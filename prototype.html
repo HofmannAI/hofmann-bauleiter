@@ -1,0 +1,2153 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E30613">
+<title>Hofmann Haus · Bauleiter-Cockpit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+:root{--red:#E30613;--red-deep:#B70510;--red-soft:#FDECEE;--ink:#0F0F10;--ink-2:#2A2925;--muted:#6B6660;--line:rgba(15,15,16,.08);--line-strong:rgba(15,15,16,.16);--bg:#F6F4F1;--paper:#FFFFFF;--paper-tint:#FAF8F4;--green:#2E7D32;--green-soft:#E8F4E9;--amber:#C97700;--amber-soft:#FDF1DA;--blue:#1F4163;--blue-soft:#E5EBF1;--grey:#B5B0AB;--grey-soft:#ECE9E4;--shadow-1:0 1px 2px rgba(15,15,16,.04),0 2px 6px rgba(15,15,16,.04);--shadow-2:0 4px 12px rgba(15,15,16,.08),0 12px 32px rgba(15,15,16,.06);--shadow-3:0 24px 48px rgba(15,15,16,.18);--r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:20px;--display:'Archivo',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100dvh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--red);outline-offset:1px}
+#app{min-height:100dvh;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:50;background:var(--ink);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+.topbar-logo{width:30px;height:30px;border:2.5px solid var(--red);border-radius:4px;position:relative;flex-shrink:0}
+.topbar-logo::after{content:'';position:absolute;right:3px;bottom:3px;width:6px;height:6px;background:var(--red);border-radius:50%}
+.topbar-text{flex:1;min-width:0}
+.topbar-brand{font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.05em;text-transform:uppercase;line-height:1}
+.topbar-brand .hl{color:var(--red)}
+.topbar-project{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-project .switch{cursor:pointer;color:rgba(255,255,255,.5);text-decoration:underline;text-underline-offset:2px;background:none;border:none;font:inherit;padding:0}
+.topbar-project .switch:hover{color:#fff}
+.topbar-actions{display:flex;gap:6px;position:relative}
+.icon-btn{width:34px;height:34px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;display:inline-flex;align-items:center;justify-content:center;transition:background .15s}
+.icon-btn:hover{background:rgba(255,255,255,.16)}
+.icon-btn:active{transform:scale(.96)}
+.icon-btn svg{width:18px;height:18px}
+.tabbar{position:sticky;bottom:0;z-index:40;background:var(--paper);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(15,15,16,.04)}
+.tabbar-btn{padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);border-radius:8px;transition:all .15s}
+.tabbar-btn svg{width:20px;height:20px}
+.tabbar-btn span{font-size:10px;font-weight:600;font-family:var(--mono);letter-spacing:.02em;text-transform:uppercase}
+.tabbar-btn.active,.tabbar-btn.active span{color:var(--red)}
+main{flex:1;padding-bottom:80px}
+.page{padding:14px;max-width:1100px;margin:0 auto}
+
+.picker-screen{min-height:100dvh;background:var(--bg);padding:36px 18px 60px}
+.picker-hero{text-align:center;margin-bottom:28px}
+.picker-logo{width:64px;height:64px;border:4px solid var(--red);border-radius:6px;position:relative;margin:0 auto 16px}
+.picker-logo::after{content:'';position:absolute;right:6px;bottom:6px;width:12px;height:12px;background:var(--red);border-radius:50%}
+.picker-brand{font-family:var(--display);font-weight:900;font-size:18px;letter-spacing:.08em;text-transform:uppercase}
+.picker-brand .hl{color:var(--red)}
+.picker-tagline{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:8px}
+.picker-section-title{font-family:var(--display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:24px auto 12px;padding:0 4px;max-width:540px}
+.project-list{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.project-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;display:flex;align-items:center;gap:14px;text-align:left;width:100%;font-family:inherit;color:inherit;box-shadow:var(--shadow-1);transition:all .15s;cursor:pointer}
+.project-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-2);border-color:var(--ink)}
+.project-card-icon{flex-shrink:0;width:46px;height:46px;border-radius:10px;background:var(--red-soft);color:var(--red);display:flex;align-items:center;justify-content:center}
+.project-card-icon svg{width:22px;height:22px}
+.project-card-text{flex:1;min-width:0}
+.project-card-name{font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:-.01em;line-height:1.2;margin-bottom:4px}
+.project-card-meta{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;flex-wrap:wrap;gap:4px 10px}
+.project-card-meta b{color:var(--ink-2);font-weight:700}
+.project-card-progress{flex-shrink:0;font-family:var(--display);font-weight:800;font-size:18px;color:var(--ink-2)}
+.project-card-progress.done{color:var(--green)}
+.picker-add{background:var(--paper);border:2px dashed var(--line-strong);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:12px;justify-content:center;width:100%;font-family:inherit;color:var(--muted);font-weight:600;font-size:14px;transition:all .15s}
+.picker-add:hover{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+.picker-add svg{width:18px;height:18px}
+
+.setup-screen{min-height:100dvh;background:var(--bg);padding:30px 18px 60px}
+.setup-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-xl);padding:24px 22px;box-shadow:var(--shadow-1);max-width:540px;margin:0 auto;width:100%}
+.setup-back{max-width:540px;margin:0 auto 16px;display:flex}
+.setup-back button{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:none;border:none;padding:0}
+.setup-back svg{width:12px;height:12px}
+.setup-title{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.15;letter-spacing:-.01em;margin:0 0 6px}
+.setup-subtitle{color:var(--muted);font-size:14px;margin:0 0 22px}
+.setup-template-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px}
+.setup-template{padding:14px;border:2px solid var(--line);background:var(--paper-tint);border-radius:var(--r-md);text-align:left;transition:all .15s}
+.setup-template:hover{border-color:var(--red)}
+.setup-template.active{border-color:var(--red);background:var(--red-soft)}
+.setup-template-title{font-family:var(--display);font-weight:700;font-size:14px;margin-bottom:4px}
+.setup-template-sub{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;line-height:1.4}
+.field{margin-bottom:16px}
+.field-label{display:block;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
+.field-input{width:100%;padding:11px 14px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--paper-tint);transition:all .15s}
+.field-input:focus{background:var(--paper);border-color:var(--red)}
+.field-hint{font-size:12px;color:var(--muted);margin-top:4px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stepper{display:flex;align-items:center;gap:8px;background:var(--paper-tint);border:1px solid var(--line-strong);border-radius:var(--r-md);padding:4px;width:fit-content}
+.stepper-btn{width:34px;height:34px;background:var(--paper);border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:17px;color:var(--ink);transition:all .12s}
+.stepper-btn:hover{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.stepper-btn:active{transform:scale(.94)}
+.stepper-btn:disabled{opacity:.3;cursor:not-allowed}
+.stepper-value{min-width:50px;text-align:center;font-family:var(--display);font-weight:800;font-size:20px;line-height:1}
+.houses-config{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.house-config{background:var(--paper-tint);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;display:flex;align-items:center;gap:12px}
+.house-config-label{font-family:var(--mono);font-size:12px;font-weight:600;text-transform:uppercase;color:var(--ink);flex:1}
+.house-config .stepper{padding:2px}
+.house-config .stepper-btn{width:28px;height:28px;font-size:15px}
+.house-config .stepper-value{font-size:15px;min-width:32px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border:1px solid transparent;border-radius:var(--r-md);font-family:var(--body);font-weight:600;font-size:14px;transition:all .15s;text-decoration:none}
+.btn svg{width:16px;height:16px}
+.btn-primary{background:var(--red);color:#fff;box-shadow:0 2px 4px rgba(227,6,19,.2)}
+.btn-primary:hover{background:var(--red-deep)}
+.btn-primary:active{transform:scale(.98)}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+.btn-ghost:hover{background:var(--paper-tint);border-color:var(--ink)}
+.btn-danger{background:transparent;color:var(--red);border-color:var(--red)}
+.btn-danger:hover{background:var(--red-soft)}
+.btn-block{width:100%;padding:13px 20px;font-size:15px}
+.btn-sm{padding:7px 12px;font-size:13px}
+
+.hero{background:var(--ink);color:#fff;border-radius:var(--r-xl);padding:22px 20px;margin-bottom:14px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(227,6,19,.18) 0%,transparent 65%);pointer-events:none}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.55);margin-bottom:6px}
+.hero-title{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.15;margin:0 0 16px;letter-spacing:-.01em}
+.hero-progress-row{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.progress-ring{flex-shrink:0;width:68px;height:68px;position:relative}
+.progress-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.progress-ring circle{fill:none;stroke-width:7}
+.progress-ring .ring-bg{stroke:rgba(255,255,255,.12)}
+.progress-ring .ring-fg{stroke:var(--red);transition:stroke-dashoffset .6s ease;stroke-linecap:round}
+.progress-ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:17px}
+.hero-stats{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.hero-stat-num{font-family:var(--display);font-weight:800;font-size:20px;line-height:1;margin-bottom:3px}
+.hero-stat-lbl{font-family:var(--mono);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.6)}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px 14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)}
+.hero-meta-item{font-family:var(--mono);font-size:11px;font-weight:500;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.04em}
+.hero-meta-item b{color:#fff;font-weight:700}
+
+.section-title{font-family:var(--display);font-weight:700;font-size:17px;margin:22px 0 10px;letter-spacing:-.005em;display:flex;align-items:baseline;justify-content:space-between}
+.section-title .count{font-family:var(--mono);font-weight:600;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.scope-group{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:13px 14px;margin-bottom:10px;box-shadow:var(--shadow-1);width:100%;text-align:left;font-family:inherit;color:inherit;cursor:pointer}
+.scope-group:hover{border-color:var(--line-strong)}
+.scope-group-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.scope-icon{width:26px;height:26px;border-radius:8px;background:var(--red-soft);color:var(--red);display:flex;align-items:center;justify-content:center}
+.scope-icon svg{width:15px;height:15px}
+.scope-name{font-family:var(--display);font-weight:700;font-size:14px;flex:1}
+.scope-progress-text{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted)}
+.progress-bar{height:6px;background:var(--grey-soft);border-radius:3px;overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--red) 0%,var(--red-deep) 100%);border-radius:3px;transition:width .5s ease}
+.progress-bar-fill.green{background:var(--green)}
+.activity-feed{display:flex;flex-direction:column;gap:6px}
+.activity-item{display:flex;gap:11px;padding:10px 12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);transition:all .12s;cursor:pointer;text-align:left;width:100%;font-family:inherit;color:inherit}
+.activity-item:hover{border-color:var(--line-strong);transform:translateX(2px)}
+.activity-icon{width:30px;height:30px;border-radius:8px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.activity-icon svg{width:15px;height:15px}
+.activity-icon.photo{background:var(--red-soft);color:var(--red)}
+.activity-text{flex:1;min-width:0}
+.activity-line1{font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.activity-line2{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+
+.filter-bar{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-pill{padding:7px 13px;background:var(--paper);border:1px solid var(--line);border-radius:999px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;transition:all .12s}
+.filter-pill:hover{border-color:var(--ink);color:var(--ink)}
+.filter-pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.filter-pill .badge{display:inline-block;margin-left:6px;padding:1px 6px;background:rgba(255,255,255,.18);border-radius:8px;font-size:10px}
+.filter-pill:not(.active) .badge{background:var(--grey-soft);color:var(--ink)}
+.checklist-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:640px){.checklist-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:900px){.checklist-grid{grid-template-columns:repeat(3,1fr)}}
+.checklist-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;text-align:left;transition:all .15s;box-shadow:var(--shadow-1);display:flex;flex-direction:column;width:100%;cursor:pointer;font-family:inherit;color:inherit}
+.checklist-card:hover{border-color:var(--ink);transform:translateY(-2px);box-shadow:var(--shadow-2)}
+.checklist-card.complete{background:var(--paper-tint)}
+.checklist-card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.checklist-num{flex-shrink:0;width:30px;height:30px;background:var(--ink);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:13px}
+.checklist-card.complete .checklist-num{background:var(--green)}
+.checklist-title{font-family:var(--display);font-weight:700;font-size:15px;line-height:1.2;flex:1;margin:4px 0}
+.checklist-meta{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.scope-tag{padding:2px 7px;background:var(--grey-soft);border-radius:4px;color:var(--ink-2)}
+.scope-tag.project{background:var(--blue-soft);color:var(--blue)}
+.scope-tag.house{background:#F0E5DC;color:#6B4A2C}
+.scope-tag.apartment{background:var(--red-soft);color:var(--red-deep)}
+.checklist-card-foot{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:10px}
+.checklist-card-foot .progress-bar{flex:1}
+.checklist-progress-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink)}
+.checklist-photo-count{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase}
+.checklist-photo-count svg{width:12px;height:12px}
+
+.detail-header{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-1)}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:0;margin-bottom:8px}
+.back-link:hover{color:var(--ink)}
+.back-link svg{width:12px;height:12px}
+.detail-num-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.detail-title{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.1;letter-spacing:-.015em;margin:6px 0 12px}
+.detail-progress{display:flex;align-items:center;gap:10px}
+.detail-progress .progress-bar{flex:1}
+.detail-progress-num{font-family:var(--mono);font-size:12px;font-weight:700}
+.filter-houses{display:flex;gap:6px;overflow-x:auto;margin:4px 0 14px;padding:2px 0}
+.filter-houses::-webkit-scrollbar{display:none}
+.house-chip{padding:6px 12px;background:var(--paper);border:1px solid var(--line);border-radius:999px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;transition:all .12s}
+.house-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.section-block{margin-bottom:16px}
+.section-heading{font-family:var(--display);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 8px;padding:0 4px}
+.item-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:8px;transition:all .15s;box-shadow:var(--shadow-1)}
+.item-card:hover{border-color:var(--line-strong)}
+.item-card-text{font-size:14px;line-height:1.45;color:var(--ink);margin-bottom:10px}
+.item-card-status-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.status-summary{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink)}
+.status-summary .dot{width:8px;height:8px;border-radius:50%;background:var(--grey)}
+.status-summary.done .dot{background:var(--green)}
+.status-summary.partial .dot{background:var(--amber)}
+.status-summary-meta{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-left:auto}
+.item-house-group{margin-top:8px}
+.item-house-group+.item-house-group{margin-top:10px}
+.item-house-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.pills-grid{display:flex;flex-wrap:wrap;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;background:var(--grey-soft);border:1px solid transparent;border-radius:999px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ink-2);transition:all .15s;line-height:1;min-height:30px}
+.pill:hover{transform:translateY(-1px);box-shadow:var(--shadow-1)}
+.pill:active{transform:scale(.95)}
+.pill.done{background:var(--green-soft);color:var(--green);border-color:rgba(46,125,50,.2)}
+.pill.partial{background:var(--amber-soft);color:var(--amber);border-color:rgba(201,119,0,.18)}
+.pill.project{padding:8px 14px;font-size:13px}
+.pill .pill-dot{width:7px;height:7px;border-radius:50%;background:var(--grey)}
+.pill.done .pill-dot{background:var(--green)}
+.pill.partial .pill-dot{background:var(--amber)}
+.pill .pill-cam{display:inline-flex;align-items:center;gap:2px;font-size:10px;opacity:.85}
+.pill .pill-cam svg{width:11px;height:11px}
+
+.scrim{position:fixed;inset:0;z-index:100;background:rgba(15,15,16,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .25s}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:101;background:var(--paper);border-top-left-radius:22px;border-top-right-radius:22px;box-shadow:var(--shadow-3);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);max-height:92dvh;display:flex;flex-direction:column}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{width:40px;height:4px;background:var(--line-strong);border-radius:2px;margin:10px auto 0;flex-shrink:0}
+.sheet-head{padding:12px 18px 6px;display:flex;align-items:flex-start;gap:12px;flex-shrink:0}
+.sheet-head-text{flex:1;min-width:0}
+.sheet-eyebrow{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;line-height:1.3}
+.sheet-title{font-family:var(--display);font-weight:700;font-size:18px;line-height:1.2;margin:0}
+.sheet-close{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:var(--grey-soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.sheet-close:hover{background:var(--line-strong)}
+.sheet-close svg{width:18px;height:18px}
+.sheet-body{padding:6px 18px 18px;overflow-y:auto;flex:1}
+.sheet-item-text{font-size:14px;line-height:1.5;color:var(--ink-2);background:var(--paper-tint);padding:11px 13px;border-radius:var(--r-md);border-left:3px solid var(--red);margin-bottom:16px}
+.sheet-status-toggle{display:flex;align-items:center;gap:12px;padding:13px;background:var(--paper-tint);border:2px solid var(--line);border-radius:var(--r-md);margin-bottom:14px;cursor:pointer;transition:all .15s;user-select:none}
+.sheet-status-toggle.checked{background:var(--green-soft);border-color:var(--green)}
+.check-box{width:24px;height:24px;border:2px solid var(--line-strong);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;background:var(--paper)}
+.sheet-status-toggle.checked .check-box{background:var(--green);border-color:var(--green)}
+.check-box svg{width:14px;height:14px;color:#fff;opacity:0;transition:opacity .15s}
+.sheet-status-toggle.checked .check-box svg{opacity:1}
+.sheet-status-text{font-family:var(--display);font-weight:700;font-size:15px}
+.sheet-status-sub{font-size:12px;color:var(--muted);margin-top:2px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em}
+.photos-section{margin-bottom:14px}
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
+.photo-tile{aspect-ratio:1;border-radius:var(--r-md);overflow:hidden;background:var(--grey-soft);border:1px solid var(--line);position:relative;cursor:pointer}
+.photo-tile img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-tile-del{position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(15,15,16,.7);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+.photo-tile:hover .photo-tile-del,.photo-tile:active .photo-tile-del{opacity:1}
+.photo-tile-del svg{width:12px;height:12px}
+.photo-add-tile{aspect-ratio:1;border:2px dashed var(--line-strong);border-radius:var(--r-md);background:var(--paper-tint);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);transition:all .15s}
+.photo-add-tile:hover{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+.photo-add-tile svg{width:22px;height:22px}
+.photo-add-tile span{font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.sheet-foot{padding:12px 18px calc(18px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--paper);flex-shrink:0}
+
+.viewer{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center}
+.viewer.open{display:flex}
+.viewer img{max-width:96vw;max-height:92vh;object-fit:contain}
+.viewer-close{position:absolute;top:16px;right:16px;width:40px;height:40px;background:rgba(255,255,255,.12);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.menu{position:absolute;top:100%;right:0;margin-top:6px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow-2);min-width:230px;overflow:hidden;z-index:60;display:none}
+.menu.open{display:block}
+.menu-item{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;text-align:left;font-size:14px;color:var(--ink);border-bottom:1px solid var(--line)}
+.menu-item:last-child{border-bottom:none}
+.menu-item:hover{background:var(--paper-tint)}
+.menu-item.danger{color:var(--red)}
+.menu-item svg{width:16px;height:16px;flex-shrink:0}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:500;z-index:300;opacity:0;transition:all .25s;box-shadow:var(--shadow-2);pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.dialog{position:fixed;inset:0;z-index:250;background:rgba(15,15,16,.55);display:none;align-items:center;justify-content:center;padding:18px}
+.dialog.open{display:flex}
+.dialog-panel{background:var(--paper);border-radius:var(--r-lg);padding:20px;max-width:420px;width:100%;box-shadow:var(--shadow-3)}
+.dialog-title{font-family:var(--display);font-weight:700;font-size:17px;margin:0 0 8px}
+.dialog-text{color:var(--muted);margin:0 0 18px;font-size:14px}
+.dialog-actions{display:flex;gap:8px;justify-content:flex-end}
+.empty{text-align:center;padding:36px 18px;color:var(--muted)}
+.empty-emoji{font-size:32px;margin-bottom:8px}
+.empty-text{font-size:14px}
+
+/* GANTT */
+.gantt-page{padding:0;max-width:none;margin:0}
+.gantt-toolbar{display:flex;align-items:center;gap:6px;padding:10px 14px;background:var(--paper);border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:51px;z-index:30}
+.gantt-toolbar-group{display:flex;gap:4px;align-items:center;background:var(--paper-tint);padding:3px;border-radius:8px;border:1px solid var(--line)}
+.gantt-zoom-btn{padding:5px 10px;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border-radius:5px;transition:all .12s}
+.gantt-zoom-btn:hover{color:var(--ink)}
+.gantt-zoom-btn.active{background:var(--ink);color:#fff}
+.gantt-toolbar .btn{padding:6px 12px;font-size:12px}
+.gantt-toolbar-spacer{flex:1}
+.gantt-info{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.gantt-info b{color:var(--ink-2)}
+.gantt-wrap{display:flex;background:var(--paper);height:calc(100dvh - 51px - 49px - 80px);min-height:480px;overflow:hidden;border-top:1px solid var(--line)}
+.gantt-list{flex-shrink:0;width:300px;border-right:1px solid var(--line-strong);background:var(--paper);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+@media(max-width:640px){.gantt-list{width:200px}}
+.gantt-list-head{position:sticky;top:0;z-index:5;background:var(--paper-tint);border-bottom:1px solid var(--line);height:60px;display:flex;align-items:flex-end;padding:0 12px 8px;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.gantt-row-list{height:32px;display:flex;align-items:center;padding:0 8px 0 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer;transition:background .12s;position:relative}
+.gantt-row-list:hover{background:var(--paper-tint)}
+.gantt-row-list.depth-0{font-weight:800;font-family:var(--display);font-size:13px;background:var(--paper-tint)}
+.gantt-row-list.depth-0:hover{background:var(--grey-soft)}
+.gantt-row-list.depth-1{font-weight:700}
+.gantt-list-toggle{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);transition:transform .15s}
+.gantt-list-toggle.expanded{transform:rotate(90deg)}
+.gantt-list-toggle.empty{visibility:hidden}
+.gantt-list-toggle svg{width:10px;height:10px}
+.gantt-list-num{font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:700;flex-shrink:0;min-width:38px;letter-spacing:-.02em}
+.gantt-list-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-row-list.depth-1 .gantt-list-name{padding-left:6px}
+.gantt-row-list.depth-2 .gantt-list-name{padding-left:14px;font-size:12.5px;color:var(--ink-2)}
+.gantt-timeline-wrap{flex:1;overflow:auto;position:relative;background:var(--paper);scrollbar-width:thin}
+.gantt-timeline{position:relative}
+.gantt-axis{position:sticky;top:0;z-index:5;background:var(--paper-tint);border-bottom:1px solid var(--line-strong);height:60px}
+.gantt-axis-month{position:absolute;top:0;height:30px;border-right:1px solid var(--line);display:flex;align-items:center;justify-content:flex-start;font-family:var(--display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink);padding:0 8px;white-space:nowrap;overflow:hidden}
+.gantt-axis-week,.gantt-axis-day{position:absolute;height:30px;top:30px;border-right:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted);letter-spacing:-.02em}
+.gantt-axis-week.today,.gantt-axis-day.today{color:var(--red);font-weight:700}
+.gantt-grid{position:absolute;top:60px;left:0;right:0;bottom:0;pointer-events:none}
+.gantt-grid-line{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+.gantt-grid-line.month{background:var(--line-strong)}
+.gantt-grid-weekend{position:absolute;top:0;bottom:0;background:rgba(15,15,16,.025);pointer-events:none}
+.gantt-today-line{position:absolute;top:30px;bottom:0;width:2px;background:var(--red);z-index:8;pointer-events:none;box-shadow:0 0 0 1px rgba(227,6,19,.2)}
+.gantt-today-label{position:absolute;left:-14px;top:0;background:var(--red);color:#fff;font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.gantt-rows{position:relative}
+.gantt-row{position:relative;height:32px;border-bottom:1px solid var(--line)}
+.gantt-row.depth-0{background:var(--paper-tint)}
+.gantt-row:hover{background:rgba(227,6,19,.03)}
+.gantt-bar{position:absolute;top:6px;height:20px;background:var(--blue);border-radius:4px;cursor:pointer;display:flex;align-items:center;padding:0 6px;font-family:var(--mono);font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.1);transition:all .12s;min-width:8px}
+.gantt-bar:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.18);z-index:6}
+.gantt-bar.summary{height:8px;top:12px;border-radius:2px;background:linear-gradient(180deg,var(--ink) 0%,var(--ink-2) 100%);font-size:0}
+.gantt-bar-label-outside{position:absolute;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--ink-2);white-space:nowrap;pointer-events:none;top:50%;transform:translateY(-50%)}
+.gantt-deps-svg{position:absolute;top:60px;left:0;pointer-events:none;z-index:7}
+.gantt-deps-svg path{stroke:var(--ink-2);stroke-width:1.2;fill:none;opacity:.5}
+.task-color-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.task-color-swatch{width:32px;height:32px;border-radius:8px;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line-strong);cursor:pointer;transition:transform .12s}
+.task-color-swatch.active{box-shadow:0 0 0 2px var(--ink)}
+.task-color-swatch:hover{transform:scale(1.1)}
+.gantt-empty{padding:60px 20px;text-align:center}
+.gantt-empty .empty-emoji{font-size:38px}
+.gantt-empty-actions{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.dep-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.dep-pill{padding:5px 9px;background:var(--paper-tint);border:1px solid var(--line);border-radius:999px;font-family:var(--mono);font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.dep-pill .x{cursor:pointer;color:var(--muted)}
+.dep-pill .x:hover{color:var(--red)}
+.task-editor select.field-input{padding-right:30px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B6660' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 10px center;background-size:14px;appearance:none;-webkit-appearance:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="photo-input" accept="image/*" capture="environment" multiple hidden>
+
+<script>
+/* Hofmann Haus Checklisten-Daten */
+// Hofmann Haus — Checklisten-Daten
+// scope: 'project' | 'house' | 'apartment'  →  Default-Ebene, der Bauleiter kann pro Foto neu zuordnen
+const CHECKLISTS = [
+  {
+    id: "01", num: "1", title: "Vor Aushub", scope: "project",
+    sections: [{ items: [
+      "Eine Beweissicherung der Anliegerflächen, Bordsteine, Laternen, etc. wurde durchgeführt.",
+      "Baugenehmigung liegt vor. (Roter Punkt)",
+      "Die Kampfmittelfreiheit für das Baufeld ist gegeben.",
+      "Eine Baugrunduntersuchung / Beprobung wurde durchgeführt — Geologisches Gutachten liegt vor.",
+      "Sohle Baugrube und OK Planum wurden festgelegt. (Aushubplan vorhanden)",
+      "Baugrube wurde vom Vermesser abgesteckt. Geofixpunkte für GPS-System angebracht (min. 3 Stück — Absprache mit Rohbauer) — Plan von Vermesser ablegen.",
+      "Eine Lagerfläche für den Mutterboden wurde festgelegt.",
+      "Eine Lagerfläche für den Baugrubenaushub wurde festgelegt — alles abfahren wo nicht benötigt wird!",
+      "Die Baugrubensohle und Fundamente wurden vom Geologen abgenommen. Prüfbericht liegt vor.",
+      "Die Baustelle wurde sauber für das Nachfolgegewerk hinterlassen. (Nachbegehung/Abnahme durchführen)",
+      "Prüfstatik liegt vor."
+    ]}]
+  },
+  {
+    id: "02", num: "2", title: "Aushub", scope: "project",
+    sections: [{ items: [
+      "Vorleistungen (Wasser, Strom, etc.) wurden mit der ausführenden Firma abgestimmt.",
+      "Bauvertrag wurde geprüft und mit Leistung abgeglichen — evtl. Nachträge vorab verhandelt und freigegeben.",
+      "Genehmigung für Anker von Verbau von Nachbar liegt vor.",
+      "Verbaustatik liegt vor.",
+      "Alle Schnittstellen zu Nachgewerk (Tiefengründung am Verbaufuß, etc.) wurden vorab geklärt und kommuniziert. (Abstimmung Erdbau und Rohbau)",
+      "Eine Absturzsicherung (Bauzaun) wurde angebracht und gegen Windeinwirkung gesichert.",
+      "Der Verbau ist kraftschlüssig hinterfüllt — Nachweis von Verbaufirma vorhanden.",
+      "Alle Bohrprotokolle und Ankerprotokolle liegen vor.",
+      "Eine Lagerfläche für den Baugrubenaushub wurde festgelegt. Es ist zu klären, was für die Außenanlagen benötigt wird — alles abfahren wo nicht benötigt wird.",
+      "Die Baugrubensohle wurde vom Geologen abgenommen (Fundamente auch).",
+      "Es wurde eine Abnahme sowie eine Dokumentation durchgeführt (Böschungswinkel, Aushubkontur nach Aushubplan, Rampe, …)."
+    ]}]
+  },
+  {
+    id: "03", num: "3", title: "Rohbau", scope: "house",
+    sections: [
+      { title: "1. Gründung", items: [
+        "Streifenfundament Gründungssohle (Abnahme Geologe). Größe Fundamente lt. Statik. (Bilder nummerieren und in PDF-Plan beschreiben)",
+        "Unterbau fachgerecht eingebaut lt. Plan, Sauberkeitsschicht, Schottertragschicht.",
+        "Erdung fachgerecht verlegt lt. Plan, Wanddurchführung für WU zugelassen. Erdungspunkte vorhanden.",
+        "Erdung dokumentiert und geprüft. Dokumentation erhalten.",
+        "Fugenblech oder Fugendichtband fachgerecht verlegt.",
+        "Stärke der Bodenplatte geprüft.",
+        "Vertikale Abdichtungsbänder vorhanden lt. Plan (bei weißer Wanne).",
+        "Abdichtung der vertikalen und horizontalen Fugen von außen vorhanden.",
+        "Fundamente unter Kragplatten im Arbeitsraum bis auf gewachsenen Boden gegründet.",
+        "Horizontalsperre (Folie) unter Bodenplatte fachgerecht verlegt."
+      ]},
+      { title: "2. Entwässerung", items: [
+        "Entwässerungssystem (Trenn- oder Mischsystem) laut Entwässerungsplan. Alle Abläufe im UG vorhanden und an der richtigen Stelle.",
+        "Die Höhe des Kontrollschachts prüfen laut Plan — (Außenanlagen und Architekt vergleichen).",
+        "Leitungen im richtigen Gefälle verlegt: Mindestgefälle 1%, keine 90°-Bögen (2× 45°), keine Unterbögen, Mindestdurchmesser DN 100.",
+        "Dokumentation der verlegten Leitungen unter der Bodenplatte.",
+        "RW, SW, Drainage an Kanal angeschlossen. Kanalbefahrung liegt vor. Druckprüfung von Schmutzwasserleitungen bis in Kanal liegt vor.",
+        "Drainage fachgerecht verlegt — Gefälle ausreichend, Hochpunkt 20 cm unterhalb OK Betonsohle, Rohrscheitel unterhalb OK Betonsohle, Noppenbahn 3-lagig mit Gleitfolie zur Dämmung und Vlies zum Erdreich.",
+        "Drainage gegen Rückstau gesichert und revisionsfähig. Drainagekontrollschächte an allen Richtungswechseln vorhanden.",
+        "Für Entwässerung unter Bodenplatte Rohre durch Fundamente vorhanden lt. Plan.",
+        "Drainagerohre in Filterschotter 8/16 verlegt. Um Filterschotter Geotextil verlegt.",
+        "Hinterfüllung der Arbeitsräume fachgerecht verdichtet. Auffüllmaterial laut Vertrag. Verdichtungsnachweise vorhanden.",
+        "GOK festgelegt (Höhe der Auffüllung vom Rohbauer) — laut Vertrag."
+      ]},
+      { title: "3. Versorgungsleitungen", items: [
+        "Anträge in Absprache mit Fachplanern gestellt: Wasser, Strom, Medien (Glasfaser/Internet), Nah-/Fernwärme, Gas. Unterlagen/Anträge abgelegt.",
+        "Einführungen passend zum Abdichtungssystem geprüft: Futterrohr bei Schwarzer Wanne, Kernbohrung oder KG-Rohr wo wieder ausgebaut wird.",
+        "Hauseinführungen mit Versorgern und Tiefbaufirmen abgestimmt (Mehrsparte, Einzeleinführung, Abdichtung, Leerrohre, Lage, …).",
+        "Versorgung zwischen den Häusern abgestimmt — Fachplaner, Rohbauer (Vertrag prüfen): Wasser, Strom, Medien, Nah-/Fernwärme, Gas.",
+        "Werden weitere Leerrohre benötigt?"
+      ]},
+      { title: "4. Untergeschoss", items: [
+        "Bewehrung UG Bodenplatte lt. Statik (Abnahme Statiker).",
+        "Bewehrung TG-Decke lt. Statik (Abnahme Statiker).",
+        "Stahlbetonwände ordentlich geschalt. Fuge Wand-Decke verspachtelt. Sockelbereich für Sockelbeschichtung vorbereitet. Dreikantleisten lt. Vertrag eingebaut.",
+        "Maße/Anzahl/Lage Bauteilöffnungen, Decken- und Wandaussparungen, Wandschlitze geprüft.",
+        "Sperrpappe unter Mauerwerk vorhanden.",
+        "Dickbeschichtung fachgerecht ausgeführt: 2K-KMB 2-lagig, 3 mm Schichtdicke trocken, Hohlkehle nach DIN 18533. Ausführungsprotokoll mit Bildern.",
+        "Versorgungsleitungen durch UG-Wand abgedichtet.",
+        "Dickbeschichtung unter Fuge Wand/Decke TG fachgerecht bis 30 cm unter Fuge. Ergänzung Dickbeschichtung über Schweißbahn + 10 cm.",
+        "Lichtschächte fachgerecht montiert. Höhe lt. Plan (Außenanlagen und Architekt). Entwässerung lt. Plan und Detail."
+      ]},
+      { title: "5. Außenmauerwerk", items: [
+        "Fugenbild, Fugenausbildung geprüft (keine Kreuzfugen, Fugen >0,5 mm verschlossen).",
+        "Steinqualität (Rohdichte) laut Statik/Schallschutz (Bild von Steinbeschriftung).",
+        "Deckenrandauflager unter Stahlbetondecke laut Vertrag eingebaut (Kantenschutz Cipolon).",
+        "Meterriss vorhanden in jeder Wohnung und am Aufzug, Höhen geprüft (mit Laser).",
+        "Maße Bauteilöffnungen/Aussparungen geprüft.",
+        "Mauerwerk lot-, winkel- und waagerecht. Fugen >5 mm mit Mörtel verschlossen. Gleichmäßiger Kleber-/Mörtelauftrag.",
+        "Brüstungshöhen geprüft.",
+        "Tür- und Fensterhöhen und -breiten kontrolliert."
+      ]},
+      { title: "6. Innenmauerwerk", items: [
+        "Verzahnung mit Edelstahlankern.",
+        "Steinqualität (Rohdichte) laut Statik/Schallschutz (Bild von Steinbeschriftung).",
+        "Fuge zur Stahlbetondecke geschlossen (bei nichttragenden Wänden, keine kraftschlüssige Verbindung).",
+        "Keine Betonüberstände an Deckenuntersicht.",
+        "Keine Versätze in den Stahlbetondecken (Untersicht der Halbfertigteile).",
+        "Fugenbild, Fugenausbildung okay."
+      ]},
+      { title: "7. Decken", items: [
+        "Bewehrung Decke über EG abgenommen (Abnahme Statiker).",
+        "Bewehrung Decke über 1.OG abgenommen (Abnahme Statiker).",
+        "Ringgurte, Stürze, Auflager lt. Statik vorhanden.",
+        "Einbauteile Aufzug bestellen — Rohbauer bestellt direkt.",
+        "Durchbrüche geprüft.",
+        "Bodenschlitze geprüft."
+      ]},
+      { title: "8. Betonfertigteiltreppen", items: [
+        "Steigung Treppe prüfen, ob mit Podest übereinstimmt.",
+        "Treppe auf Elastomerlager (Schöck Tronsole) gelagert.",
+        "Schallentkopplung prüfen (keine Verbindung zu Auflager, Wand, etc.). Treppe muss komplett frei gelagert sein.",
+        "Untersicht und Übergang zum Podest. Maximaler Überstand Kante Treppe — Decke Podest 5 mm.",
+        "Treppe sitzt parallel zur Wand (Wandabstand prüfen laut Plan). Breite von Treppenauge prüfen (laut Plan)."
+      ]},
+      { title: "9. Giebelmauerwerk bei Satteldach", items: [
+        "Ortstermin mit Zimmermann und Rohbauer vereinbaren und Höhen von Auflager prüfen.",
+        "Dämmung auf Giebelwand prüfen.",
+        "Nach Aufrichten sämtliche Wände hochgemauert (Brandschutz beachten). Auf Brandwand (Treppenhaus, Wohnungstrennwand) nichtbrennbare Dämmung verlegt.",
+        "Stahlstützen untermörtelt.",
+        "Ringgurte und Auflager betoniert (laut Statikplan)."
+      ]}
+    ]
+  },
+  {
+    id: "04", num: "4", title: "Abdichtungsarbeiten", scope: "house",
+    sections: [
+      { title: "1. Abdichtung Dachflächen", items: [
+        "Abstimmung zwischen Abdichter, Zimmerer, Gipser und Flaschner ist erfolgt — Schnittstellen besprochen.",
+        "Gefälleplanung liegt vor und entspricht den Vorgaben aus der Bauphysik. Dämmstärke und Wärmeleitgruppe passen mit Bauphysik überein und wurden dokumentiert.",
+        "Überlappungen (8 cm) der Schweißbahnen gem. Herstellerangaben ausgeführt — stichprobenartig geprüft.",
+        "Alle Anschlüsse an Abläufen/Notabläufen geprüft und sauber ausgeführt. Gefälle der Notabläufe geprüft.",
+        "Fertiggestellte Oberflächen auf Beschädigung, Blasenbildung, unsaubere Ausführung geprüft.",
+        "Alle Abläufe geprüft. Anstaubleche (bei Notabläufen) und Abdeckungen angebracht.",
+        "Sicherung der Dachflächen (Sekuranten) abgestimmt. Nachweis und Bestätigung der Durchführung erhalten.",
+        "Alle Bauteile (Lüftung, Dachausstieg, Sekuranten, etc.) mit Flüssigkunststoff bis +15 cm über FFB eingedichtet.",
+        "Fenster mit Flüssigkunststoff eingedichtet. Flüssigkunststoff von Fenster auf Beton geführt. Flüssigkunststoff zwischen Mauer und Fenster mind. 15 cm über FFB hochgeführt."
+      ]},
+      { title: "2. Dachbegrünung und -bekiesung", items: [
+        "Belegung Kies/Begrünung abgestimmt. Belegung Dachflächen mit PV beachten. Kies ringsum und um alle Bauteile, –10 cm OK Blechattika, –15 cm zum Dachausstieg. Überdeckung mit Substrat geprüft.",
+        "Bilddokumentation der begrünten und bekiesten Flächen durchgeführt.",
+        "Lüfterhauben fest angeschraubt (auf Badlüftung montiert; Schmutzwasserentlüftung benötigt keine Hauben).",
+        "Abläufe sind nicht verstopft und revisionierbar."
+      ]},
+      { title: "3. Abdichtung Dachterrassen, Balkone", items: [
+        "Ausführung mit Abdichter laut Detail (Architekt) besprochen. Gefälleplanung besprochen.",
+        "Betonuntergrund geprüft (keine Kiesnester, trocken, Temperatur). Eignet sich für Schweißbahn.",
+        "Bit. Voranstrich und Dampfsperre vollflächig aufgebracht.",
+        "Dämmstärken geprüft, stimmen mit Bauphysik überein.",
+        "Ausreichendes Gefälle vorhanden (laut Plan).",
+        "Hochzug der Abdichtung an aufgehenden Bauteilen mit 15 cm ü. FFB, mit Klemmleisten oder Flüssigkunststoff gesichert.",
+        "Anschlüsse an Fenster und Hebe-Schiebe-Türen fachgerecht (15 cm ü. FFB). Korrekt an Rollladenschiene und unter Wetterschenkel.",
+        "Anschlüsse an Abläufen geprüft, sauber/fachgerecht. Abläufe ohne Gegengefälle.",
+        "Schweißbahnen (2-lagig) auf Beschädigung, Blasenbildung, unsaubere Ausführung geprüft.",
+        "Abdichtung mit Bautenschutzmatten geschützt.",
+        "Beschädigungen der Fenster/-rahmen (durch Schweißbrenner, Flüssigkunststoff) liegen nicht vor.",
+        "Abläufe fachgerecht eingebaut, sauber und revisionierbar. Notabläufe sitzen über Ablauf und unter Schwelle Fenster/HST. (Bei einseitig offenem Balkon kein Notablauf nötig.)"
+      ]},
+      { title: "4. Abdichtung TG-Decke / Erdberührte Flächen", items: [
+        "Betonuntergrund geprüft, geeignet für Schweißbahn.",
+        "Ausreichendes Gefälle vorhanden.",
+        "Bit. Voranstrich vollflächig aufgebracht.",
+        "Schweißbahnen (2-lagig) für die darüberliegende Nutzung (Begrünung, Parkplatz, etc.) geeignet.",
+        "Alle Überlappungen (8 cm) gem. Herstellerangaben.",
+        "Anschlüsse an Abläufen geprüft, sauber/fachgerecht.",
+        "Oberflächen auf Beschädigung, Blasenbildung, unsaubere Ausführung geprüft.",
+        "Hochzug an aufgehenden Bauteilen mit +15 cm ü. FFB, mit Klemmleisten oder Flüssigkunststoff gesichert.",
+        "Alle Abkantungen über die Fuge (TG-Decke/Kellerwand) geführt — min. 10 cm überlappend.",
+        "Dämmstärken geprüft, stimmen mit Bauphysik überein, laut Plan eingebaut.",
+        "Schutz der Abdichtung aufgebracht (Vlies 300 g + Bautenschutzmatte).",
+        "Bilddokumentation der abgedichteten Flächen und Dämmung durchgeführt.",
+        "Baustelle sauber hinterlassen.",
+        "Sämtliche Revisionsunterlagen, Dokumentationen und Nachweise erhalten und abgelegt."
+      ]}
+    ]
+  },
+  {
+    id: "05", num: "5", title: "Satteldach", scope: "house",
+    sections: [{ items: [
+      "Dachkonstruktion lt. Statik, Holzdimensionen, Befestigungsmittel, Holzqualität.",
+      "Stellbretter, Dachschalung, Ortgangleisten, Unterspann sauber verlegt, Stöße verklebt, Durchdringungen verklebt, keine Beschädigungen, Konter- und Traglattung (S10) fachgerecht montiert.",
+      "Dacheindeckung fachgerecht verlegt. Schneefanggitter vorhanden. Lüftungsziegel richtig montiert. Sturmklammern nach Vorschrift eingebaut, Dokumentation vorhanden.",
+      "Einlauf in Rinne gewährleistet, Einlaufblech und Tropfblech vorhanden.",
+      "Hinterlüftung gegeben und sauber.",
+      "Lüfter (Abluft) vorhanden an richtiger Stelle (Abstimmung HLS).",
+      "Sonderziegel (PV, Sat, Solar, etc.) vorhanden (wenn im Auftrag).",
+      "Dachüberstand hergestellt nach Plan. Trennung Kamin Betondecken — Mauerwerk mit 3 cm Dämmung 1000° beständig. Kaminauswechslung ausbetoniert oder mittels Dachhalter gesichert.",
+      "Dachflächenfenster nach Plan eingebaut (Höhe prüfen).",
+      "Baustelle wurde ordentlich verlassen."
+    ]}]
+  },
+  {
+    id: "06", num: "6", title: "Flaschner", scope: "house",
+    sections: [{ items: [
+      "Abstimmung zwischen Abdichter, Zimmerer, Gipser und Flaschner erfolgt — Schnittstellen besprochen.",
+      "Notwendige Regenrinnen mit ausreichend Gefälle montiert.",
+      "Regenfallrohre lotrecht montiert.",
+      "Fallrohre gegen Abrutschen gesichert.",
+      "Rohrschellenabstand stimmt. Passende Abdeckkappen an Putz montiert (WDVS oder Mauerwerk), liegen ordentlich an.",
+      "Standrohre UV-beständig ausgeführt. Bis 30 cm ü. FFB.",
+      "Fallrohre und Rinne auf Beschädigungen geprüft.",
+      "Flaschnerarbeiten fachgerecht ausgeführt (Kaminverwahrung, Seitenkehlen, Dachrinnen, Ortgangblech, etc.). Mit Vertrag abgeglichen.",
+      "Attikablech mit Neigung Gefälle nach innen (laut Detail) ausgeführt.",
+      "Überstand Attikablech über Fassade (abhängig von Gebäudehöhe — mind. 4 cm) durchgängig eingehalten.",
+      "Alle Lötstellen sauber ausgeführt. Undichtigkeiten ausgeschlossen.",
+      "Attika auf Schäden geprüft (Kratzer, Dellen, …).",
+      "Dehnungsfugen eingehalten und ordentlich ausgeführt.",
+      "Attikablech an allen Stellen fest (Halter prüfen).",
+      "Alle Arbeiten nach Plan und Details ausgeführt.",
+      "Farbe und Material stimmen mit Bemusterung überein."
+    ]}]
+  },
+  {
+    id: "07", num: "7", title: "Fenster", scope: "house",
+    sections: [{ items: [
+      "Gerüst und Kran mit Fensterbauer abgestimmt — siehe Vertrag.",
+      "Details an Lichtschacht, HST, Rollladen abgestimmt.",
+      "Ausführung des „Gewerkelochs“ abgestimmt — zwischen Gipser, Rolladenbauer, Fensterbauer.",
+      "Simse im EG geprüft (Planung Außenanlagen wegen Höhen).",
+      "Bodentiefe Fenster im EG / Terrassen / Balkone / Loggien: 5 cm Absatz + Festverglasung unten = Rinne; 15 cm Absatz + Festverglasung unten = nur Kies; bodeneben + überdacht = nur Rinne; bodeneben nicht überdacht = Rinne + beheizt.",
+      "Fenster nach Herstellerangaben im Mauerwerk verschraubt. Spezielle Verankerung für VSG-Verglasung beachten.",
+      "Fenster und HST nach Meterriss eingebaut.",
+      "Fensterprofil innen und außen luftdicht mit Mauerwerk abgeklebt (RAL-Montage).",
+      "Fenster vollständig (mit Griff, Anschlussprofilen, etc.) montiert.",
+      "Funktion der Fenster (Schließfunktion, Dreh-Kipp, etc.) geprüft.",
+      "Alle Fenster lotrecht montiert.",
+      "Vorgaben der Bauphysik (Schallschutz, Wärmeschutz) der Scheiben mit LV und Bauteilaufbauten geprüft.",
+      "Alle Fenster auf Schäden an Glas und Rahmen geprüft.",
+      "Gefälle der Fensterbank mit 5° Neigung — kein Gegengefälle.",
+      "Bei Holzbau 2. Dichtungsebene unter Sims ausgeführt.",
+      "Mind. zwei Simshalter bei WDVS montiert.",
+      "Antidröhnmatte unterseitig des Simses angebracht.",
+      "Überstand über Putzoberfläche 4,5 cm. Holzfassade beachten und Überstand prüfen.",
+      "Fensterbank waagerecht eingebaut. Lackoberflächen schadensfrei.",
+      "Wird ein RWA-Fenster benötigt?",
+      "2. Fluchtweg prüfen — (Lichter Durchgang, Notkurbel) Abgleich mit Brandschutzplan.",
+      "Abnahme der Fenster durchgeführt.",
+      "Ggf. Rahmenverbreiterungen verkleiden — Trockenbauer etc.",
+      "Baustelle sauber verlassen."
+    ]}]
+  },
+  {
+    id: "08", num: "8", title: "Haustüre", scope: "house",
+    sections: [{ items: [
+      "Vorbereitungen seitens Elektriker erledigt.",
+      "Ausführung laut Baubeschreibung und Bemusterung.",
+      "Tür nach Meterriss eingebaut.",
+      "Keine Beschädigungen an Lack und Glas.",
+      "Funktion geprüft.",
+      "Obertürschließer eingebaut, schließt ordentlich.",
+      "Barrierefreiheit geprüft.",
+      "Sicherheitsverriegelung mit Durchlaufzylinder (Panikschloss) verbaut.",
+      "Bei Gewerbe Öffnungsrichtung prüfen wegen Fluchtweg.",
+      "Baustelle sauber verlassen."
+    ]}]
+  },
+  {
+    id: "09", num: "9", title: "Schlosser", scope: "house",
+    sections: [
+      { title: "1. Geländer Balkone, Loggien, Dachterrassen, Außenanlagen", items: [
+        "Geländerstatik und Ausführungsdetails vorhanden.",
+        "Montage mit Kran etc. abgestimmt — laut Vertrag.",
+        "Befestigungen gem. Vorgaben aus Statik. Thermostopp eingebaut unter Stahlwinkel bei gedämmter Loggia.",
+        "Dokumentation der Befestigung (für Prüfstatik und Bauamt) erfolgt.",
+        "Abstände zwischen den Geländerstäben sind kleiner 12 cm.",
+        "Anschlüsse mit Stuckateur und Abdichter besprochen.",
+        "Geländerhöhe bis 12 m: 90 cm über Belag, ab 12 m: 1,10 m. Geprüft.",
+        "Oberflächen (Verzinkung, Beschichtung) fehlerfrei/ohne Beschädigung.",
+        "Alle Geländer und Handläufe ausgeführt — Planung abgleichen (Außenanlagen).",
+        "Werden Lüftungsgitter benötigt? (Lüftungsschächte TG, UG-Fenster, etc.) Ausführung nach Plan und Bemusterung.",
+        "Müssen Lichtschachtgitter angepasst werden an Kamin, Pelletsbefüllung, etc.?"
+      ]},
+      { title: "2. Handläufe/Geländer, Estrichwinkel im Treppenhaus", items: [
+        "Estrichwinkel nach Meterriss eingebaut.",
+        "Ausführung Geländer nach Plan und Statik.",
+        "Befestigung geprüft.",
+        "Abstand zur Wand geprüft (min. 5 cm).",
+        "Handlauf durchgängig und ordentlich verschweißt.",
+        "Abstand zu anderem Handlauf (min. 5 cm) geprüft.",
+        "Höhe Handlauf zwischen 80–115 cm (wenn nur Handlauf an Wand).",
+        "Höhe Geländer (OK Handlauf) bis 12 m: 90 cm, ab 12 m: 1,10 m. Geprüft.",
+        "Abstände zwischen Geländerstäben kleiner 12 cm.",
+        "Lichte Durchgangshöhe zu Treppenpodest min. 200 cm.",
+        "Abdeckgitter im UG an sämtlichen Schächten verbaut."
+      ]}
+    ]
+  },
+  {
+    id: "10", num: "10", title: "Fensterabsturzsicherungen", scope: "house",
+    sections: [{ items: [
+      "Ausführung laut Bemusterung.",
+      "Geländerstatik und Ausführungsdetails vorhanden.",
+      "Abstimmung mit den betreffenden Firmen (Schlosser, Gipser, Fensterbauer, Rolladenbauer).",
+      "Befestigungen gem. Vorgaben aus Statik.",
+      "Thermische Trennung der Kopfplatten gegeben.",
+      "Abstände zwischen Geländerstäben kleiner 12 cm.",
+      "Geländerhöhe (90 cm über FFB/Fensterrahmen) gegeben/geprüft.",
+      "Oberflächen (Verzinkung, Beschichtung) fehlerfrei/ohne Beschädigung.",
+      "Baustelle sauber hinterlassen."
+    ]}]
+  },
+  {
+    id: "11", num: "11", title: "Fassade", scope: "house",
+    sections: [
+      { title: "WDVS / Putz ohne Dämmung", items: [
+        "Ausführung laut Bemusterung — Farben, Putze, sonstige Elemente.",
+        "Sockelhöhe umlaufend festgelegt — gemäß Außenanlagenplan.",
+        "Fensterbänke waagerecht eingebaut, Überstand über Putz mind. 4 cm.",
+        "APU-Leisten bis auf Sims geführt — kein Spalt sichtbar.",
+        "Hohlräume unter Fensterbänken vollständig ausgedämmt.",
+        "Fassadenanstrich 2× aufgebracht (an 2 Tagen wegen Trocknungszeit).",
+        "Sockelputz und Sockelputzabschluss fachgerecht. Sockelabdichtung über Sockelputz geführt. Höhe min. 5 cm ü. FFB und auf WDVS gezogen. Gewebespachtelung/Oberputz nicht bis zur Terrassen-/Balkonplatte/TG-Decke. Nur 3–5 cm unter FFB. Dämmplatte Sockel als XPS — laut Detail.",
+        "Sockelabdichtung hinter Dämmung mind. 30 cm über FFB.",
+        "Zwischen Fenster und Dämmung komplett ausgedämmt.",
+        "Anschluss an Rollladenschiene schlagregendicht.",
+        "Putzgrund auf Tragfähigkeit/Verschmutzungen geprüft. Standzeit Grundputz eingehalten.",
+        "WDVS-Platten sauber verlegt, keine Kreuzfugen, Fugen mit Schaum ausgespritzt. Kompribänder an Fenstersimsen, Geländereinbindungen, Lüftungen, Dachgesims richtig angebracht. Abnahme mit Hersteller.",
+        "Gewebespachtelung fachgerecht aufgebracht und überlappt, Stärke >6 mm. Abnahme mit Hersteller.",
+        "Dehnfugen an Materialwechseln ausgeführt.",
+        "Anschlüsse an Bleche, Lüfter, etc. fachgerecht abgedichtet und getrennt.",
+        "Oberputz fachgerecht aufgebracht, Struktur durchgängig.",
+        "Dokumentation von Dämmung (Stärke, WLG), Grundputz und fertiger Fassade durchgeführt.",
+        "Lackoberflächen der Fensterbänke schadensfrei. Fensterrahmen und -scheibe schadensfrei. Gerüst gereinigt.",
+        "Baustelle aufgeräumt. Putzreste und Farbrückstände entfernt. Erdreich um das Haus gesäubert."
+      ]},
+      { title: "Holzfassade", items: [
+        "Dichtungsebene durchgehend an Fenster, Sims, Leibungen, etc.",
+        "2. Dichtungsebene unter Fenstersims vorhanden — liefert Fensterbauer.",
+        "Hinterlüftung überall gewährleistet.",
+        "Sichtprüfung von Material gemacht (keine größeren Risse, Abplatzungen, etc.).",
+        "Edelstahlschrauben verwendet.",
+        "Abnahme der Fassade erfolgt."
+      ]}
+    ]
+  },
+  {
+    id: "12", num: "12", title: "Terrassen- und Balkonbeläge", scope: "apartment",
+    sections: [{ items: [
+      "Abgedichtete Flächen vor Beginn der Arbeiten gereinigt.",
+      "Bautenschutzmatte vor Montage der Unterkonstruktion verlegt.",
+      "Auswahl der Platten nach Bemusterung und Baubeschreibung.",
+      "Unterkonstruktion fachgerecht montiert (auch unter Rinne).",
+      "Keramikplatten liegen vollflächig auf, schallentkoppelt verlegt.",
+      "Keramikplatten auf Beschädigungen und Verunreinigungen geprüft. Schnittkanten ordentlich.",
+      "Einteilung der Platten sinnvoll — keine kleinen Abschnitte.",
+      "Umrandung ordentlich ausgeführt — OK Belag bündig. Bei Kies muss Noppenbahn 2 cm ü. FFB. Randeinfassung nach Detail und Vertrag.",
+      "Rinnenrost so gesetzt, dass herausnehmbar. Stoß an Rollladenschiene.",
+      "Platten liegen satt auf und wackeln nicht (Randbereich und Übergang an Rinne).",
+      "Baustelle sauber hinterlassen — keine Metallspäne auf Belag, etc."
+    ]}]
+  },
+  {
+    id: "13", num: "13", title: "Dämmung UG / TG", scope: "house",
+    sections: [
+      { title: "Dämmung TG", items: [
+        "Dämmung entspricht Vorgaben der Bauphysik (Bauteilkatalog) und dem Vertrag.",
+        "Brandschutz beachten (Baustoffklasse).",
+        "Gedämmte Flächen gem. Planung hergestellt.",
+        "An Durchführungen mit BS-Manschette wurde 10 cm Dämmung um DD/WD ausgespart.",
+        "Oberflächen sauber ausgeführt.",
+        "Hinter Sockeldämmung abgedichtet. Sockeldämmplatte vorhanden.",
+        "Nachweise für KfW vorhanden.",
+        "Baustelle sauber hinterlassen."
+      ]},
+      { title: "Dämmung UG-Räume", items: [
+        "Dämmung entspricht Vorgaben der Bauphysik (Bauteilkatalog) und dem Vertrag.",
+        "Sockeldämmplatte vorhanden.",
+        "Brandschutz beachten (Baustoffklasse).",
+        "Gedämmte Flächen gem. Planung hergestellt.",
+        "Nachweise für KfW vorhanden.",
+        "An Türlaibungen schräg gedämmt. Obertürschließer berücksichtigt."
+      ]}
+    ]
+  },
+  {
+    id: "14", num: "14", title: "Beschichtung TG", scope: "project",
+    sections: [
+      { title: "Tiefgarage WU", items: [
+        "Material geprüft und dokumentiert.",
+        "Hohlkehlen ausgeführt (schwimmend/starr).",
+        "Oberfläche geprüft / Körnung.",
+        "Bei Rampe Anschlüsse an Rinne geprüft.",
+        "OK Sockelabdichtung = 50 cm über FFB.",
+        "Markierungen Parkplätze laut Teilungsplan und Vertrieb."
+      ]},
+      { title: "Tiefgarage gepflastert — Fundamente/Stützen/Wände", items: [
+        "Material geprüft und dokumentiert.",
+        "Betonqualität von Fundamentbeton prüfen (Beschichtung notwendig oder nicht?).",
+        "Hohlkehle an Stütze vorhanden. 15 cm auf Waagrechte beschichtet. OK Sockelabdichtung = 50 cm über FFB."
+      ]}
+    ]
+  },
+  {
+    id: "15", num: "15", title: "Pflaster Tiefgarage", scope: "project",
+    sections: [{ items: [
+      "Pflasterunterbau stimmt mit Vorgaben aus Planung bzw. geol. Gutachten überein.",
+      "Notwendige Abdichtung von Betonbauteilen (z.B. OS 5b) angebracht. OK Sockelabdichtung = 50 cm über Pflasterbelag.",
+      "Alle Rinnen und Abläufe an Grundleitungen angeschlossen.",
+      "Noppen an Wandanschluss min. 2 cm ü. FFB.",
+      "Ausreichendes Gefälle (2,5 %) im Pflasterbelag.",
+      "Pflasterbelag auf Beschädigungen und Verunreinigungen geprüft.",
+      "Belag abgerüttelt und gesandet. Alle Fugen vollständig mit Sand gefüllt.",
+      "Baustelle sauber verlassen."
+    ]}]
+  },
+  {
+    id: "16", num: "16", title: "Maler", scope: "house",
+    sections: [
+      { title: "Maler UG + TG", items: [
+        "Oberflächen geprüft und deckend gestrichen.",
+        "Maler hat aktuelle Bemusterung bekommen.",
+        "Arbeiten vollständig laut Vertrag erledigt.",
+        "Stellplatznummern und Markierungen angebracht.",
+        "Brandschutzmanschetten etc. nicht überstrichen.",
+        "Stahltüren lackiert wo notwendig.",
+        "Große Fugen und Lunker verspachtelt (Decke-Wandfuge, Sockelbereich, etc.).",
+        "Baustelle sauber, alle Farbrückstände und Abdeckfolien entfernt."
+      ]},
+      { title: "Maler Wohnungen", items: [
+        "Putzflächen und Deckenstöße auf Ebenheit geprüft. Oberflächen entsprechen Q2 — Vorbegehung mit Gipser 2 Wochen vor Beginn.",
+        "Stöße und Anschlüsse der Tapete sauber ausgeführt.",
+        "Oberflächen vollständig deckend gestrichen.",
+        "Alle Sonderwünsche gem. Kundenbemusterung ausgeführt.",
+        "Randdämmstreifen 2 cm über Estrichbelag zurückgeschnitten.",
+        "Türzargen abgefugt (auch oben). FBH-Verteiler abgefugt.",
+        "Evtl. Sockelleisten abfugen wenn Spalt zu groß.",
+        "Bäder wo halbhoch gefliest tapeziert laut Bemusterung. Fuge Decke-Wand abgefugt (auch wenn Wand gefliest).",
+        "Arbeiten vollständig laut Vertrag erledigt.",
+        "Baustelle sauber, alle Farbrückstände entfernt (Türzargen, Türblätter, Fenster, …)."
+      ]},
+      { title: "Maler Treppenhaus", items: [
+        "Putzflächen und Deckenstöße auf Ebenheit geprüft. Oberflächen entsprechen Q2.",
+        "Stöße und Anschlüsse der Tapete an Decken und Treppenuntersichten sauber ausgeführt.",
+        "Oberflächen vollständig deckend gestrichen, auch Putzoberfläche.",
+        "Alle Dehnfugen / Entkopplungsfugen mit Sollbruchstelle / Kellenschnitt. Übergang Wand-Decke mit Gewebe ohne Dehnfuge.",
+        "Sämtliche Fugen an Podest und Treppenlauf mit PU-Material ausgefugt.",
+        "Treppenstirnkanten verspachtelt und gestrichen vor Montage Treppengeländer — Abstimmung mit Schlosser.",
+        "Ggf. Aufzugstüren lackiert — Baubeschreibung und Bemusterung prüfen.",
+        "Treppengeländer und Estrichwinkel lackiert laut Bemusterung. Keine Lunker.",
+        "Sockel und Türrahmen abgefugt. Fenstersimse eingeputzt.",
+        "Oberlichter ordentlich verkleidet, tapeziert und gestrichen (Rahmen hat 5 mm Überstand über Laibung).",
+        "Arbeiten vollständig laut Vertrag erledigt."
+      ]}
+    ]
+  },
+  {
+    id: "17", num: "17", title: "Tor Tiefgarage", scope: "project",
+    sections: [{ items: [
+      "Einbausituation (Maße, Lage, Höhe Sturz, etc.) mit Torbauer abgestimmt und geprüft.",
+      "Vorarbeiten des Elektrikers abgestimmt und vorbereitet.",
+      "Positionen von Ampel, Sensoren und Schlüsselschalter/Zugschalter innen definiert — Zylinder bestellt.",
+      "Notwendiger Lüftungsquerschnitt eingehalten.",
+      "TG-Tor ohne Beschädigungen (Lack) montiert."
+    ]}]
+  },
+  {
+    id: "18", num: "18", title: "Dachdämmung Schrägdach", scope: "house",
+    sections: [{ items: [
+      "Dämmung vollflächig und fachgerecht verlegt.",
+      "Dämmung entspricht Vorgaben aus der Bauphysik.",
+      "Dampfbremse/-sperre fachgerecht angebracht, luftdicht verklebt.",
+      "Blower-Door-Test kann ausgeführt werden inkl. Leckageortung.",
+      "Gipskartondecken fachgerecht montiert und verspachtelt.",
+      "Hinter Trempelwand gedämmt. Über Aufzug gedämmt. Dachvorsprung gedämmt.",
+      "Folienanschluss an Wand passend für Gipser — Absprache mit Gipser.",
+      "GKB an DFF senkrecht und waagerecht ausgeführt.",
+      "Baustelle sauber verlassen.",
+      "Brandschutz an Treppenhaus und Wohnungstrennwänden (Satteldach) geprüft und dokumentiert — 1 m Brandüberschlag."
+    ]}]
+  },
+  {
+    id: "19", num: "19", title: "Trockenbauwände und -decken", scope: "house",
+    sections: [
+      { title: "Wände", items: [
+        "Abstimmung zwischen HLS, Elektro und Trockenbau erfolgt.",
+        "Schienen an Durchbrüchen ausgespart, ordentlich ausbetonierbar (Brandschutz).",
+        "Sämtliche Nischen eingebaut — Kundenwünsche geprüft (Dusche, Waschbecken/Spiegel, etc.).",
+        "Schallentkopplung Decke, Boden, Wand ausgeführt.",
+        "UA-Profile verbaut und mit Winkel befestigt an: Türen; WC wo Vorwand raumhoch (ansonsten WC an Wand befestigen).",
+        "Aussparung FBH-Verteiler nach Rücksprache mit HLS ausgewechselt. Aussparung Elektroverteiler nach Rücksprache mit Elektro ausgewechselt.",
+        "Zwischenraumdämmung vollständig eingebaut.",
+        "Trennbänder an Wand- und Deckenanschlüssen angebracht.",
+        "GK-Platten ausreichend verschraubt.",
+        "Eckschienen gesetzt und ordentlich verspachtelt.",
+        "Oberfläche entsprechend Vertrag vorbereitet (Q2, Q3, für Fliesen, etc.).",
+        "Übergang Trockenbau auf Putz (Dehnfuge) sauber und tapezierfähig — Breite ca. 2–3 mm.",
+        "Ebenheit und Lotrechtigkeit der GK-Wände geprüft — Ortstermin mit Maler und Fliesenleger vereinbaren.",
+        "Alle Raumabmessungen mit Werkplanung geprüft. Sonderwünsche beachten. Rechte Winkel geprüft.",
+        "Baustelle sauber für Nachgewerke hinterlassen."
+      ]},
+      { title: "Decken", items: [
+        "Alle Abhangdecken und Öffnungen nach Plan und Kundenwunsch ausgeführt.",
+        "Revision beachten wo Leitungen HLS verbaut sind.",
+        "Stockwerkshöhe in Schleusen beachten.",
+        "Brandschutzanforderungen in Schleusen, Treppenhaus etc. beachten."
+      ]}
+    ]
+  },
+  {
+    id: "20", num: "20", title: "Brandschutz", scope: "project",
+    sections: [{ items: [
+      "Alle Brandschotts eingebaut mit ausreichend (10 cm) Abstand zur Dämmung an Decke und Wand.",
+      "Trockenleitung notwendig?",
+      "Aufzug auf Brandschutzanforderungen geprüft.",
+      "Abnahme mit Brandschutzgutachter bevor Wände geschlossen werden. Alle Schotts und Conlitschalungen abgenommen und dokumentiert (mit docma).",
+      "RWA-Anlagen verbaut und in Betrieb genommen. Dokumentation vorhanden.",
+      "Brandschutz an Treppenhaus und Wohnungstrennwänden (Satteldach) geprüft und dokumentiert — 1 m Brandüberschlag.",
+      "Sind Feuerlöscher nach Plan verbaut?",
+      "Feuerwehrpläne erforderlich?",
+      "Beleuchtung TG und Fluchtwege nach Brandschutzgutachten.",
+      "Ausführung gem. Planung/Gutachten hergestellt (Türen, Aufzug, RWA, Fluchtweg, etc.).",
+      "Errichterbestätigungen/Prüfberichte/Unterlagen von HLS, Trockenbau, Schreiner UG-Türen, Elektro, WDVS, Aufzug, Rohbau vorhanden.",
+      "Konformitätserklärung von Brandschutzgutachter erhalten."
+    ]}]
+  },
+  {
+    id: "21", num: "21", title: "Innenputz", scope: "house",
+    sections: [{ items: [
+      "Begehung mit Gipser. Begutachtung Vorgewerke — 2 Wochen vor Beginn — Protokoll erstellt.",
+      "Aufzug eingebaut. Haustürrahmen eingebaut.",
+      "Stahltüren im UG eingebaut.",
+      "Im UG sind alle Wanddurchbrüche geschlossen.",
+      "Vorwände fertiggestellt. Rohinstallation Elektro und HLS fertig.",
+      "Kellenschnitt am Übergang zur Decke und anderen Bauteilen gezogen.",
+      "Dehnfugen an Materialwechseln fachgerecht ausgeführt. Breite ca. 2–3 mm.",
+      "Laibungen und Ecken rechtwinklig ausgeführt, Prüfung erfolgt.",
+      "Putz fachgerecht aufgebracht in Q2-Qualität — Begehung mit Maler und Gipser erfolgt — Protokoll erstellt.",
+      "Waagrechte Dehnfugen im Treppenhaus mit Gewebe überputzt.",
+      "Baustelle sauber verlassen. Begehung mit Estrichleger erfolgt wegen Müll."
+    ]}]
+  },
+  {
+    id: "22", num: "22", title: "Estrich", scope: "house",
+    sections: [{ items: [
+      "Betondecken trocken und besenrein.",
+      "Abnahme Vorgewerke mit Estrichleger — Protokoll erstellt (2 Wochen vor Beginn).",
+      "Estrichaufbau besprochen.",
+      "Rinnenhöhen in Dusche prüfen und protokollieren — min. 2 % Gefälle.",
+      "Estrichhöhen an Übergängen zum Bad besprochen. Anschlusshöhen zu bodentiefen Fenstern (HST — 5 mm Absatz von FFB zu OK Schwelle), Treppen, Aufzug, Haustüre geprüft. Höhen Treppenhaus zu Wohnungen geprüft.",
+      "Randdämmstreifen fachgerecht angebracht, Tackerklammern über Estrich. Ausreichend befestigt und mit Dämmplatte verklebt.",
+      "Dämmung vollflächig (keine Hohlräume), nicht in Kreuzfugen verlegt. Stöße zwischen Dämmplatten verklebt.",
+      "An Wohnungseingangstüren (Brandabschnitt) Mineralwolledämmung eingebaut. Randstreifen bei WET zwischen Estrich Wohnung und Estrich Treppenhaus eingebaut.",
+      "Vorgaben aus Bauphysik (Trittschalldämmung + U-Werte + Stärke) geprüft und dokumentiert.",
+      "Dehnfugen an Türen und Übergängen nach Estricheinbringung offen. Alle Dehnfugen richtig positioniert (Aufschlagrichtung Tür beachten).",
+      "Estrichhöhen mit Laser geprüft (kein Absatz zu Bad und Bodenbeläge berücksichtigt).",
+      "Ebenheit der Oberflächen geprüft, für Nachfolgegewerk in Ordnung (ggf. mit Parkettleger/Fliesenleger prüfen).",
+      "Estrich angeschliffen.",
+      "Estrichtrocknung nach Aufheizprotokoll, ausreichend gelüftet, Estrichfeuchte vor Verlegung der Böden bei 0,3 %. Protokoll vorhanden.",
+      "Baustelle sauber verlassen."
+    ]}]
+  },
+  {
+    id: "23", num: "23", title: "Treppenhausbelag", scope: "house",
+    sections: [{ items: [
+      "Vorbegehung mit Treppenbauer — Protokoll erstellt.",
+      "Schallbrücken zur Wand und Decke ausgeschlossen.",
+      "Höhen zwischen Wohnungen, Aufzug, Estrichwinkel, Haustüre und Treppenhaus geprüft.",
+      "Evtl. Gefälle in Schleusen UG prüfen ob nach Plan hergestellt.",
+      "Höhen von Türen im UG prüfen.",
+      "Fugen vollständig gefüllt.",
+      "Tritt- und Setzstufen geprüft (durchgängig gleiches Maß).",
+      "Oberflächen sauber ausgeführt. Verfärbungen und Unregelmäßigkeiten ausgeschlossen.",
+      "Alle Silikonfugen vollständig ausgeführt.",
+      "Abstand zur Wand kleiner 6 cm.",
+      "Belagsanschluss vor Haustüre (0-Schwelle) abstimmen (Höhe Belag).",
+      "Baustelle sauber verlassen."
+    ]}]
+  },
+  {
+    id: "24", num: "24", title: "Fliesen", scope: "apartment",
+    sections: [{ items: [
+      "Oberflächen (Estrich, Innenputz, Trockenbau) in WC und Bad geprüft. Vorbegehung der Gewerke (2 Wochen vorher) Protokoll erstellt.",
+      "Fliesenleger hat aktuelle Bemusterung bekommen.",
+      "Einteilung der Fliese besprochen (ggf. mit Kunde klären).",
+      "Abdichtungsanschlüsse an Dusche, Badewanne, Boden und Türbereich mit Dichtbändern (inkl. Falte in Dehnfuge) ausgeführt. Türlaibungen vor Einbau Türzargen abgedichtet. Unter Badewanne abgedichtet.",
+      "Bilddokumentation der Abdichtung durchgeführt.",
+      "Dehnungsfugen zwischen Wand-/Sockelfliese und Bodenfliese mind. 0,5 cm + Einbau von Rundschnur.",
+      "Übergang am Belagswechsel (Höhe Abschlussschiene) mit Fliesenleger und Parkettleger abgestimmt (Dichtband mit Kleber überzogen).",
+      "Fugenmaterial vor dem Silikonieren entfernt. Schallbrücken ausgeschlossen.",
+      "Fliesen, Fugenmaterial und Silikon nach Bemusterung eingebaut.",
+      "Sanitärgegenstände abgefugt.",
+      "Nischen/Ablagen nach Plan und Bemusterung eingebaut.",
+      "Steckdosen, Schalter, HLS-Anschlüsse nicht zu groß ausgeschnitten.",
+      "Duschgefälle geprüft — min. 2 %.",
+      "Eckschienen nicht verkratzt. Stöße der Eckschienen ordentlich.",
+      "Keine Versätze in der Fläche.",
+      "Baustelle sauber verlassen."
+    ]}]
+  },
+  {
+    id: "25", num: "25", title: "Bodenbeläge Parkett, Vinyl", scope: "apartment",
+    sections: [{ items: [
+      "Vorbegehung mit Bodenleger hat stattgefunden. Estrichflächen auf Ebenheit geprüft.",
+      "Bodenleger hat aktuelle Bemusterung bekommen.",
+      "Dehnfugen besprochen.",
+      "Türrahmenhöhe geprüft.",
+      "Übergang zu Treppenhausbelag geprüft.",
+      "CM-Messung mit Parkettleger durchgeführt. Estrich ausreichend ausgetrocknet, kann belegt werden.",
+      "Randdämmstreifen 1 cm über Estrichbelag zurückgeschnitten.",
+      "Bodenbelag nach Bemusterung eingebaut.",
+      "Belag steht nicht an der Wand an — min. 5 mm Abstand.",
+      "Übergänge am Belagswechsel sauber ausgeführt.",
+      "Alle Türen vollständig abgefugt.",
+      "Fertige Oberfläche auf optische Mängel (Kratzer, Unebenheit, Risse) geprüft.",
+      "Sockelleisten ordentlich verlegt (Schallschutz geprüft). Gehrungsschnitte ordentlich.",
+      "Baustelle sauber, Lack- und Kleberückstände entfernt. Kein Restmaterial mehr auf der Baustelle.",
+      "Dehnfuge Estrich an Eingangstür übernommen und Dehnfuge in Boden eingebaut."
+    ]}]
+  },
+  {
+    id: "26", num: "26", title: "Schreiner", scope: "house",
+    sections: [
+      { title: "Innentüren Wohnungen", items: [
+        "Anschlüsse zur Wand sauber ausgeführt. Bei großen Fugen (Wand/Zarge) prüfen, wie diese geschlossen werden.",
+        "Tür streift nicht. Unterschnitt ca. 5 mm.",
+        "Funktion geprüft. Türen leicht zu öffnen und zu schließen (fällt nicht zu).",
+        "Oberflächen (Lack) auf Schäden geprüft.",
+        "Öffnungsrichtungen stimmen mit Planung (ggf. Sonderwünsche beachten).",
+        "Schalldichtung der Wohnungseingangstüren eingestellt, schließt dicht.",
+        "Lüftungsgitter nach Plan eingebaut — Schrauben stehen nicht raus.",
+        "Sonderwünsche beachtet (Türspion, Griffe, etc.).",
+        "Baustelle sauber verlassen."
+      ]},
+      { title: "UG-Türen", items: [
+        "Türen bestellt (Lieferzeit beachten).",
+        "Höhen prüfen (Meterriss).",
+        "Brandschutz nach Plan eingebaut.",
+        "Bei RS-Türen Dichtungen eingebaut.",
+        "Einbau nach Herstellerangaben (Rahmen ausgeschäumt — Brandschutz).",
+        "Schließen alle Türen ordnungsgemäß."
+      ]},
+      { title: "Badmöbel", items: [
+        "Sonderwünsche geprüft.",
+        "Sonderwünsche bestellt."
+      ]}
+    ]
+  },
+  {
+    id: "27", num: "27", title: "Kellertrennwände", scope: "project",
+    sections: [{ items: [
+      "Arbeiten nach Plan ausgeführt.",
+      "Stabilität geprüft. Befestigungen an Wand und Decke ausreichend.",
+      "Elemente lotrecht montiert.",
+      "Türen schließen ordentlich.",
+      "Boden nicht verkratzt.",
+      "Nummerierung passt nach Aufteilungsplan.",
+      "Baustelle sauber verlassen."
+    ]}]
+  },
+  {
+    id: "28", num: "28", title: "Gerüst", scope: "house",
+    sections: [{ items: [
+      "Vorbegehung mit Gerüstbauer erfolgt. Abstimmung mit Rohbauer.",
+      "Gerüst wird erst gestellt, wenn Rohbauer komplett aufgefüllt hat und EG fertig ist (Terrassen, Versorgungsleitungen, Lichtschächte, Lichthöfe, Erdplanum, TG fertig, …).",
+      "Abstimmung Gerüst mit Fensterbauer, Gipser, Abdichter.",
+      "Abstand zur Fassade abgestimmt. Konsolen notwendig?!",
+      "Standsicherheit des Gerüstes gegeben und mit Schein bestätigt.",
+      "Kamin, Balkone, Terrassen, Versorgungsleitungen, Brandschutzleiter berücksichtigt.",
+      "Auf TG Füße möglichst weit nach oben drehen. Erste Lage Abdichtung vorab hergestellt.",
+      "Dachterrassen, Balkone etc. erste Lage Abdichtung hergestellt.",
+      "Treppentürme beachten — Lage festlegen.",
+      "Bei Satteldach genügend Abstand zu Ortgang und Traufe — ggf. Abstimmung mit Zimmermann.",
+      "Alle Arbeiten wo Gerüst benötigt wird sind erledigt: Fassade, Lüfter in der Fassade, Flachdach (Begrünung und Flaschner), Fenster, Balkongeländer, Kamin, Photovoltaik."
+    ]}]
+  },
+  {
+    id: "29", num: "29", title: "HLS (Heizung/Lüftung/Sanitär)", scope: "house",
+    sections: [
+      { title: "Sanitär", items: [
+        "Leitungsführung nach Planung vollständig und fachgerecht ausgeführt.",
+        "Abwasserleitung schallisoliert.",
+        "Rohrleitungen senkrecht und waagerecht gedämmt: 100 % Dämmung vom Rohrinnendurchmesser im UG bis zu den Wasseruhren; Wohnung 50 % Dämmung; Tiefgarage 200 % Dämmung. Bilddokumentation.",
+        "Gefälle min. 1,5 % bei horizontalen Schmutzwasserleitungen.",
+        "Konsolen / Befestigungen schallentkoppelt.",
+        "Unterkonstruktion WC und WB ausreichend befestigt (UA-Profil oder rückseitig Wand).",
+        "Steigleitungen ausreichend befestigt.",
+        "Bei Fallrichtungswechsel 2× 45° Bogen oder flacher. Keine 90°-Bögen.",
+        "Brandschutzmanschetten SW-Leitungen vollständig und fachgerecht angebracht. Conlitschalungen fachgerecht angebracht — Drahtumwicklungen nach Brandschutz.",
+        "FBH-Verteiler auf richtiger Höhe gesetzt.",
+        "Leitungen abgedrückt.",
+        "Richtige Unterputzkörper nach Bemusterung verbaut.",
+        "WCs auf richtige Höhe gesetzt — Standardhöhe OK Porzellan 43 cm. Sonderwünsche prüfen.",
+        "Duscharmatur mittig gesetzt — fluchtgerecht mit Rinneneinlauf, Fliesenfuge, Regendusche etc. Sonderwünsche prüfen.",
+        "Anschlüsse Küche auf Rigipsplatte, wenn gemauerte oder betonierte Wand.",
+        "Gewindestangen an Waschbecken und WCs vorhanden und fest.",
+        "Revisionsöffnungen im UG vorhanden."
+      ]},
+      { title: "Heizung", items: [
+        "Fernwärmestation von HLS bestellt und mit Stadtwerken abgestimmt. Abruf bei Stadtwerken erfolgt — Einbau mit HLS und Elektriker abgestimmt.",
+        "Heizungsanlage (Pellets oder Wärmepumpe) mit HLS und Elektriker besprochen, Einbau abgestimmt. Pellets bestellt zum Aufheizen von Estrich.",
+        "Heizung in Betrieb genommen. Dokumentation vorhanden.",
+        "Heizung geerdet.",
+        "Notschalter außerhalb von Heizraum angebracht.",
+        "Prüfliste von Gutachter abgearbeitet.",
+        "FBH dokumentieren (Bilder mit Whg und Raum beschriften)."
+      ]},
+      { title: "Lüftung", items: [
+        "Leitungsführung nach Planung vollständig und fachgerecht ausgeführt.",
+        "Höhe Lüftungsstränge prüfen — min. 2,00 m von FFB im UG.",
+        "Brandschutzklappen an Decken und Wanddurchdringungen vollständig und fachgerecht. Brandabschnitte prüfen. Dokumentation vorhanden.",
+        "Lüftungsstrang ausreichend befestigt → schallentkoppelt — Vibration ausgeschlossen.",
+        "Mit Trockenbauer Montage/Befestigung der UP-Kästen in WCs für Lüfter abgestimmt.",
+        "Notwendige elektrische Zuleitung mit Elektriker abgestimmt.",
+        "Regelung/Steuerung mit HLS und Elektro besprochen."
+      ]}
+    ]
+  },
+  {
+    id: "30", num: "30", title: "Elektro", scope: "house",
+    sections: [{ items: [
+      "Hausanschluss beauftragt und ausgeführt. Stromzähler beantragt.",
+      "Verkabelung der Lüfter im Bad und WC mit Elektriker und Sanitärinstallateur abgestimmt.",
+      "Leitungen in Wänden senkrecht oder waagerecht verlegt nach Planung.",
+      "Durchdringungen durch Außenwände luftdicht und wasserdicht verschlossen.",
+      "Rohinstallation geprüft (Position Steckdosen, Schalter, Sonderwünsche).",
+      "Rohinstallation der Küchen nach Küchenplan ausgeführt.",
+      "Brandschottung zwischen Brandabschnitten durchgeführt und dokumentiert.",
+      "Zählerschrank und Sicherungskasten vollständig maschinell beschriftet. PE-Schiene beschriftet.",
+      "Technikraum/Heizraum vollständig verkabelt — laut Vertrag. Erdung der HLS-Anlage erstellt.",
+      "Einführungen Kabel in Schaltschrank staubdicht verschlossen.",
+      "Höhe Kabelkanal prüfen — min. 2,00 m ü. FFB. In TG 2,10 m. Kreuzungspunkte mit HLS abgestimmt.",
+      "Beleuchtung TG nach Brandschutzgutachten. BW so eingestellt, dass überall erkennbar.",
+      "Schleusen/Notausgänge Beleuchtung nach Brandschutzgutachten.",
+      "Funktionsprüfung vor Übergabe durchgeführt und dokumentiert.",
+      "Wohnraumlüftung verkabelt und angeschlossen.",
+      "Internet, TV, etc. abgestimmt (Anbieter, Glasfaser, …). Übergabepunkte geklärt.",
+      "Treppenhausbeleuchtung, RWA, Aufzug abgestimmt.",
+      "Liste von Gutachter abgearbeitet.",
+      "Außenbeleuchtung angebracht. Wegbeleuchtung nach Plan verbaut.",
+      "Position Briefkastenanlage / Sprechanlage abgestimmt. Notwendige Aussparungen im WDVS vorgesehen.",
+      "Position Video abgestimmt.",
+      "Elektrische Anschlüsse Video, Sprechanlage, Haustüre abgestimmt.",
+      "Funktionsprüfung des E-Öffners und Sprechanlage vor Übergabe durchgeführt.",
+      "Beschädigungen an Briefkastenanlage und Sprechanlage nicht ersichtlich."
+    ]}]
+  },
+  {
+    id: "31", num: "31", title: "Aufzug", scope: "house",
+    sections: [{ items: [
+      "Aufmaß seitens der Aufzugsfirma erfolgt.",
+      "Vorbereitende Maßnahmen erfüllt (Meterriss, Zugänglichkeit Baustelle, Lagerplatz Aufzug, etc.).",
+      "Vorarbeit seitens des Elektrikers vollständig.",
+      "Oberflächen geprüft und unbeschädigt.",
+      "Abnahme mit dem TÜV terminiert.",
+      "Schlüsseltresor gesetzt.",
+      "Schachtentlüftung in das Treppenhaus eingebaut.",
+      "Konformität/Abnahme liegt vor.",
+      "Aufzug betriebsbereit für Kunde."
+    ]}]
+  }
+];
+
+</script>
+<script>
+/* Beispiel-Bauzeitenplan */
+const SAMPLE_GAISBACH = {
+  name: 'Gaisbach 13',
+  tasks: [
+    { id:'t_1', num:'1', name:"Tiefbau", duration:20, start:'2025-04-01', end:'2025-05-07', parent:null, color:'#E8833A', depth:0, predecessors:[] },
+    { id:'t_1_1', num:'1.1', name:"Fläche räumen", duration:1, start:'2025-04-01', end:'2025-04-01', parent:"t_1", color:'#E8833A', depth:1, predecessors:[] },
+    { id:'t_1_2', num:'1.2', name:"Aushub", duration:10, start:'2025-04-02', end:'2025-04-23', parent:"t_1", color:'#E8833A', depth:1, predecessors:[] },
+    { id:'t_1_3', num:'1.3', name:"Einbau Drainage TG", duration:2, start:'2025-04-24', end:'2025-04-25', parent:"t_1", color:'#E8833A', depth:1, predecessors:[] },
+    { id:'t_1_4', num:'1.4', name:"Herstellen Schotter/Tragschichten", duration:7, start:'2025-04-28', end:'2025-05-07', parent:"t_1", color:'#E8833A', depth:1, predecessors:[] },
+    { id:'t_2', num:'2', name:"Rohbau", duration:245, start:'2025-05-08', end:'2026-06-11', parent:null, color:'#3B6CC4', depth:0, predecessors:[] },
+    { id:'t_2_1', num:'2.1', name:"Rohbau Haus A", duration:117, start:'2025-05-08', end:'2025-11-14', parent:"t_2", color:'#3B6CC4', depth:1, predecessors:[] },
+    { id:'t_2_2', num:'2.2', name:"Verzug Rohbau Haus A", duration:70, start:'2025-11-17', end:'2026-03-13', parent:"t_2", color:'#3B6CC4', depth:1, predecessors:[] },
+    { id:'t_2_3', num:'2.3', name:"Tiefgarage", duration:188, start:'2025-05-23', end:'2026-03-31', parent:"t_2", color:'#3B6CC4', depth:1, predecessors:[] },
+    { id:'t_2_4', num:'2.4', name:"Rohbau Haus B", duration:117, start:'2025-05-23', end:'2025-12-01', parent:"t_2", color:'#3B6CC4', depth:1, predecessors:[] },
+    { id:'t_2_5', num:'2.5', name:"Verzug Rohbau Haus B", duration:35, start:'2025-12-01', end:'2026-02-06', parent:"t_2", color:'#3B6CC4', depth:1, predecessors:[] },
+    { id:'t_2_6', num:'2.6', name:"Tiefgarage pflastern", duration:10, start:'2026-04-27', end:'2026-05-11', parent:"t_2", color:'#3B6CC4', depth:1, predecessors:[] },
+    { id:'t_2_7', num:'2.7', name:"Restarbeiten Rohbau", duration:48, start:'2026-03-30', end:'2026-06-11', parent:"t_2", color:'#3B6CC4', depth:1, predecessors:[] },
+    { id:'t_3', num:'3', name:"Flachdach", duration:55, start:'2026-03-09', end:'2026-05-29', parent:null, color:'#3FAA60', depth:0, predecessors:[] },
+    { id:'t_3_1', num:'3.1', name:"Haus A", duration:32, start:'2026-04-13', end:'2026-05-29', parent:"t_3", color:'#3FAA60', depth:1, predecessors:[] },
+    { id:'t_3_1_1', num:'3.1.1', name:"Flachdach abschweißen", duration:10, start:'2026-04-13', end:'2026-04-24', parent:"t_3_1", color:'#3FAA60', depth:2, predecessors:[] },
+    { id:'t_3_1_2', num:'3.1.2', name:"Dachbegrünung", duration:3, start:'2026-04-27', end:'2026-04-29', parent:"t_3_1", color:'#3FAA60', depth:2, predecessors:[] },
+    { id:'t_3_1_3', num:'3.1.3', name:"Falschnerarbeiten", duration:7, start:'2026-05-20', end:'2026-05-29', parent:"t_3_1", color:'#3FAA60', depth:2, predecessors:[] },
+    { id:'t_3_2', num:'3.2', name:"Haus B", duration:32, start:'2026-03-09', end:'2026-04-23', parent:"t_3", color:'#3FAA60', depth:1, predecessors:[] },
+    { id:'t_3_2_1', num:'3.2.1', name:"Flachdach abschweißen", duration:10, start:'2026-03-09', end:'2026-03-20', parent:"t_3_2", color:'#3FAA60', depth:2, predecessors:[] },
+    { id:'t_3_2_2', num:'3.2.2', name:"Dachbegrünung", duration:3, start:'2026-03-23', end:'2026-03-25', parent:"t_3_2", color:'#3FAA60', depth:2, predecessors:[] },
+    { id:'t_3_2_3', num:'3.2.3', name:"Flaschnerarbeiten", duration:7, start:'2026-04-15', end:'2026-04-23', parent:"t_3_2", color:'#3FAA60', depth:2, predecessors:[] },
+    { id:'t_4', num:'4', name:"Tiefgarage / UG", duration:59, start:'2026-02-16', end:'2026-05-12', parent:null, color:'#D4A22A', depth:0, predecessors:[] },
+    { id:'t_4_1', num:'4.1', name:"Malerarbeiten TG", duration:9, start:'2026-04-20', end:'2026-04-30', parent:"t_4", color:'#D4A22A', depth:1, predecessors:[] },
+    { id:'t_4_2', num:'4.2', name:"Dämmung UG/TG", duration:25, start:'2026-02-16', end:'2026-03-20', parent:"t_4", color:'#D4A22A', depth:1, predecessors:[] },
+    { id:'t_4_3', num:'4.3', name:"Toreinbau TG", duration:2, start:'2026-05-11', end:'2026-05-12', parent:"t_4", color:'#D4A22A', depth:1, predecessors:[] },
+    { id:'t_5', num:'5', name:"Gerüstbau", duration:183, start:'2025-09-15', end:'2026-06-26', parent:null, color:'#7A7570', depth:0, predecessors:[] },
+    { id:'t_5_1', num:'5.1', name:"Haus A - Standzeit", duration:183, start:'2025-09-15', end:'2026-06-26', parent:"t_5", color:'#7A7570', depth:1, predecessors:[] },
+    { id:'t_5_1_1', num:'5.1.1', name:"Gerüstaufbau", duration:2, start:'2025-09-15', end:'2025-09-16', parent:"t_5_1", color:'#7A7570', depth:2, predecessors:[] },
+    { id:'t_5_1_2', num:'5.1.2', name:"Gerüstabbau", duration:2, start:'2026-06-25', end:'2026-06-26', parent:"t_5_1", color:'#7A7570', depth:2, predecessors:[] },
+    { id:'t_5_2', num:'5.2', name:"Haus B - Standzeit", duration:172, start:'2025-09-15', end:'2026-06-11', parent:"t_5", color:'#7A7570', depth:1, predecessors:[] },
+    { id:'t_5_2_1', num:'5.2.1', name:"Gerüstaufbau", duration:2, start:'2025-09-15', end:'2025-09-16', parent:"t_5_2", color:'#7A7570', depth:2, predecessors:[] },
+    { id:'t_5_2_2', num:'5.2.2', name:"Gerüstabbau", duration:2, start:'2026-06-10', end:'2026-06-11', parent:"t_5_2", color:'#7A7570', depth:2, predecessors:[] },
+    { id:'t_6', num:'6', name:"Gebäudehülle", duration:117, start:'2026-01-26', end:'2026-07-15', parent:null, color:'#C9482F', depth:0, predecessors:[] },
+    { id:'t_6_1', num:'6.1', name:"Haus A", duration:68, start:'2026-04-07', end:'2026-07-15', parent:"t_6", color:'#C9482F', depth:1, predecessors:[] },
+    { id:'t_6_1_1', num:'6.1.1', name:"Fenster", duration:7, start:'2026-04-07', end:'2026-04-15', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_1_2', num:'6.1.2', name:"Haustürzargen", duration:1, start:'2026-04-27', end:'2026-04-27', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_1_3', num:'6.1.3', name:"Abdichtung Fenster + Türen", duration:5, start:'2026-04-16', end:'2026-04-22', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_1_4', num:'6.1.4', name:"Abdichtung Balkone und Penthouse", duration:8, start:'2026-04-23', end:'2026-05-05', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_1_5', num:'6.1.5', name:"Außenputz", duration:30, start:'2026-05-06', end:'2026-06-19', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_1_6', num:'6.1.6', name:"Flaschner / Fallrohre", duration:2, start:'2026-06-22', end:'2026-06-23', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_1_7', num:'6.1.7', name:"Lüfterabdeckungen montieren", duration:1, start:'2026-06-24', end:'2026-06-24', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_1_8', num:'6.1.8', name:"Balkongeländer", duration:3, start:'2026-07-06', end:'2026-07-08', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_1_9', num:'6.1.9', name:"Balkonbeläge", duration:5, start:'2026-07-09', end:'2026-07-15', parent:"t_6_1", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2', num:'6.2', name:"Haus B", duration:101, start:'2026-01-26', end:'2026-06-23', parent:"t_6", color:'#C9482F', depth:1, predecessors:[] },
+    { id:'t_6_2_1', num:'6.2.1', name:"Fenster", duration:7, start:'2026-01-26', end:'2026-02-03', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2_2', num:'6.2.2', name:"Haustürzargen", duration:1, start:'2026-04-27', end:'2026-04-27', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2_3', num:'6.2.3', name:"Abdichtung Fenster + Türen", duration:5, start:'2026-03-09', end:'2026-03-13', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2_4', num:'6.2.4', name:"Abdichtung Balkone und Penthouse", duration:8, start:'2026-03-16', end:'2026-03-25', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2_5', num:'6.2.5', name:"Außenputz", duration:35, start:'2026-04-13', end:'2026-06-03', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2_6', num:'6.2.6', name:"Flaschner / Fallrohre", duration:2, start:'2026-06-05', end:'2026-06-08', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2_7', num:'6.2.7', name:"Lüfterabdeckungen montieren", duration:1, start:'2026-06-09', end:'2026-06-09', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2_8', num:'6.2.8', name:"Balkongeländer", duration:3, start:'2026-06-12', end:'2026-06-16', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_6_2_9', num:'6.2.9', name:"Balkonbeläge", duration:5, start:'2026-06-17', end:'2026-06-23', parent:"t_6_2", color:'#C9482F', depth:2, predecessors:[] },
+    { id:'t_7', num:'7', name:"Gebäudeausbau", duration:170, start:'2026-02-09', end:'2026-10-12', parent:null, color:'#1E96A8', depth:0, predecessors:[] },
+    { id:'t_7_1', num:'7.1', name:"Haus B", duration:156, start:'2026-02-09', end:'2026-09-22', parent:"t_7", color:'#1E96A8', depth:1, predecessors:[] },
+    { id:'t_7_1_1', num:'7.1.1', name:"Steigleitungen", duration:5, start:'2026-02-12', end:'2026-02-18', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_2', num:'7.1.2', name:"Deckendurchbrüche Steigleitungen schließen", duration:2, start:'2026-02-19', end:'2026-02-20', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_3', num:'7.1.3', name:"Trockenbauständer + Einseitig Beplankung", duration:10, start:'2026-02-09', end:'2026-02-20', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_4', num:'7.1.4', name:"Rohinstallation Sanitär/Heizung", duration:20, start:'2026-02-12', end:'2026-03-11', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_5', num:'7.1.5', name:"Rohinstallation Elektro", duration:20, start:'2026-02-12', end:'2026-03-11', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_6', num:'7.1.6', name:"Deckendurchbrüche schalen + betonieren", duration:5, start:'2026-03-12', end:'2026-03-18', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_7', num:'7.1.7', name:"Trockenbau fertig beplanken + spachteln", duration:10, start:'2026-03-26', end:'2026-04-10', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_8', num:'7.1.8', name:"Aufzugeinbau", duration:5, start:'2026-05-11', end:'2026-05-18', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_9', num:'7.1.9', name:"Innenputz", duration:19, start:'2026-04-13', end:'2026-05-08', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_10', num:'7.1.10', name:"Fußbodendämmung", duration:3, start:'2026-05-11', end:'2026-05-13', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_11', num:'7.1.11', name:"Fußbodenheizung", duration:4, start:'2026-05-15', end:'2026-05-20', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_12', num:'7.1.12', name:"Estrich", duration:4, start:'2026-05-21', end:'2026-05-27', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_13', num:'7.1.13', name:"Inbetriebnahme Heizung", duration:1, start:'2026-05-28', end:'2026-05-28', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_14', num:'7.1.14', name:"(Trockenbau spachteln)", duration:3, start:'2026-06-12', end:'2026-06-16', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_15', num:'7.1.15', name:"Elektrodosen + Lüfter einbauen", duration:5, start:'2026-05-11', end:'2026-05-18', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_16', num:'7.1.16', name:"Wanddurchdringungen UG schließen", duration:3, start:'2026-04-20', end:'2026-04-22', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_17', num:'7.1.17', name:"Treppenstufen belegen", duration:5, start:'2026-05-20', end:'2026-05-27', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_18', num:'7.1.18', name:"Treppenwangen einputzen", duration:2, start:'2026-05-28', end:'2026-05-29', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_19', num:'7.1.19', name:"Stahltüren UG", duration:2, start:'2026-04-13', end:'2026-04-14', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_20', num:'7.1.20', name:"Maler UG", duration:2, start:'2026-04-20', end:'2026-04-21', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_21', num:'7.1.21', name:"Rohinstallation Elektro UG", duration:3, start:'2026-04-22', end:'2026-04-24', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_22', num:'7.1.22', name:"UG beschichten", duration:6, start:'2026-06-08', end:'2026-06-15', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_23', num:'7.1.23', name:"Abstellräume stellen", duration:3, start:'2026-06-16', end:'2026-06-18', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_24', num:'7.1.24', name:"Maler", duration:30, start:'2026-06-19', end:'2026-07-30', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_25', num:'7.1.25', name:"Rinnenkörper setzen", duration:2, start:'2026-06-10', end:'2026-06-11', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_26', num:'7.1.26', name:"Fliesenleger", duration:30, start:'2026-06-12', end:'2026-07-23', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_27', num:'7.1.27', name:"Badewanne + Rinnen setzen", duration:4, start:'2026-06-12', end:'2026-06-17', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_28', num:'7.1.28', name:"Heizung/ Sanitär Fertiginstallation", duration:10, start:'2026-07-24', end:'2026-08-06', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_29', num:'7.1.29', name:"Türzargen", duration:7, start:'2026-08-07', end:'2026-08-17', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_30', num:'7.1.30', name:"Türblätter Wohnungseingang", duration:6, start:'2026-08-18', end:'2026-08-25', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_31', num:'7.1.31', name:"Elektro Fertiginstallation", duration:10, start:'2026-07-24', end:'2026-08-06', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_32', num:'7.1.32', name:"Parkett", duration:20, start:'2026-08-07', end:'2026-09-03', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_33', num:'7.1.33', name:"Türblätter Wohnungen", duration:3, start:'2026-09-04', end:'2026-09-08', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_34', num:'7.1.34', name:"Treppenhausbelag Podeste", duration:10, start:'2026-07-10', end:'2026-07-23', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_35', num:'7.1.35', name:"Decken abhängen UG", duration:5, start:'2026-04-27', end:'2026-05-04', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_36', num:'7.1.36', name:"Treppenwangen Putz ergänzen", duration:2, start:'2026-07-22', end:'2026-07-23', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_37', num:'7.1.37', name:"Treppengeländer", duration:2, start:'2026-07-24', end:'2026-07-27', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_38', num:'7.1.38', name:"Putz Treppenhaus", duration:5, start:'2026-07-28', end:'2026-08-03', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_39', num:'7.1.39', name:"Maler Treppenhaus", duration:3, start:'2026-08-04', end:'2026-08-06', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_40', num:'7.1.40', name:"Elektro Fertigmontage Treppenhaus", duration:3, start:'2026-08-07', end:'2026-08-11', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_41', num:'7.1.41', name:"Haustüren", duration:1, start:'2026-04-13', end:'2026-04-13', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_42', num:'7.1.42', name:"Aufzugsinbetriebnahme", duration:1, start:'2026-08-12', end:'2026-08-12', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_1_43', num:'7.1.43', name:"Bauendreinigung", duration:10, start:'2026-09-09', end:'2026-09-22', parent:"t_7_1", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2', num:'7.2', name:"Haus A", duration:150, start:'2026-03-09', end:'2026-10-12', parent:"t_7", color:'#1E96A8', depth:1, predecessors:[] },
+    { id:'t_7_2_1', num:'7.2.1', name:"Steigleitungen", duration:5, start:'2026-03-30', end:'2026-04-07', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_2', num:'7.2.2', name:"Deckendurchbrüche Steigleitungen schließen", duration:2, start:'2026-04-13', end:'2026-04-14', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_3', num:'7.2.3', name:"Trockenbauständer + Einseitig Beplankung", duration:10, start:'2026-03-09', end:'2026-03-20', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_4', num:'7.2.4', name:"Rohinstallation Sanitär/Heizung", duration:20, start:'2026-03-12', end:'2026-04-10', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_5', num:'7.2.5', name:"Rohinstallation Elektro", duration:15, start:'2026-04-07', end:'2026-04-27', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_6', num:'7.2.6', name:"Deckendurchbrüche schalen + betonieren", duration:5, start:'2026-04-13', end:'2026-04-17', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_7', num:'7.2.7', name:"Trockenbau fertig beplanken + spachteln", duration:7, start:'2026-04-20', end:'2026-04-28', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_8', num:'7.2.8', name:"Aufzugeinbau", duration:5, start:'2026-05-11', end:'2026-05-18', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_9', num:'7.2.9', name:"Innenputz", duration:15, start:'2026-05-06', end:'2026-05-28', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_10', num:'7.2.10', name:"Fußbodendämmung", duration:3, start:'2026-05-29', end:'2026-06-02', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_11', num:'7.2.11', name:"Fußbodenheizung", duration:4, start:'2026-06-03', end:'2026-06-09', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_12', num:'7.2.12', name:"Estrich", duration:4, start:'2026-06-10', end:'2026-06-15', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_13', num:'7.2.13', name:"Inbetriebnahme Heizung", duration:1, start:'2026-06-16', end:'2026-06-16', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_14', num:'7.2.14', name:"(Trockenbau spachteln)", duration:3, start:'2026-06-30', end:'2026-07-02', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_15', num:'7.2.15', name:"Elektrodosen + Lüfter einbauen", duration:5, start:'2026-07-07', end:'2026-07-13', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_16', num:'7.2.16', name:"Wanddurchdringungen UG schließen", duration:3, start:'2026-04-28', end:'2026-04-30', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_17', num:'7.2.17', name:"Treppenstufen belegen", duration:5, start:'2026-06-23', end:'2026-06-29', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_18', num:'7.2.18', name:"Treppenwangen einputzen", duration:2, start:'2026-05-29', end:'2026-06-01', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_19', num:'7.2.19', name:"Stahltüren UG", duration:2, start:'2026-04-13', end:'2026-04-14', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_20', num:'7.2.20', name:"Maler UG", duration:2, start:'2026-04-20', end:'2026-04-21', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_21', num:'7.2.21', name:"Rohinstallation Elektro UG", duration:3, start:'2026-04-22', end:'2026-04-24', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_22', num:'7.2.22', name:"UG beschichten", duration:6, start:'2026-06-24', end:'2026-07-01', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_23', num:'7.2.23', name:"Abstellräume stellen", duration:3, start:'2026-07-02', end:'2026-07-06', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_24', num:'7.2.24', name:"Maler", duration:30, start:'2026-07-14', end:'2026-08-24', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_25', num:'7.2.25', name:"Rinnenkörper setzen", duration:2, start:'2026-06-25', end:'2026-06-26', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_26', num:'7.2.26', name:"Fliesenleger", duration:30, start:'2026-06-30', end:'2026-08-10', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_27', num:'7.2.27', name:"Badewanne + Rinnen setzen", duration:4, start:'2026-06-30', end:'2026-07-03', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_28', num:'7.2.28', name:"Heizung/ Sanitär Fertiginstallation", duration:10, start:'2026-08-11', end:'2026-08-24', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_29', num:'7.2.29', name:"Türzargen", duration:7, start:'2026-08-25', end:'2026-09-02', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_30', num:'7.2.30', name:"Türblätter Wohnungseingang", duration:6, start:'2026-09-03', end:'2026-09-10', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_31', num:'7.2.31', name:"Elektro Fertiginstallation", duration:10, start:'2026-08-11', end:'2026-08-24', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_32', num:'7.2.32', name:"Parkett", duration:20, start:'2026-08-25', end:'2026-09-21', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_33', num:'7.2.33', name:"Türblätter Wohnungen", duration:5, start:'2026-09-22', end:'2026-09-28', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_34', num:'7.2.34', name:"Treppenhausbelag Podeste", duration:15, start:'2026-07-28', end:'2026-08-17', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_35', num:'7.2.35', name:"Decken abhängen UG", duration:5, start:'2026-04-27', end:'2026-05-04', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_36', num:'7.2.36', name:"Treppenwangen Putz ergänzen", duration:2, start:'2026-08-14', end:'2026-08-17', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_37', num:'7.2.37', name:"Treppengeländer", duration:2, start:'2026-08-18', end:'2026-08-19', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_38', num:'7.2.38', name:"Putz Treppenhaus", duration:5, start:'2026-05-29', end:'2026-06-05', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_39', num:'7.2.39', name:"Maler Treppenhaus", duration:3, start:'2026-06-08', end:'2026-06-10', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_40', num:'7.2.40', name:"Elektro Fertigmontage Treppenhaus", duration:3, start:'2026-06-11', end:'2026-06-15', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_41', num:'7.2.41', name:"Haustüren", duration:1, start:'2026-06-11', end:'2026-06-11', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_42', num:'7.2.42', name:"Aufzugsinbetriebnahme", duration:1, start:'2026-06-16', end:'2026-06-16', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_7_2_43', num:'7.2.43', name:"Bauendreinigung", duration:10, start:'2026-09-29', end:'2026-10-12', parent:"t_7_2", color:'#1E96A8', depth:2, predecessors:[] },
+    { id:'t_8', num:'8', name:"Außenanlagen", duration:40, start:'2026-06-12', end:'2026-08-06', parent:null, color:'#7CB246', depth:0, predecessors:[] },
+    { id:'t_8_1', num:'8.1', name:"TG-Decke abschweißen", duration:10, start:'2026-06-12', end:'2026-06-25', parent:"t_8", color:'#7CB246', depth:1, predecessors:[] },
+    { id:'t_8_2', num:'8.2', name:"Briefkastenfundament", duration:2, start:'2026-06-12', end:'2026-06-15', parent:"t_8", color:'#7CB246', depth:1, predecessors:[] },
+    { id:'t_8_3', num:'8.3', name:"Traufstreifen", duration:5, start:'2026-06-26', end:'2026-07-02', parent:"t_8", color:'#7CB246', depth:1, predecessors:[] },
+    { id:'t_8_4', num:'8.4', name:"Briefkasten aufstellen", duration:1, start:'2026-07-03', end:'2026-07-03', parent:"t_8", color:'#7CB246', depth:1, predecessors:[] },
+    { id:'t_8_5', num:'8.5', name:"Pflasterarbeiten", duration:10, start:'2026-07-03', end:'2026-07-16', parent:"t_8", color:'#7CB246', depth:1, predecessors:[] },
+    { id:'t_8_6', num:'8.6', name:"Grünanlagen", duration:15, start:'2026-07-17', end:'2026-08-06', parent:"t_8", color:'#7CB246', depth:1, predecessors:[] },
+  ]
+};
+
+</script>
+<script>
+(() => {
+'use strict';
+
+const STATE_KEY='hofmann-state-v3';
+const STATE_KEY_OLD='hofmann-state-v2';
+const DB_NAME='hofmann-checklists';
+const PHOTO_STORE='photos';
+const SCOPE_LABELS={project:'Projekt-weit',house:'Pro Haus',apartment:'Pro Wohnung'};
+const SCOPE_TAGS={project:{label:'Projekt',cls:'project'},house:{label:'Haus',cls:'house'},apartment:{label:'Wohnung',cls:'apartment'}};
+const TASK_COLORS=['#E8833A','#3B6CC4','#3FAA60','#D4A22A','#7A7570','#C9482F','#1E96A8','#7CB246'];
+const ICON={
+back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+chevR:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+dots:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+door:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18M14 13v.01"/></svg>',
+list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+activity:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>',
+gantt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="13" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="11" y1="18" x2="21" y2="18"/></svg>',
+building:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><path d="M10 22v-4h4v4"/></svg>',
+switch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+calendar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+};
+
+// IndexedDB
+let dbPromise=null;
+function openDB(){if(dbPromise)return dbPromise;dbPromise=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(PHOTO_STORE))db.createObjectStore(PHOTO_STORE,{keyPath:'id'});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});return dbPromise;}
+async function dbPutPhoto(id,blob,meta={}){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(PHOTO_STORE,'readwrite');tx.objectStore(PHOTO_STORE).put({id,blob,meta,createdAt:Date.now()});tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function dbGetPhoto(id){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(PHOTO_STORE,'readonly');const r=tx.objectStore(PHOTO_STORE).get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);});}
+async function dbDeletePhoto(id){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(PHOTO_STORE,'readwrite');tx.objectStore(PHOTO_STORE).delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function dbAllPhotos(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(PHOTO_STORE,'readonly');const r=tx.objectStore(PHOTO_STORE).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
+
+// State
+function newProjectId(){return 'p_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);}
+function emptyProject(name=''){return{id:newProjectId(),name:name||'Neues Projekt',createdAt:Date.now(),config:{project:name||'',an:'Hofmann Haus',bauleiter:'',houses:[{id:1,name:'Haus 1',apartments:[{id:1,name:'Wohnung 1'}]}]},items:{},activity:[],schedule:{tasks:[]}};}
+function defaultState(){return{projects:[],currentProjectId:null};}
+let state=defaultState();
+function migrateLegacy(parsed){if(parsed&&parsed.config&&!parsed.projects){const proj={id:newProjectId(),name:parsed.config.project||'Projekt',createdAt:Date.now(),config:parsed.config,items:parsed.items||{},activity:parsed.activity||[],schedule:{tasks:[]}};return{projects:[proj],currentProjectId:proj.id};}return parsed;}
+function loadState(){try{let raw=localStorage.getItem(STATE_KEY);if(!raw){const old=localStorage.getItem(STATE_KEY_OLD);if(old){const p=migrateLegacy(JSON.parse(old));state=Object.assign(defaultState(),p);saveState();return;}return;}let parsed=JSON.parse(raw);parsed=migrateLegacy(parsed);state=Object.assign(defaultState(),parsed);state.projects=state.projects||[];state.projects.forEach(p=>{p.items=p.items||{};p.activity=p.activity||[];p.schedule=p.schedule||{tasks:[]};p.schedule.tasks=p.schedule.tasks||[];});}catch(e){console.error('loadState',e);}}
+function saveState(){try{localStorage.setItem(STATE_KEY,JSON.stringify(state));}catch(e){toast('Speicher voll!');}}
+function currentProject(){return state.projects.find(p=>p.id===state.currentProjectId)||null;}
+function getItem(key){const p=currentProject();if(!p)return{done:false,date:'',notes:'',photos:[]};if(!p.items[key])p.items[key]={done:false,date:'',notes:'',photos:[]};return p.items[key];}
+function pushActivity(entry){const p=currentProject();if(!p)return;p.activity.unshift({ts:Date.now(),...entry});if(p.activity.length>50)p.activity.length=50;}
+
+// Helpers
+function $(sel,root=document){return root.querySelector(sel);}
+function escHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(msg){let el=$('.toast');if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el);}el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),2200);}
+function timeAgo(ts){const s=Math.floor((Date.now()-ts)/1000);if(s<60)return'gerade eben';const m=Math.floor(s/60);if(m<60)return`vor ${m} Min`;const h=Math.floor(m/60);if(h<24)return`vor ${h} Std`;const d=Math.floor(h/24);if(d<7)return`vor ${d} Tag${d>1?'en':''}`;return new Date(ts).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function buildScopeInstances(scope){const p=currentProject();if(!p)return[];if(scope==='project')return[{key:'project',label:'Projekt',short:'Projekt'}];const out=[];p.config.houses.forEach(h=>{if(scope==='house')out.push({key:`h:${h.id}`,label:`Haus ${h.id}`,short:`H${h.id}`,houseId:h.id});else if(scope==='apartment')h.apartments.forEach(a=>out.push({key:`h:${h.id}:a:${a.id}`,label:`Haus ${h.id} · Wohnung ${a.id}`,short:`W${a.id}`,houseId:h.id,apartmentId:a.id}));});return out;}
+function itemKey(c,s,i,k){return`${c}|${s}|${i}|${k}`;}
+function findChecklist(id){return CHECKLISTS.find(c=>c.id===id);}
+function progressForChecklist(cl){const p=currentProject();if(!p)return{done:0,total:0,photos:0,pct:0};const inst=buildScopeInstances(cl.scope);let d=0,t=0,ph=0;cl.sections.forEach((sec,si)=>sec.items.forEach((_,ii)=>inst.forEach(x=>{t++;const it=p.items[itemKey(cl.id,si,ii,x.key)];if(it){if(it.done)d++;ph+=(it.photos||[]).length;}})));return{done:d,total:t,photos:ph,pct:t?Math.round(d/t*100):0};}
+function progressOverall(){let d=0,t=0,ph=0;CHECKLISTS.forEach(cl=>{const p=progressForChecklist(cl);d+=p.done;t+=p.total;ph+=p.photos;});return{done:d,total:t,photos:ph,pct:t?Math.round(d/t*100):0};}
+function progressByScope(scope){let d=0,t=0;CHECKLISTS.filter(c=>c.scope===scope).forEach(cl=>{const p=progressForChecklist(cl);d+=p.done;t+=p.total;});return{done:d,total:t,pct:t?Math.round(d/t*100):0,count:CHECKLISTS.filter(c=>c.scope===scope).length};}
+async function compressImage(file,maxDim=1600,q=.78){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{let{width,height}=img;const r=Math.min(1,maxDim/Math.max(width,height));width=Math.round(width*r);height=Math.round(height*r);const c=document.createElement('canvas');c.width=width;c.height=height;c.getContext('2d').drawImage(img,0,0,width,height);c.toBlob(b=>{URL.revokeObjectURL(url);b?res(b):rej(new Error('compress'));},'image/jpeg',q);};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('load'));};img.src=url;});}
+
+// Gantt date helpers
+const DAY_MS=86400000;
+function parseDate(s){return new Date(s+'T00:00:00');}
+function fmtDate(d){if(typeof d==='string')return d;return d.toISOString().slice(0,10);}
+function daysBetween(a,b){return Math.round((parseDate(b)-parseDate(a))/DAY_MS);}
+function addDays(s,n){const d=parseDate(s);d.setDate(d.getDate()+n);return fmtDate(d);}
+function ganttRange(){const p=currentProject();const tasks=p?.schedule?.tasks||[];if(!tasks.length){const t=new Date();return{start:fmtDate(new Date(t.getFullYear(),t.getMonth(),1)),end:fmtDate(new Date(t.getFullYear(),t.getMonth()+6,0))};}let min=tasks[0].start,max=tasks[0].end;tasks.forEach(t=>{if(t.start<min)min=t.start;if(t.end>max)max=t.end;});return{start:addDays(min,-7),end:addDays(max,7)};}
+function dayWidth(){return view.ganttZoom==='day'?28:view.ganttZoom==='week'?12:4;}
+function isParent(taskId){const p=currentProject();return p.schedule.tasks.some(t=>t.parent===taskId);}
+function isHidden(task,tasks){let pid=task.parent;while(pid){if(ganttCollapsed[pid])return true;const par=tasks.find(t=>t.id===pid);pid=par?.parent;}return false;}
+
+// View state
+const view={screen:'picker',setupMode:'new',tab:'dashboard',detail:null,detailHouseFilter:'all',sheet:null,taskEditor:null,ganttZoom:'week',menuOpen:false};
+let listFilter='all';
+let ganttCollapsed={};
+let setupDraft=null;
+
+function ensureSetupDraft(fromProject=null){if(setupDraft)return;if(fromProject){setupDraft=JSON.parse(JSON.stringify(fromProject.config));setupDraft._editingId=fromProject.id;}else{setupDraft={project:'',an:'Hofmann Haus',bauleiter:'',houses:[{id:1,name:'Haus 1',apartments:[{id:1,name:'Wohnung 1'}]}]};}}
+function setupHousesCount(n){ensureSetupDraft();const c=setupDraft.houses.length;if(n>c)for(let i=c+1;i<=n;i++)setupDraft.houses.push({id:i,name:`Haus ${i}`,apartments:[{id:1,name:'Wohnung 1'}]});else if(n<c)setupDraft.houses.length=n;}
+function setupAptsCount(idx,n){ensureSetupDraft();const h=setupDraft.houses[idx];const c=h.apartments.length;if(n>c)for(let i=c+1;i<=n;i++)h.apartments.push({id:i,name:`Wohnung ${i}`});else if(n<c)h.apartments.length=n;}
+function readSetupInputs(){if(!setupDraft)return;document.querySelectorAll('[data-setup]').forEach(el=>setupDraft[el.dataset.setup]=el.value);}
+function saveSheetFields(){if(!view.sheet)return;const k=itemKey(view.sheet.checklistId,view.sheet.sectionIdx,view.sheet.itemIdx,view.sheet.scopeKey);const it=getItem(k);const date=$('[data-sh="date"]')?.value;const notes=$('[data-sh="notes"]')?.value;if(date!==undefined)it.date=date;if(notes!==undefined)it.notes=notes;saveState();}
+
+// === RENDER FUNCTIONS ===
+function renderPicker(){
+  return `<div class="picker-screen">
+    <div class="picker-hero">
+      <div class="picker-logo"></div>
+      <div class="picker-brand">HOFMANN <span class="hl">HAUS</span></div>
+      <div class="picker-tagline">Bauleiter-Cockpit</div>
+    </div>
+    ${state.projects.length>0?`<div class="picker-section-title">Deine Projekte</div>
+      <div class="project-list">${state.projects.map(p=>{
+        const orig=state.currentProjectId;state.currentProjectId=p.id;
+        const o=progressOverall();state.currentProjectId=orig;
+        const houses=p.config.houses.length;
+        const apts=p.config.houses.reduce((s,h)=>s+h.apartments.length,0);
+        const tasks=p.schedule?.tasks?.length||0;
+        return `<button class="project-card" data-action="open-project" data-id="${p.id}" type="button">
+          <div class="project-card-icon">${ICON.building}</div>
+          <div class="project-card-text">
+            <div class="project-card-name">${escHtml(p.name)}</div>
+            <div class="project-card-meta"><span><b>${houses}</b> Häuser</span><span><b>${apts}</b> Wohn.</span><span><b>${o.photos}</b> Fotos</span>${tasks?`<span><b>${tasks}</b> Termine</span>`:''}</div>
+          </div>
+          <div class="project-card-progress ${o.pct===100?'done':''}">${o.pct}%</div>
+        </button>`;
+      }).join('')}</div>`:`<div class="picker-section-title">Willkommen</div>`}
+    <div class="project-list" style="margin-top:14px;">
+      <button class="picker-add" data-action="new-project" type="button">${ICON.plus} Neues Projekt anlegen</button>
+      ${state.projects.length===0?`<button class="picker-add" data-action="new-project-sample" type="button" style="border-style:solid;color:var(--red);border-color:var(--red);">${ICON.calendar} Mit Beispiel-Projekt starten (Gaisbach 13)</button>`:''}
+    </div>
+  </div>`;
+}
+
+function renderSetup(){
+  ensureSetupDraft();
+  const d=setupDraft;
+  const totalApts=d.houses.reduce((s,h)=>s+h.apartments.length,0);
+  const isEdit=!!d._editingId;
+  return `<div class="setup-screen">
+    <div class="setup-back"><button data-action="setup-cancel" type="button">${ICON.back} Zurück</button></div>
+    <div class="setup-card">
+      <h1 class="setup-title">${isEdit?'Projekt bearbeiten':'Neues Projekt'}</h1>
+      <p class="setup-subtitle">${isEdit?'Daten anpassen.':'Bauvorhaben anlegen — kannst du später jederzeit ändern.'}</p>
+      ${!isEdit?`<div class="setup-template-row">
+        <button class="setup-template ${view.setupMode==='new'?'active':''}" data-action="set-mode" data-mode="new" type="button"><div class="setup-template-title">Leer starten</div><div class="setup-template-sub">Eigene Daten</div></button>
+        <button class="setup-template ${view.setupMode==='sample'?'active':''}" data-action="set-mode" data-mode="sample" type="button"><div class="setup-template-title">Gaisbach 13</div><div class="setup-template-sub">Vorlage<br>150 Termine</div></button>
+      </div>`:''}
+      <div class="field"><label class="field-label" for="f-project">Bauvorhaben</label><input class="field-input" id="f-project" data-setup="project" type="text" value="${escHtml(d.project)}" placeholder="z.B. Gaisbach 13"></div>
+      <div class="field-row">
+        <div class="field"><label class="field-label" for="f-an">AN</label><input class="field-input" id="f-an" data-setup="an" type="text" value="${escHtml(d.an)}"></div>
+        <div class="field"><label class="field-label" for="f-bauleiter">Bauleiter</label><input class="field-input" id="f-bauleiter" data-setup="bauleiter" type="text" value="${escHtml(d.bauleiter)}"></div>
+      </div>
+      <div class="field"><label class="field-label">Anzahl Häuser</label>
+        <div class="stepper">
+          <button class="stepper-btn" data-action="houses-dec" type="button" ${d.houses.length<=1?'disabled':''}>−</button>
+          <div class="stepper-value">${d.houses.length}</div>
+          <button class="stepper-btn" data-action="houses-inc" type="button">+</button>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">Wohnungen pro Haus</label>
+        <div class="houses-config">${d.houses.map((h,idx)=>`<div class="house-config"><div class="house-config-label">${escHtml(h.name)}</div><div class="stepper"><button class="stepper-btn" data-action="apt-dec" data-house-idx="${idx}" type="button" ${h.apartments.length<=1?'disabled':''}>−</button><div class="stepper-value">${h.apartments.length}</div><button class="stepper-btn" data-action="apt-inc" data-house-idx="${idx}" type="button">+</button></div></div>`).join('')}</div>
+        <div class="field-hint"><b>${d.houses.length}</b> Häuser · <b>${totalApts}</b> Wohnungen</div>
+      </div>
+      <button class="btn btn-primary btn-block" data-action="setup-save" type="button" style="margin-top:14px;">${isEdit?'Speichern':'Projekt erstellen'} ${ICON.chevR}</button>
+    </div>
+  </div>`;
+}
+
+function renderTopbar(){
+  const p=currentProject();
+  return `<div class="topbar">
+    <div class="topbar-logo"></div>
+    <div class="topbar-text">
+      <div class="topbar-brand">HOFMANN <span class="hl">HAUS</span></div>
+      <div class="topbar-project">${escHtml(p?.config?.project||p?.name||'Kein Projekt')}${state.projects.length>1?`<button class="switch" data-action="back-to-picker" type="button">wechseln</button>`:''}</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" data-action="menu-toggle" type="button">${ICON.dots}</button>
+      <div class="menu ${view.menuOpen?'open':''}" data-menu>
+        <button class="menu-item" data-action="back-to-picker" type="button">${ICON.switch} Projekte verwalten</button>
+        <button class="menu-item" data-action="open-edit" type="button">${ICON.settings} Projekt bearbeiten</button>
+        <button class="menu-item" data-action="export" type="button">${ICON.download} Backup exportieren</button>
+        <button class="menu-item" data-action="import" type="button">${ICON.upload} Backup importieren</button>
+        <button class="menu-item danger" data-action="delete-project" type="button">${ICON.trash} Projekt löschen</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderTabbar(){
+  const tabs=[
+    {id:'dashboard',label:'Übersicht',icon:ICON.dashboard},
+    {id:'lists',label:'Checklisten',icon:ICON.list},
+    {id:'gantt',label:'Bauzeitplan',icon:ICON.gantt},
+    {id:'activity',label:'Aktivität',icon:ICON.activity}
+  ];
+  return `<nav class="tabbar">${tabs.map(t=>`<button class="tabbar-btn ${view.tab===t.id?'active':''}" data-action="tab" data-tab="${t.id}" type="button">${t.icon}<span>${t.label}</span></button>`).join('')}</nav>`;
+}
+
+function renderActivityItem(a){
+  const isPhoto=a.type==='photo';
+  const icon=isPhoto?ICON.cam:ICON.check;
+  const cls=isPhoto?'photo':'';
+  const meta=a.parts?a.parts.join(' · '):'';
+  return `<button class="activity-item" data-action="activity-jump" data-key="${escHtml(a.key||'')}" type="button">
+    <div class="activity-icon ${cls}">${icon}</div>
+    <div class="activity-text"><div class="activity-line1">${escHtml(a.msg)}</div><div class="activity-line2">${escHtml(meta)} · ${timeAgo(a.ts)}</div></div>
+  </button>`;
+}
+
+function renderDashboard(){
+  const p=currentProject();
+  if(!p)return'';
+  const o=progressOverall();
+  const projP=progressByScope('project');
+  const houseP=progressByScope('house');
+  const aptP=progressByScope('apartment');
+  const totalHouses=p.config.houses.length;
+  const totalApts=p.config.houses.reduce((s,h)=>s+h.apartments.length,0);
+  const r=30,circ=2*Math.PI*r,off=circ-(o.pct/100)*circ;
+  const recent=p.activity.slice(0,5);
+  const tasksCount=p.schedule?.tasks?.length||0;
+  let tasksDue=0;
+  if(tasksCount){
+    const today=fmtDate(new Date()),in14=addDays(today,14);
+    tasksDue=p.schedule.tasks.filter(t=>!isParent(t.id)&&t.start<=in14&&t.end>=today).length;
+  }
+  return `<div class="page">
+    <div class="hero">
+      <div class="hero-eyebrow">Projekt-Status</div>
+      <h2 class="hero-title">${escHtml(p.config.project||p.name)}</h2>
+      <div class="hero-progress-row">
+        <div class="progress-ring"><svg viewBox="0 0 72 72"><circle class="ring-bg" cx="36" cy="36" r="${r}"/><circle class="ring-fg" cx="36" cy="36" r="${r}" stroke-dasharray="${circ}" stroke-dashoffset="${off}"/></svg><div class="progress-ring-label">${o.pct}%</div></div>
+        <div class="hero-stats">
+          <div><div class="hero-stat-num">${o.done}</div><div class="hero-stat-lbl">Erledigt</div></div>
+          <div><div class="hero-stat-num">${o.total-o.done}</div><div class="hero-stat-lbl">Offen</div></div>
+          <div><div class="hero-stat-num">${o.photos}</div><div class="hero-stat-lbl">Fotos</div></div>
+        </div>
+      </div>
+      <div class="hero-meta">
+        <div class="hero-meta-item"><b>${totalHouses}</b> Häuser</div>
+        <div class="hero-meta-item"><b>${totalApts}</b> Wohnungen</div>
+        ${tasksCount?`<div class="hero-meta-item"><b>${tasksDue}</b> Termine in 14 Tagen</div>`:''}
+        <div class="hero-meta-item">BL: <b>${escHtml(p.config.bauleiter||'—')}</b></div>
+      </div>
+    </div>
+    <h3 class="section-title">Fortschritt pro Bereich</h3>
+    ${[{scope:'project',stats:projP,icon:ICON.layers},{scope:'house',stats:houseP,icon:ICON.home},{scope:'apartment',stats:aptP,icon:ICON.door}].map(({scope,stats,icon})=>`<button class="scope-group" data-action="filter-scope" data-scope="${scope}" type="button"><div class="scope-group-head"><div class="scope-icon">${icon}</div><div class="scope-name">${SCOPE_LABELS[scope]}</div><div class="scope-progress-text">${stats.done}/${stats.total} · ${stats.pct}%</div></div><div class="progress-bar"><div class="progress-bar-fill ${stats.pct===100?'green':''}" style="width:${stats.pct}%"></div></div></button>`).join('')}
+    <h3 class="section-title">Letzte Aktivität ${recent.length?`<span class="count">${p.activity.length}</span>`:''}</h3>
+    ${recent.length===0?`<div class="empty"><div class="empty-emoji">📋</div><div class="empty-text">Noch keine Aktivität — leg los!</div></div>`:`<div class="activity-feed">${recent.map(renderActivityItem).join('')}</div>`}
+  </div>`;
+}
+
+function renderLists(){
+  const filtered=listFilter==='all'?CHECKLISTS:CHECKLISTS.filter(c=>c.scope===listFilter);
+  const counts={all:CHECKLISTS.length,project:CHECKLISTS.filter(c=>c.scope==='project').length,house:CHECKLISTS.filter(c=>c.scope==='house').length,apartment:CHECKLISTS.filter(c=>c.scope==='apartment').length};
+  return `<div class="page">
+    <div class="filter-bar">${[{id:'all',label:'Alle'},{id:'project',label:'Projekt'},{id:'house',label:'Häuser'},{id:'apartment',label:'Wohnungen'}].map(f=>`<button class="filter-pill ${listFilter===f.id?'active':''}" data-action="list-filter" data-filter="${f.id}" type="button">${f.label} <span class="badge">${counts[f.id]}</span></button>`).join('')}</div>
+    <div class="checklist-grid">${filtered.map(cl=>{
+      const pr=progressForChecklist(cl);
+      const tag=SCOPE_TAGS[cl.scope];
+      const complete=pr.total>0&&pr.done===pr.total;
+      return `<button class="checklist-card ${complete?'complete':''}" data-action="open-checklist" data-id="${cl.id}" type="button">
+        <div class="checklist-card-head"><div class="checklist-num">${cl.num}</div><h3 class="checklist-title">${escHtml(cl.title)}</h3></div>
+        <div class="checklist-meta"><span class="scope-tag ${tag.cls}">${tag.label}</span><span>${cl.sections.reduce((s,sec)=>s+sec.items.length,0)} Punkte</span></div>
+        <div class="checklist-card-foot"><div class="progress-bar"><div class="progress-bar-fill ${complete?'green':''}" style="width:${pr.pct}%"></div></div><div class="checklist-progress-num">${pr.pct}%</div>${pr.photos>0?`<div class="checklist-photo-count">${ICON.cam}<span>${pr.photos}</span></div>`:''}</div>
+      </button>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+function renderPill(cid,sIdx,iIdx,inst){
+  const k=itemKey(cid,sIdx,iIdx,inst.key);
+  const p=currentProject();
+  const it=p.items[k];
+  let cls='';
+  if(it&&it.done)cls='done';
+  else if(it&&(it.photos.length>0||it.notes))cls='partial';
+  if(inst.key==='project')cls+=' project';
+  const photos=it?it.photos.length:0;
+  return `<button class="pill ${cls}" type="button" data-action="open-sheet" data-checklist="${cid}" data-section="${sIdx}" data-item="${iIdx}" data-scope="${escHtml(inst.key)}"><span class="pill-dot"></span><span>${escHtml(inst.short)}</span>${photos>0?`<span class="pill-cam">${ICON.cam}${photos}</span>`:''}</button>`;
+}
+
+function renderItemCard(cl,sIdx,iIdx,itemText){
+  const p=currentProject();
+  const instances=buildScopeInstances(cl.scope);
+  let visible=instances;
+  if((cl.scope==='house'||cl.scope==='apartment')&&view.detailHouseFilter!=='all'){
+    visible=instances.filter(i=>String(i.houseId)===String(view.detailHouseFilter));
+  }
+  let doneC=0,photoC=0;
+  visible.forEach(inst=>{const it=p.items[itemKey(cl.id,sIdx,iIdx,inst.key)];if(it){if(it.done)doneC++;photoC+=(it.photos||[]).length;}});
+  const total=visible.length;
+  let cls='pending';
+  if(doneC===total&&total>0)cls='done';
+  else if(doneC>0)cls='partial';
+  let pillsHtml='';
+  if(cl.scope==='apartment'&&p.config.houses.length>1&&view.detailHouseFilter==='all'){
+    const groups={};
+    visible.forEach(inst=>{(groups[inst.houseId]=groups[inst.houseId]||[]).push(inst);});
+    pillsHtml=Object.keys(groups).map(hk=>`<div class="item-house-group"><div class="item-house-label">Haus ${hk}</div><div class="pills-grid">${groups[hk].map(inst=>renderPill(cl.id,sIdx,iIdx,inst)).join('')}</div></div>`).join('');
+  }else{
+    pillsHtml=`<div class="pills-grid">${visible.map(inst=>renderPill(cl.id,sIdx,iIdx,inst)).join('')}</div>`;
+  }
+  return `<div class="item-card">
+    <div class="item-card-text">${escHtml(itemText)}</div>
+    <div class="item-card-status-row"><div class="status-summary ${cls}"><span class="dot"></span><span>${doneC}/${total} erledigt</span></div>${photoC>0?`<div class="status-summary-meta">${photoC} Fotos</div>`:''}</div>
+    ${pillsHtml}
+  </div>`;
+}
+
+function renderDetail(){
+  const cl=findChecklist(view.detail);
+  if(!cl)return `<div class="page"><div class="empty">Nicht gefunden</div></div>`;
+  const p=currentProject();
+  const pr=progressForChecklist(cl);
+  const tag=SCOPE_TAGS[cl.scope];
+  const houses=p.config.houses;
+  const showHouseFilter=(cl.scope==='house'||cl.scope==='apartment')&&houses.length>1;
+  return `<div class="page">
+    <button class="back-link" data-action="back-to-lists" type="button">${ICON.back} Checklisten</button>
+    <div class="detail-header">
+      <div class="detail-num-row"><div class="checklist-num">${cl.num}</div><div class="checklist-meta" style="margin:0;"><span class="scope-tag ${tag.cls}">${tag.label}</span></div></div>
+      <h1 class="detail-title">${escHtml(cl.title)}</h1>
+      <div class="detail-progress"><div class="progress-bar"><div class="progress-bar-fill ${pr.pct===100?'green':''}" style="width:${pr.pct}%"></div></div><div class="detail-progress-num">${pr.done}/${pr.total} · ${pr.pct}%</div></div>
+    </div>
+    ${showHouseFilter?`<div class="filter-houses"><button class="house-chip ${view.detailHouseFilter==='all'?'active':''}" data-action="house-filter" data-house="all" type="button">Alle Häuser</button>${houses.map(h=>`<button class="house-chip ${view.detailHouseFilter==h.id?'active':''}" data-action="house-filter" data-house="${h.id}" type="button">Haus ${h.id}</button>`).join('')}</div>`:''}
+    ${cl.sections.map((sec,sIdx)=>`<div class="section-block">${sec.title?`<h3 class="section-heading">${escHtml(sec.title)}</h3>`:''}${sec.items.map((t,iIdx)=>renderItemCard(cl,sIdx,iIdx,t)).join('')}</div>`).join('')}
+  </div>`;
+}
+
+function renderActivity(){
+  const p=currentProject();
+  const acts=p.activity;
+  return `<div class="page"><h3 class="section-title">Aktivitätsverlauf <span class="count">${acts.length}</span></h3>${acts.length===0?`<div class="empty"><div class="empty-emoji">📋</div><div class="empty-text">Noch keine Aktivität.</div></div>`:`<div class="activity-feed">${acts.map(renderActivityItem).join('')}</div>`}</div>`;
+}
+
+function renderSheet(){
+  if(!view.sheet)return'';
+  const{checklistId,sectionIdx,itemIdx,scopeKey}=view.sheet;
+  const cl=findChecklist(checklistId);
+  if(!cl)return'';
+  const itemText=cl.sections[sectionIdx].items[itemIdx];
+  const k=itemKey(checklistId,sectionIdx,itemIdx,scopeKey);
+  const it=getItem(k);
+  const inst=buildScopeInstances(cl.scope).find(i=>i.key===scopeKey);
+  return `<div class="scrim open" data-action="close-sheet"></div>
+  <div class="sheet open">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head"><div class="sheet-head-text"><div class="sheet-eyebrow">${escHtml(cl.num)}. ${escHtml(cl.title)} · ${escHtml(inst.label)}</div><h2 class="sheet-title">Punkt bearbeiten</h2></div><button class="sheet-close" data-action="close-sheet" type="button">${ICON.x}</button></div>
+    <div class="sheet-body">
+      <div class="sheet-item-text">${escHtml(itemText)}</div>
+      <div class="sheet-status-toggle ${it.done?'checked':''}" data-action="toggle-done"><div class="check-box">${ICON.check}</div><div><div class="sheet-status-text">${it.done?'Erledigt':'Als erledigt markieren'}</div><div class="sheet-status-sub">${it.done&&it.date?'am '+new Date(it.date).toLocaleDateString('de-DE'):'Tippen zum Abhaken'}</div></div></div>
+      <div class="field"><label class="field-label" for="sh-date">Geprüft am</label><input class="field-input" id="sh-date" type="date" value="${escHtml(it.date||'')}" data-sh="date"></div>
+      <div class="field"><label class="field-label" for="sh-notes">Bemerkungen</label><textarea class="field-input" id="sh-notes" rows="3" data-sh="notes" placeholder="z.B. Mängel, …">${escHtml(it.notes||'')}</textarea></div>
+      <div class="photos-section"><label class="field-label">Fotos (${it.photos.length})</label><div class="photos-grid">
+        ${it.photos.map((pid,idx)=>`<div class="photo-tile" data-photo-id="${escHtml(pid)}"><img alt="Foto ${idx+1}" data-pic="${escHtml(pid)}"><button class="photo-tile-del" type="button" data-action="del-photo" data-photo-id="${escHtml(pid)}">${ICON.x}</button></div>`).join('')}
+        <button class="photo-add-tile" type="button" data-action="add-photos">${ICON.cam}<span>Foto</span></button>
+      </div></div>
+    </div>
+    <div class="sheet-foot"><button class="btn btn-primary btn-block" type="button" data-action="close-sheet">Fertig</button></div>
+  </div>`;
+}
+
+async function loadSheetPhotos(){
+  const imgs=document.querySelectorAll('img[data-pic]');
+  for(const img of imgs){
+    const pid=img.dataset.pic;
+    try{const rec=await dbGetPhoto(pid);if(rec&&rec.blob)img.src=URL.createObjectURL(rec.blob);}catch(e){}
+  }
+}
+// === GANTT RENDER ===
+function renderGantt(){
+  const p=currentProject();
+  const tasks=p.schedule?.tasks||[];
+  if(!tasks.length){
+    return `<div class="gantt-empty">
+      <div class="empty-emoji">📅</div>
+      <h3 style="font-family:var(--display);font-weight:700;font-size:18px;margin:0 0 6px;">Noch kein Bauzeitenplan</h3>
+      <p style="color:var(--muted);font-size:14px;margin:0 0 16px;">Lege Termine an oder lade die Gaisbach-13-Vorlage als Startpunkt.</p>
+      <div class="gantt-empty-actions">
+        <button class="btn btn-ghost" data-action="task-new" type="button">${ICON.plus} Termin anlegen</button>
+        <button class="btn btn-primary" data-action="load-gaisbach" type="button">${ICON.calendar} Gaisbach 13 laden</button>
+      </div>
+    </div>`;
+  }
+  const range=ganttRange();
+  const totalDays=daysBetween(range.start,range.end)+1;
+  const dw=dayWidth();
+  const tlW=totalDays*dw;
+  const today=fmtDate(new Date());
+  const todayPos=daysBetween(range.start,today)*dw;
+  const todayInRange=today>=range.start&&today<=range.end;
+  const visibleTasks=tasks.filter(t=>!isHidden(t,tasks));
+  const rowH=32;
+  const totalH=visibleTasks.length*rowH;
+
+  // Axis
+  const startD=parseDate(range.start);
+  const months=[];
+  let curM=null;
+  for(let i=0;i<=totalDays;i++){
+    const d=new Date(startD);d.setDate(d.getDate()+i);
+    const k=d.getFullYear()+'-'+d.getMonth();
+    if(k!==curM){months.push({start:i,label:d.toLocaleDateString('de-DE',{month:'short',year:'2-digit'})});curM=k;}
+  }
+  let axisHtml='';
+  for(let mi=0;mi<months.length;mi++){
+    const next=mi+1<months.length?months[mi+1].start:totalDays;
+    const w=(next-months[mi].start)*dw;
+    axisHtml+=`<div class="gantt-axis-month" style="left:${months[mi].start*dw}px;width:${w}px;">${escHtml(months[mi].label)}</div>`;
+  }
+  if(view.ganttZoom==='day'){
+    for(let i=0;i<totalDays;i++){
+      const d=new Date(startD);d.setDate(d.getDate()+i);
+      const isToday=fmtDate(d)===today;
+      axisHtml+=`<div class="gantt-axis-day ${isToday?'today':''}" style="left:${i*dw}px;width:${dw}px;">${d.getDate()}</div>`;
+    }
+  }else if(view.ganttZoom==='week'){
+    let i=0;
+    while(i<totalDays){
+      const d=new Date(startD);d.setDate(d.getDate()+i);
+      const dow=(d.getDay()+6)%7;
+      const w=Math.min(7-dow,totalDays-i);
+      const tmp=new Date(d);tmp.setHours(0,0,0,0);
+      tmp.setDate(tmp.getDate()+3-((tmp.getDay()+6)%7));
+      const week1=new Date(tmp.getFullYear(),0,4);
+      const wn=1+Math.round(((tmp-week1)/86400000-3+((week1.getDay()+6)%7))/7);
+      const dEnd=new Date(d);dEnd.setDate(dEnd.getDate()+w-1);
+      const todayInWeek=today>=fmtDate(d)&&today<=fmtDate(dEnd);
+      axisHtml+=`<div class="gantt-axis-week ${todayInWeek?'today':''}" style="left:${i*dw}px;width:${w*dw}px;">KW${wn}</div>`;
+      i+=w;
+    }
+  }else{
+    for(let mi=0;mi<months.length;mi++){
+      const next=mi+1<months.length?months[mi+1].start:totalDays;
+      axisHtml+=`<div class="gantt-axis-week" style="left:${months[mi].start*dw}px;width:${(next-months[mi].start)*dw}px;">${escHtml(months[mi].label)}</div>`;
+    }
+  }
+
+  // Grid (weekends + month dividers)
+  let gridHtml='';
+  for(let i=0;i<=totalDays;i++){
+    const d=new Date(startD);d.setDate(d.getDate()+i);
+    const dow=d.getDay();
+    if(dow===0||dow===6){gridHtml+=`<div class="gantt-grid-weekend" style="left:${i*dw}px;width:${dw}px;"></div>`;}
+    if(d.getDate()===1){gridHtml+=`<div class="gantt-grid-line month" style="left:${i*dw}px;"></div>`;}
+    else if(view.ganttZoom!=='month'&&dow===1){gridHtml+=`<div class="gantt-grid-line" style="left:${i*dw}px;"></div>`;}
+  }
+
+  // Bars
+  const rowsHtml=visibleTasks.map(t=>{
+    const startDays=daysBetween(range.start,t.start);
+    const days=daysBetween(t.start,t.end)+1;
+    const left=startDays*dw;
+    const width=Math.max(days*dw,6);
+    const isP=isParent(t.id);
+    const labelOutside=width<60&&!isP;
+    return `<div class="gantt-row depth-${t.depth}" style="height:${rowH}px;">
+      <div class="gantt-bar ${isP?'summary':''}" data-action="task-edit" data-id="${t.id}" style="left:${left}px;width:${width}px;${!isP?`background:${t.color};`:''}" title="${escHtml(t.num+' '+t.name+': '+t.start+' → '+t.end)}">${!labelOutside&&!isP?`<span style="position:relative;z-index:2;">${escHtml(t.name)}</span>`:''}</div>
+      ${labelOutside&&!isP?`<div class="gantt-bar-label-outside" style="left:${left+width+6}px;">${escHtml(t.name)}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // Dependencies
+  let depsSvg='';
+  visibleTasks.forEach((t,ti)=>{
+    if(!t.predecessors||!t.predecessors.length)return;
+    t.predecessors.forEach(predId=>{
+      const predIdx=visibleTasks.findIndex(x=>x.id===predId);
+      if(predIdx===-1)return;
+      const pred=visibleTasks[predIdx];
+      const x1=(daysBetween(range.start,pred.end)+1)*dw;
+      const y1=predIdx*rowH+rowH/2;
+      const x2=daysBetween(range.start,t.start)*dw;
+      const y2=ti*rowH+rowH/2;
+      const mx=x1+8;
+      depsSvg+=`<path d="M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2-4},${y2}" />`;
+      depsSvg+=`<polygon points="${x2},${y2} ${x2-5},${y2-3} ${x2-5},${y2+3}" fill="var(--ink-2)" opacity=".5" />`;
+    });
+  });
+
+  // Task list (left)
+  const listHtml=visibleTasks.map(t=>{
+    const has=isParent(t.id);
+    const isCol=ganttCollapsed[t.id];
+    return `<div class="gantt-row-list depth-${t.depth}" style="height:${rowH}px;padding-left:${8+t.depth*14}px;" data-action="task-row-list" data-id="${t.id}">
+      <div class="gantt-list-toggle ${has?'':'empty'} ${has&&!isCol?'expanded':''}" data-action="toggle-collapse" data-id="${t.id}">${has?ICON.chevR:''}</div>
+      <div class="gantt-list-num">${escHtml(t.num)}</div>
+      <div class="gantt-list-name">${escHtml(t.name)}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="gantt-page">
+    <div class="gantt-toolbar">
+      <div class="gantt-toolbar-group">
+        <button class="gantt-zoom-btn ${view.ganttZoom==='day'?'active':''}" data-action="gantt-zoom" data-zoom="day" type="button">Tag</button>
+        <button class="gantt-zoom-btn ${view.ganttZoom==='week'?'active':''}" data-action="gantt-zoom" data-zoom="week" type="button">Woche</button>
+        <button class="gantt-zoom-btn ${view.ganttZoom==='month'?'active':''}" data-action="gantt-zoom" data-zoom="month" type="button">Monat</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" data-action="gantt-today" type="button">${ICON.calendar} Heute</button>
+      <button class="btn btn-ghost btn-sm" data-action="gantt-collapse-all" type="button">Einklappen</button>
+      <button class="btn btn-ghost btn-sm" data-action="gantt-expand-all" type="button">Ausklappen</button>
+      <div class="gantt-toolbar-spacer"></div>
+      <div class="gantt-info"><b>${tasks.length}</b> Termine</div>
+      <button class="btn btn-primary btn-sm" data-action="task-new" type="button">${ICON.plus} Neu</button>
+    </div>
+    <div class="gantt-wrap" id="gantt-wrap">
+      <div class="gantt-list" id="gantt-list">
+        <div class="gantt-list-head">Vorgang</div>
+        ${listHtml}
+      </div>
+      <div class="gantt-timeline-wrap" id="gantt-timeline-wrap">
+        <div class="gantt-timeline" style="width:${tlW}px;height:${totalH+60}px;">
+          <div class="gantt-axis" style="width:${tlW}px;">${axisHtml}</div>
+          <div class="gantt-grid" style="width:${tlW}px;height:${totalH}px;">${gridHtml}</div>
+          ${todayInRange?`<div class="gantt-today-line" style="left:${todayPos}px;height:${totalH+30}px;"><div class="gantt-today-label">Heute</div></div>`:''}
+          <div class="gantt-rows" style="position:absolute;top:60px;left:0;width:${tlW}px;height:${totalH}px;">${rowsHtml}</div>
+          ${depsSvg?`<svg class="gantt-deps-svg" width="${tlW}" height="${totalH}">${depsSvg}</svg>`:''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderTaskEditor(){
+  if(!view.taskEditor)return'';
+  const p=currentProject();
+  const isNew=view.taskEditor.isNew;
+  const t=view.taskEditor.task;
+  const tasks=p.schedule.tasks;
+  const possibleParents=tasks.filter(x=>x.id!==t.id);
+  return `<div class="scrim open" data-action="close-task-editor"></div>
+  <div class="sheet open task-editor">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head"><div class="sheet-head-text"><div class="sheet-eyebrow">Bauzeitenplan</div><h2 class="sheet-title">${isNew?'Termin anlegen':'Termin bearbeiten'}</h2></div><button class="sheet-close" data-action="close-task-editor" type="button">${ICON.x}</button></div>
+    <div class="sheet-body">
+      <div class="field"><label class="field-label" for="te-num">Pos.</label><input class="field-input" id="te-num" type="text" value="${escHtml(t.num||'')}" data-te="num" placeholder="z.B. 7.1.5"></div>
+      <div class="field"><label class="field-label" for="te-name">Vorgang</label><input class="field-input" id="te-name" type="text" value="${escHtml(t.name||'')}" data-te="name" placeholder="z.B. Innenputz"></div>
+      <div class="field-row">
+        <div class="field"><label class="field-label" for="te-start">Start</label><input class="field-input" id="te-start" type="date" value="${escHtml(t.start||'')}" data-te="start"></div>
+        <div class="field"><label class="field-label" for="te-end">Ende</label><input class="field-input" id="te-end" type="date" value="${escHtml(t.end||'')}" data-te="end"></div>
+      </div>
+      <div class="field"><label class="field-label" for="te-parent">Übergeordnet (optional)</label>
+        <select class="field-input" id="te-parent" data-te="parent">
+          <option value="">— ohne —</option>
+          ${possibleParents.map(x=>`<option value="${x.id}" ${t.parent===x.id?'selected':''}>${escHtml(x.num)} ${escHtml(x.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label class="field-label">Farbe</label><div class="task-color-row">${TASK_COLORS.map(c=>`<button type="button" class="task-color-swatch ${t.color===c?'active':''}" style="background:${c};" data-action="te-color" data-color="${c}"></button>`).join('')}</div></div>
+      <div class="field"><label class="field-label">Vorgänger (Abhängigkeiten)</label>
+        <div class="dep-list">${(t.predecessors||[]).map(pid=>{const pt=tasks.find(x=>x.id===pid);return pt?`<span class="dep-pill">${escHtml(pt.num)} ${escHtml(pt.name)}<span class="x" data-action="te-dep-remove" data-id="${pid}">×</span></span>`:'';}).join('')}</div>
+        <select class="field-input" data-action="te-dep-add" style="margin-top:6px;">
+          <option value="">+ Vorgänger hinzufügen</option>
+          ${tasks.filter(x=>x.id!==t.id&&!(t.predecessors||[]).includes(x.id)).map(x=>`<option value="${x.id}">${escHtml(x.num)} ${escHtml(x.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="sheet-foot" style="display:flex;gap:8px;">
+      ${!isNew?`<button class="btn btn-danger" type="button" data-action="te-delete">${ICON.trash}</button>`:''}
+      <button class="btn btn-ghost" type="button" data-action="close-task-editor" style="flex:1;">Abbrechen</button>
+      <button class="btn btn-primary" type="button" data-action="te-save" style="flex:1;">Speichern</button>
+    </div>
+  </div>`;
+}
+
+function readTaskEditor(){
+  if(!view.taskEditor)return;
+  const t=view.taskEditor.task;
+  document.querySelectorAll('[data-te]').forEach(el=>{
+    const k=el.dataset.te;
+    let v=el.value;
+    if(k==='parent'&&v==='')v=null;
+    t[k]=v;
+  });
+}
+
+// === MAIN RENDER ===
+function render(){
+  const root=$('#app');
+  if(view.screen==='picker'){root.innerHTML=renderPicker();return;}
+  if(view.screen==='setup'){root.innerHTML=renderSetup();return;}
+  const p=currentProject();
+  if(!p){view.screen='picker';render();return;}
+  let body='';
+  if(view.detail)body=renderDetail();
+  else if(view.tab==='dashboard')body=renderDashboard();
+  else if(view.tab==='lists')body=renderLists();
+  else if(view.tab==='gantt')body=renderGantt();
+  else if(view.tab==='activity')body=renderActivity();
+  root.innerHTML=`${renderTopbar()}<main>${body}</main>${!view.detail?renderTabbar():''}<div id="sheet-mount">${view.sheet?renderSheet():''}${view.taskEditor?renderTaskEditor():''}</div><div class="viewer" id="viewer"><button class="viewer-close" data-action="close-viewer" type="button">${ICON.x}</button><img alt=""></div><div class="dialog" id="dialog"></div>`;
+  if(view.sheet)loadSheetPhotos();
+  if(view.tab==='gantt'&&!view.detail&&!view.taskEditor){
+    requestAnimationFrame(()=>{
+      const wrap=$('#gantt-timeline-wrap');
+      if(wrap&&!wrap._scrolled){
+        const today=fmtDate(new Date());
+        const range=ganttRange();
+        if(today>=range.start&&today<=range.end){
+          const pos=daysBetween(range.start,today)*dayWidth();
+          wrap.scrollLeft=Math.max(0,pos-200);
+        }
+        wrap._scrolled=true;
+      }
+      const list=$('#gantt-list'),tl=$('#gantt-timeline-wrap');
+      if(list&&tl&&!list._sync){
+        let lock=false;
+        list.addEventListener('scroll',()=>{if(lock)return;lock=true;tl.scrollTop=list.scrollTop;lock=false;});
+        tl.addEventListener('scroll',()=>{if(lock)return;lock=true;list.scrollTop=tl.scrollTop;lock=false;});
+        list._sync=true;
+      }
+    });
+  }
+}
+
+// === CONFIRM DIALOG ===
+function confirmDialog(opts,onConfirm){
+  const d=$('#dialog');
+  if(!d)return;
+  d.innerHTML=`<div class="dialog-panel"><h3 class="dialog-title">${escHtml(opts.title)}</h3><p class="dialog-text">${escHtml(opts.text)}</p><div class="dialog-actions"><button class="btn btn-ghost" data-dlg="cancel" type="button">${escHtml(opts.cancel||'Abbrechen')}</button><button class="btn ${opts.danger?'btn-danger':'btn-primary'}" data-dlg="ok" type="button">${escHtml(opts.ok||'OK')}</button></div></div>`;
+  d.classList.add('open');
+  d.onclick=(e)=>{if(e.target.dataset.dlg==='cancel'||e.target===d){d.classList.remove('open');}else if(e.target.dataset.dlg==='ok'){d.classList.remove('open');onConfirm();}};
+}
+
+// === EVENT DELEGATION ===
+document.addEventListener('click',async(e)=>{
+  // close menu on outside
+  if(view.menuOpen&&!e.target.closest('[data-menu]')&&!e.target.closest('[data-action="menu-toggle"]')){
+    view.menuOpen=false;render();return;
+  }
+  const target=e.target.closest('[data-action]');
+  if(!target){
+    const tile=e.target.closest('.photo-tile');
+    if(tile&&!e.target.closest('[data-action="del-photo"]')){
+      const pid=tile.dataset.photoId;
+      if(pid){try{const rec=await dbGetPhoto(pid);if(rec&&rec.blob){const v=$('#viewer');v.querySelector('img').src=URL.createObjectURL(rec.blob);v.classList.add('open');}}catch(err){}}
+    }
+    return;
+  }
+  const a=target.dataset.action;
+
+  switch(a){
+    case 'menu-toggle': e.stopPropagation();view.menuOpen=!view.menuOpen;render();break;
+    case 'tab': view.tab=target.dataset.tab;view.detail=null;view.menuOpen=false;render();break;
+    case 'open-checklist': view.detail=target.dataset.id;view.detailHouseFilter='all';window.scrollTo(0,0);render();break;
+    case 'back-to-lists': view.detail=null;window.scrollTo(0,0);render();break;
+    case 'list-filter': listFilter=target.dataset.filter;render();break;
+    case 'filter-scope': listFilter=target.dataset.scope;view.tab='lists';render();break;
+    case 'house-filter': view.detailHouseFilter=target.dataset.house;render();break;
+    case 'open-sheet':
+      view.sheet={checklistId:target.dataset.checklist,sectionIdx:parseInt(target.dataset.section,10),itemIdx:parseInt(target.dataset.item,10),scopeKey:target.dataset.scope};
+      render();break;
+    case 'close-sheet': saveSheetFields();view.sheet=null;render();break;
+    case 'toggle-done':{
+      if(!view.sheet)break;
+      const k=itemKey(view.sheet.checklistId,view.sheet.sectionIdx,view.sheet.itemIdx,view.sheet.scopeKey);
+      const it=getItem(k);
+      saveSheetFields();
+      it.done=!it.done;
+      if(it.done&&!it.date)it.date=new Date().toISOString().slice(0,10);
+      const cl=findChecklist(view.sheet.checklistId);
+      const inst=buildScopeInstances(cl.scope).find(i=>i.key===view.sheet.scopeKey);
+      const itemText=cl.sections[view.sheet.sectionIdx].items[view.sheet.itemIdx];
+      pushActivity({type:it.done?'check':'uncheck',msg:itemText,parts:[cl.title,inst.label],key:k});
+      saveState();render();
+      break;
+    }
+    case 'add-photos':
+      if(!view.sheet)break;
+      saveSheetFields();
+      window._photoTarget={...view.sheet};
+      $('#photo-input').click();
+      break;
+    case 'del-photo':{
+      if(!view.sheet)break;
+      const pid=target.dataset.photoId;
+      const k=itemKey(view.sheet.checklistId,view.sheet.sectionIdx,view.sheet.itemIdx,view.sheet.scopeKey);
+      const it=getItem(k);
+      it.photos=it.photos.filter(p=>p!==pid);
+      try{await dbDeletePhoto(pid);}catch(err){}
+      saveState();render();break;
+    }
+    case 'close-viewer': $('#viewer').classList.remove('open');break;
+    case 'open-edit':
+      view.menuOpen=false;view.screen='setup';setupDraft=null;ensureSetupDraft(currentProject());render();break;
+    case 'export': view.menuOpen=false;await exportBackup();break;
+    case 'import': view.menuOpen=false;importBackup();break;
+    case 'delete-project':
+      view.menuOpen=false;
+      confirmDialog({title:'Projekt löschen?',text:'Alle Daten und Fotos zu diesem Projekt gehen verloren. Vorher Backup machen!',ok:'Löschen',cancel:'Abbrechen',danger:true},async()=>{
+        const cur=currentProject();
+        if(cur){
+          try{const ph=await dbAllPhotos();for(const p of ph){if(p.meta?.projectId===cur.id)await dbDeletePhoto(p.id);}}catch(err){}
+          state.projects=state.projects.filter(p=>p.id!==cur.id);
+          state.currentProjectId=state.projects[0]?.id||null;
+          saveState();view.screen='picker';view.detail=null;view.sheet=null;render();toast('Projekt gelöscht');
+        }
+      });
+      break;
+    case 'back-to-picker': view.menuOpen=false;view.screen='picker';view.detail=null;view.sheet=null;render();break;
+    case 'open-project':
+      state.currentProjectId=target.dataset.id;saveState();view.screen='app';view.tab='dashboard';render();break;
+    case 'new-project': view.setupMode='new';setupDraft=null;view.screen='setup';render();break;
+    case 'new-project-sample':
+      view.setupMode='sample';
+      setupDraft={project:'Gaisbach 13',an:'Hofmann Haus',bauleiter:'',houses:[{id:1,name:'Haus A',apartments:Array.from({length:8},(_,i)=>({id:i+1,name:`Wohnung ${i+1}`}))},{id:2,name:'Haus B',apartments:Array.from({length:8},(_,i)=>({id:i+1,name:`Wohnung ${i+1}`}))}]};
+      view.screen='setup';render();break;
+    case 'set-mode':
+      view.setupMode=target.dataset.mode;
+      if(view.setupMode==='sample'){
+        setupDraft={project:'Gaisbach 13',an:'Hofmann Haus',bauleiter:'',houses:[{id:1,name:'Haus A',apartments:Array.from({length:8},(_,i)=>({id:i+1,name:`Wohnung ${i+1}`}))},{id:2,name:'Haus B',apartments:Array.from({length:8},(_,i)=>({id:i+1,name:`Wohnung ${i+1}`}))}]};
+      }else{setupDraft=null;}
+      render();break;
+    case 'activity-jump':{
+      const k=target.dataset.key;
+      if(!k)break;
+      const parts=k.split('|');
+      const cid=parts[0],s=parts[1],i=parts[2],sk=parts.slice(3).join('|');
+      view.tab='lists';view.detail=cid;
+      view.sheet={checklistId:cid,sectionIdx:parseInt(s,10),itemIdx:parseInt(i,10),scopeKey:sk};
+      render();break;
+    }
+    case 'houses-inc': ensureSetupDraft();setupHousesCount(setupDraft.houses.length+1);render();break;
+    case 'houses-dec': ensureSetupDraft();if(setupDraft.houses.length>1){setupHousesCount(setupDraft.houses.length-1);render();}break;
+    case 'apt-inc':{ensureSetupDraft();const idx=parseInt(target.dataset.houseIdx,10);setupAptsCount(idx,setupDraft.houses[idx].apartments.length+1);render();break;}
+    case 'apt-dec':{ensureSetupDraft();const idx=parseInt(target.dataset.houseIdx,10);if(setupDraft.houses[idx].apartments.length>1){setupAptsCount(idx,setupDraft.houses[idx].apartments.length-1);render();}break;}
+    case 'setup-save':{
+      ensureSetupDraft();readSetupInputs();
+      if(!setupDraft.project.trim()){toast('Bitte Bauvorhaben angeben');$('#f-project')?.focus();return;}
+      const editingId=setupDraft._editingId;
+      delete setupDraft._editingId;
+      if(editingId){
+        const proj=state.projects.find(p=>p.id===editingId);
+        if(proj){proj.config=JSON.parse(JSON.stringify(setupDraft));proj.name=setupDraft.project;}
+        toast('Projekt gespeichert');
+      }else{
+        const proj=emptyProject(setupDraft.project);
+        proj.config=JSON.parse(JSON.stringify(setupDraft));
+        if(view.setupMode==='sample'){proj.schedule.tasks=JSON.parse(JSON.stringify(SAMPLE_GAISBACH.tasks));}
+        state.projects.push(proj);
+        state.currentProjectId=proj.id;
+        toast('Projekt erstellt');
+      }
+      saveState();setupDraft=null;view.screen='app';view.tab='dashboard';render();break;
+    }
+    case 'setup-cancel':
+      setupDraft=null;
+      view.screen=state.projects.length>0?(state.currentProjectId?'app':'picker'):'picker';
+      render();break;
+
+    // Gantt
+    case 'gantt-zoom':
+      view.ganttZoom=target.dataset.zoom;
+      const wrap=$('#gantt-timeline-wrap');if(wrap)wrap._scrolled=false;
+      render();break;
+    case 'gantt-today':{
+      const w=$('#gantt-timeline-wrap');
+      if(w){const today=fmtDate(new Date());const range=ganttRange();const pos=daysBetween(range.start,today)*dayWidth();w.scrollLeft=Math.max(0,pos-200);}
+      break;
+    }
+    case 'gantt-collapse-all':{const p=currentProject();p.schedule.tasks.forEach(t=>{if(isParent(t.id))ganttCollapsed[t.id]=true;});render();break;}
+    case 'gantt-expand-all': ganttCollapsed={};render();break;
+    case 'toggle-collapse':{e.stopPropagation();const id=target.dataset.id;ganttCollapsed[id]=!ganttCollapsed[id];render();break;}
+    case 'task-row-list':case 'task-edit':{
+      const p=currentProject();const t=p.schedule.tasks.find(x=>x.id===target.dataset.id);
+      if(t){view.taskEditor={task:JSON.parse(JSON.stringify(t)),isNew:false};render();}break;
+    }
+    case 'task-new':{
+      const today=fmtDate(new Date());
+      view.taskEditor={task:{id:'t_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,5),num:'',name:'',start:today,end:today,parent:null,color:TASK_COLORS[1],depth:0,predecessors:[]},isNew:true};
+      render();break;
+    }
+    case 'load-gaisbach':{const p=currentProject();p.schedule.tasks=JSON.parse(JSON.stringify(SAMPLE_GAISBACH.tasks));saveState();render();toast('Gaisbach 13 geladen — 150 Termine');break;}
+    case 'close-task-editor': readTaskEditor();view.taskEditor=null;render();break;
+    case 'te-color': readTaskEditor();view.taskEditor.task.color=target.dataset.color;render();break;
+    case 'te-dep-remove':{readTaskEditor();const id=target.dataset.id;view.taskEditor.task.predecessors=(view.taskEditor.task.predecessors||[]).filter(x=>x!==id);render();break;}
+    case 'te-save':{
+      readTaskEditor();
+      const t=view.taskEditor.task;
+      if(!t.name.trim()){toast('Name fehlt');return;}
+      if(!t.start||!t.end){toast('Datum fehlt');return;}
+      if(t.start>t.end){toast('Ende vor Start');return;}
+      const p=currentProject();
+      if(t.parent){const par=p.schedule.tasks.find(x=>x.id===t.parent);t.depth=par?(par.depth+1):0;}else{t.depth=0;}
+      if(view.taskEditor.isNew){p.schedule.tasks.push(t);}
+      else{const idx=p.schedule.tasks.findIndex(x=>x.id===t.id);if(idx>=0)p.schedule.tasks[idx]=t;}
+      saveState();view.taskEditor=null;render();toast('Termin gespeichert');break;
+    }
+    case 'te-delete':
+      confirmDialog({title:'Termin löschen?',text:'Auch alle Unterpunkte werden mitgelöscht.',ok:'Löschen',cancel:'Abbrechen',danger:true},()=>{
+        const p=currentProject();
+        const id=view.taskEditor.task.id;
+        const toDel=new Set([id]);
+        let changed=true;
+        while(changed){changed=false;p.schedule.tasks.forEach(t=>{if(t.parent&&toDel.has(t.parent)&&!toDel.has(t.id)){toDel.add(t.id);changed=true;}});}
+        p.schedule.tasks=p.schedule.tasks.filter(t=>!toDel.has(t.id));
+        saveState();view.taskEditor=null;render();toast('Termin gelöscht');
+      });
+      break;
+  }
+});
+
+// === DEPENDENCY-ADD select handler (uses change event) ===
+document.addEventListener('change',(e)=>{
+  if(e.target.dataset.action==='te-dep-add'){
+    readTaskEditor();
+    const id=e.target.value;
+    if(id){
+      view.taskEditor.task.predecessors=view.taskEditor.task.predecessors||[];
+      if(!view.taskEditor.task.predecessors.includes(id))view.taskEditor.task.predecessors.push(id);
+      render();
+    }
+  }
+});
+
+// Live setup input updates (so re-renders preserve values)
+document.addEventListener('input',(e)=>{
+  if(e.target.dataset.setup){if(setupDraft)setupDraft[e.target.dataset.setup]=e.target.value;}
+});
+
+// === PHOTO INPUT HANDLER ===
+$('#photo-input').addEventListener('change',async(e)=>{
+  const files=Array.from(e.target.files||[]);
+  if(!files.length||!window._photoTarget){e.target.value='';return;}
+  const target=window._photoTarget;
+  const k=itemKey(target.checklistId,target.sectionIdx,target.itemIdx,target.scopeKey);
+  const it=getItem(k);
+  const cl=findChecklist(target.checklistId);
+  const inst=buildScopeInstances(cl.scope).find(i=>i.key===target.scopeKey);
+  const itemText=cl.sections[target.sectionIdx].items[target.itemIdx];
+  toast(`${files.length} Foto${files.length>1?'s':''} werden verarbeitet…`);
+  const projId=currentProject()?.id;
+  for(const f of files){
+    try{
+      const blob=await compressImage(f);
+      const pid='ph_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+      await dbPutPhoto(pid,blob,{projectId:projId,key:k,checklist:cl.title,scope:inst.label,item:itemText});
+      it.photos.push(pid);
+    }catch(err){console.error(err);toast('Foto-Fehler');}
+  }
+  pushActivity({type:'photo',msg:itemText,parts:[cl.title,inst.label,`${files.length} Foto${files.length>1?'s':''}`],key:k});
+  saveState();e.target.value='';render();toast(`${files.length} Foto${files.length>1?'s':''} gespeichert`);
+});
+
+// === EXPORT / IMPORT ===
+async function exportBackup(){
+  toast('Backup wird erstellt…');
+  const cur=currentProject();
+  const photos=await dbAllPhotos();
+  const photoData={};
+  for(const p of photos){
+    if(cur&&p.meta?.projectId&&p.meta.projectId!==cur.id)continue;
+    const reader=new FileReader();
+    const dataUrl=await new Promise((res,rej)=>{reader.onload=()=>res(reader.result);reader.onerror=()=>rej(reader.error);reader.readAsDataURL(p.blob);});
+    photoData[p.id]={dataUrl,meta:p.meta||{},createdAt:p.createdAt};
+  }
+  const payload={version:3,exportedAt:new Date().toISOString(),project:cur,photos:photoData};
+  const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const fname=(cur?.config?.project||'projekt').replace(/[^a-z0-9_-]/gi,'_').toLowerCase();
+  a.download=`hofmann-backup-${fname}-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('Backup heruntergeladen');
+}
+
+function importBackup(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='application/json,.json';
+  inp.onchange=async()=>{
+    const f=inp.files[0];if(!f)return;
+    try{
+      const data=JSON.parse(await f.text());
+      let proj=null;
+      if(data.project)proj=data.project;
+      else if(data.state?.config){const m=migrateLegacy(data.state);proj=m.projects[0];}
+      else if(data.state?.projects)proj=data.state.projects[0];
+      if(!proj||!data.photos)throw new Error('Format');
+      confirmDialog({title:'Backup importieren?',text:'Wird als neues Projekt hinzugefügt.',ok:'Importieren',cancel:'Abbrechen'},async()=>{
+        proj.id=newProjectId();
+        state.projects.push(proj);
+        state.currentProjectId=proj.id;
+        for(const[pid,info]of Object.entries(data.photos)){
+          try{const b=await(await fetch(info.dataUrl)).blob();await dbPutPhoto(pid,b,{...(info.meta||{}),projectId:proj.id});}catch(e){}
+        }
+        saveState();view.screen='app';view.tab='dashboard';view.detail=null;view.sheet=null;render();toast('Backup importiert');
+      });
+    }catch(err){toast('Import fehlgeschlagen: '+err.message);}
+  };
+  inp.click();
+}
+
+// === INIT ===
+function init(){
+  loadState();
+  if(state.projects.length===0){view.screen='picker';}
+  else if(state.currentProjectId){view.screen='app';}
+  else{view.screen='picker';}
+  render();
+}
+init();
+})();
+
+</script>
+</body>
+</html>
