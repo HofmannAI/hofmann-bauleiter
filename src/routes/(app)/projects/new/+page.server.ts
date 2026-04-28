@@ -1,6 +1,6 @@
-import { fail, redirect, type Actions } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
-import type { PageServerLoad } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import { createProject } from '$lib/db/projectQueries';
 
 export const load: PageServerLoad = async ({ locals }) => {
