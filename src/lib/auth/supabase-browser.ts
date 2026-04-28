@@ -1,13 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
-import type { Database } from '$lib/db/types';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
-let _client: SupabaseClient<Database> | null = null;
+let _client: ReturnType<typeof createBrowserClient> | null = null;
 
-export function getSupabaseBrowser(): SupabaseClient<Database> {
+export function getSupabaseBrowser() {
   if (!_client) {
-    _client = createBrowserClient<Database>(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
+    _client = createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
   }
   return _client;
 }
