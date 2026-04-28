@@ -1,8 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Topbar from '$lib/components/Topbar.svelte';
   import Tabbar from '$lib/components/Tabbar.svelte';
+  import { subscribeRealtime } from '$lib/stores/realtime';
 
   let { data, children } = $props();
+
+  onMount(() => subscribeRealtime(data.project.id));
 </script>
 
 <svelte:head>
