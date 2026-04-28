@@ -16,9 +16,10 @@
   type Props = {
     tasks: GTask[];
     onSelect?: (taskId: string) => void;
+    onMove?: (taskId: string, newStart: string, newEnd: string) => void;
     criticalPathIds?: Set<string>;
   };
-  let { tasks, onSelect, criticalPathIds = new Set<string>() }: Props = $props();
+  let { tasks, onSelect, onMove, criticalPathIds = new Set<string>() }: Props = $props();
 
   let zoom = $state<'day' | 'week' | 'month'>('week');
   let collapsed = $state<Record<string, boolean>>({});
@@ -99,6 +100,36 @@
     if (today < range.start || today > range.end) return null;
     return daysBetween(range.start, today) * dayWidth();
   }
+
+  // Drag-to-move state (mouse-based; touch users can use task editor)
+  let dragging = $state<null | { id: string; startDate: string; endDate: string; originX: number; previewOffset: number }>(null);
+
+  function onBarMouseDown(e: MouseEvent, t: GTask) {
+    if (!onMove) return;
+    if (isParentMap.has(t.id)) return; // can't drag parent rows
+    e.preventDefault();
+    dragging = { id: t.id, startDate: t.startDate, endDate: t.endDate, originX: e.clientX, previewOffset: 0 };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp, { once: true });
+  }
+
+  function onMouseMove(e: MouseEvent) {
+    if (!dragging) return;
+    const dx = e.clientX - dragging.originX;
+    dragging = { ...dragging, previewOffset: dx };
+  }
+
+  function onMouseUp(_: MouseEvent) {
+    window.removeEventListener('mousemove', onMouseMove);
+    if (!dragging || !onMove) { dragging = null; return; }
+    const dxDays = Math.round(dragging.previewOffset / dayWidth());
+    if (dxDays !== 0) {
+      const newStart = addDays(dragging.startDate, dxDays);
+      const newEnd = addDays(dragging.endDate, dxDays);
+      onMove(dragging.id, newStart, newEnd);
+    }
+    dragging = null;
+  }
 </script>
 
 <div class="gantt-toolbar">
@@ -158,8 +189,10 @@
               <button
                 class="gantt-bar"
                 class:critical={criticalPathIds.has(t.id)}
-                style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
-                onclick={() => onSelect?.(t.id)}
+                class:dragging={dragging?.id === t.id}
+                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
+                onclick={() => { if (!dragging) onSelect?.(t.id); }}
+                onmousedown={(e) => onBarMouseDown(e, t)}
                 title={`${t.name} · ${t.startDate} → ${t.endDate}`}
               >{t.name}</button>
             {/if}
@@ -294,6 +327,8 @@
   }
   .gantt-bar:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0, 0, 0, .18); z-index: 6; }
   .gantt-bar.critical { box-shadow: 0 0 0 2px var(--red), 0 1px 2px rgba(0,0,0,.1); }
+  .gantt-bar.dragging { opacity: .7; cursor: grabbing; z-index: 9; }
+  .gantt-bar { cursor: grab; }
   .gantt-bar.summary {
     height: 8px; top: 12px; border-radius: 2px;
     background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
