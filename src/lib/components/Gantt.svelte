@@ -1,0 +1,302 @@
+<script lang="ts">
+  import { parseDate, addDays, daysBetween, fmtDate } from '$lib/gantt/calendar';
+
+  type GTask = {
+    id: string;
+    num: string | null;
+    name: string;
+    parentId: string | null;
+    startDate: string;
+    endDate: string;
+    color: string | null;
+    depth: number;
+    sortOrder: number;
+  };
+
+  type Props = {
+    tasks: GTask[];
+    onSelect?: (taskId: string) => void;
+    criticalPathIds?: Set<string>;
+  };
+  let { tasks, onSelect, criticalPathIds = new Set<string>() }: Props = $props();
+
+  let zoom = $state<'day' | 'week' | 'month'>('week');
+  let collapsed = $state<Record<string, boolean>>({});
+
+  function dayWidth(): number {
+    return zoom === 'day' ? 28 : zoom === 'week' ? 12 : 4;
+  }
+
+  let range = $derived.by(() => {
+    if (tasks.length === 0) {
+      const t = new Date();
+      return {
+        start: fmtDate(new Date(t.getFullYear(), t.getMonth(), 1)),
+        end: fmtDate(new Date(t.getFullYear(), t.getMonth() + 6, 0))
+      };
+    }
+    let min = tasks[0].startDate;
+    let max = tasks[0].endDate;
+    for (const t of tasks) {
+      if (t.startDate < min) min = t.startDate;
+      if (t.endDate > max) max = t.endDate;
+    }
+    return { start: addDays(min, -7), end: addDays(max, 7) };
+  });
+
+  let totalDays = $derived(daysBetween(range.start, range.end) + 1);
+  let widthPx = $derived(totalDays * dayWidth());
+
+  let isParentMap = $derived.by(() => {
+    const m = new Set<string>();
+    for (const t of tasks) if (t.parentId) m.add(t.parentId);
+    return m;
+  });
+
+  function isHidden(t: GTask): boolean {
+    let pid = t.parentId;
+    while (pid) {
+      if (collapsed[pid]) return true;
+      const p = tasks.find((x) => x.id === pid);
+      pid = p?.parentId ?? null;
+    }
+    return false;
+  }
+
+  let visible = $derived(tasks.filter((t) => !isHidden(t)));
+
+  function offsetPx(date: string): number {
+    return daysBetween(range.start, date) * dayWidth();
+  }
+
+  function widthFor(t: GTask): number {
+    return Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
+  }
+
+  function months(): { label: string; left: number; width: number }[] {
+    const out: { label: string; left: number; width: number }[] = [];
+    const start = parseDate(range.start);
+    const end = parseDate(range.end);
+    const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (cur <= end) {
+      const monthStart = cur > start ? cur : start;
+      const next = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+      const monthEnd = next < end ? next : end;
+      const left = daysBetween(range.start, fmtDate(monthStart)) * dayWidth();
+      const w = (daysBetween(fmtDate(monthStart), fmtDate(monthEnd))) * dayWidth();
+      out.push({
+        label: cur.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }).toUpperCase(),
+        left,
+        width: w
+      });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return out;
+  }
+
+  function todayPos(): number | null {
+    const today = fmtDate(new Date());
+    if (today < range.start || today > range.end) return null;
+    return daysBetween(range.start, today) * dayWidth();
+  }
+</script>
+
+<div class="gantt-toolbar">
+  <div class="gantt-toolbar-group">
+    <button class="gantt-zoom-btn" class:active={zoom === 'day'} onclick={() => (zoom = 'day')}>Tag</button>
+    <button class="gantt-zoom-btn" class:active={zoom === 'week'} onclick={() => (zoom = 'week')}>Woche</button>
+    <button class="gantt-zoom-btn" class:active={zoom === 'month'} onclick={() => (zoom = 'month')}>Monat</button>
+  </div>
+  <div class="gantt-toolbar-spacer"></div>
+  <span class="gantt-info"><b>{tasks.length}</b> Termine</span>
+</div>
+
+<div class="gantt-wrap">
+  <div class="gantt-list">
+    <div class="gantt-list-head">Vorgang</div>
+    {#each visible as t (t.id)}
+      <button
+        class="gantt-row-list depth-{t.depth}"
+        onclick={() => onSelect?.(t.id)}
+      >
+        {#if isParentMap.has(t.id)}
+          <span
+            class="gantt-list-toggle"
+            class:expanded={!collapsed[t.id]}
+            onclick={(e) => { e.stopPropagation(); collapsed[t.id] = !collapsed[t.id]; }}
+            onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); collapsed[t.id] = !collapsed[t.id]; } }}
+            role="button"
+            tabindex="-1"
+          >▶</span>
+        {:else}
+          <span class="gantt-list-toggle empty"></span>
+        {/if}
+        <span class="gantt-list-num">{t.num ?? ''}</span>
+        <span class="gantt-list-name">{t.name}</span>
+      </button>
+    {/each}
+  </div>
+
+  <div class="gantt-timeline-wrap">
+    <div class="gantt-timeline" style={`width:${widthPx}px`}>
+      <div class="gantt-axis">
+        {#each months() as m}
+          <div class="gantt-axis-month" style={`left:${m.left}px;width:${m.width}px`}>{m.label}</div>
+        {/each}
+      </div>
+      {#if todayPos() !== null}
+        <div class="gantt-today-line" style={`left:${todayPos()}px`}>
+          <span class="gantt-today-label">Heute</span>
+        </div>
+      {/if}
+      <div class="gantt-rows">
+        {#each visible as t (t.id)}
+          <div class="gantt-row depth-{t.depth}">
+            {#if isParentMap.has(t.id)}
+              <div class="gantt-bar summary" style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px`}></div>
+            {:else}
+              <button
+                class="gantt-bar"
+                class:critical={criticalPathIds.has(t.id)}
+                style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
+                onclick={() => onSelect?.(t.id)}
+                title={`${t.name} · ${t.startDate} → ${t.endDate}`}
+              >{t.name}</button>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .gantt-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 14px; background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap; position: sticky; top: 51px; z-index: 30;
+  }
+  .gantt-toolbar-group {
+    display: flex; gap: 4px; align-items: center;
+    background: var(--paper-tint); padding: 3px;
+    border-radius: 8px; border: 1px solid var(--line);
+  }
+  .gantt-zoom-btn {
+    padding: 5px 10px;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); border-radius: 5px; transition: all .12s;
+    cursor: pointer;
+  }
+  .gantt-zoom-btn:hover { color: var(--ink); }
+  .gantt-zoom-btn.active { background: var(--ink); color: #fff; }
+  .gantt-toolbar-spacer { flex: 1; }
+  .gantt-info {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+  }
+  .gantt-info :global(b) { color: var(--ink-2); }
+
+  .gantt-wrap {
+    display: flex; background: var(--paper);
+    height: calc(100dvh - 51px - 49px - 80px); min-height: 480px;
+    overflow: hidden; border-top: 1px solid var(--line);
+  }
+  .gantt-list {
+    flex-shrink: 0; width: 300px;
+    border-right: 1px solid var(--line-strong);
+    background: var(--paper);
+    overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
+  }
+  @media (max-width: 640px) { .gantt-list { width: 200px; } }
+  .gantt-list-head {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--paper-tint); border-bottom: 1px solid var(--line);
+    height: 60px; display: flex; align-items: flex-end;
+    padding: 0 12px 8px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+  }
+  .gantt-row-list {
+    height: 32px; display: flex; align-items: center;
+    padding: 0 8px 0 0; border-bottom: 1px solid var(--line);
+    font-size: 13px; cursor: pointer; transition: background .12s;
+    width: 100%; text-align: left; font-family: inherit; color: inherit;
+  }
+  .gantt-row-list:hover { background: var(--paper-tint); }
+  .gantt-row-list.depth-0 {
+    font-weight: 800; font-family: var(--display); font-size: 13px;
+    background: var(--paper-tint);
+  }
+  .gantt-row-list.depth-0:hover { background: var(--grey-soft); }
+  .gantt-row-list.depth-1 { font-weight: 700; }
+  .gantt-list-toggle {
+    width: 18px; height: 18px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: var(--muted);
+    transition: transform .15s; cursor: pointer;
+  }
+  .gantt-list-toggle.expanded { transform: rotate(90deg); }
+  .gantt-list-toggle.empty { visibility: hidden; }
+  .gantt-list-num {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--muted); font-weight: 700;
+    flex-shrink: 0; min-width: 38px; letter-spacing: -.02em;
+  }
+  .gantt-list-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gantt-row-list.depth-1 .gantt-list-name { padding-left: 6px; }
+  .gantt-row-list.depth-2 .gantt-list-name { padding-left: 14px; font-size: 12.5px; color: var(--ink-2); }
+
+  .gantt-timeline-wrap { flex: 1; overflow: auto; position: relative; background: var(--paper); scrollbar-width: thin; }
+  .gantt-timeline { position: relative; }
+  .gantt-axis {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--paper-tint);
+    border-bottom: 1px solid var(--line-strong);
+    height: 60px;
+  }
+  .gantt-axis-month {
+    position: absolute; top: 0; height: 30px;
+    border-right: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: flex-start;
+    font-family: var(--display); font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    color: var(--ink); padding: 0 8px;
+    white-space: nowrap; overflow: hidden;
+  }
+  .gantt-today-line {
+    position: absolute; top: 30px; bottom: 0; width: 2px;
+    background: var(--red); z-index: 8; pointer-events: none;
+    box-shadow: 0 0 0 1px rgba(227, 6, 19, .2);
+  }
+  .gantt-today-label {
+    position: absolute; left: -14px; top: 0;
+    background: var(--red); color: #fff;
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .gantt-rows { position: relative; }
+  .gantt-row { position: relative; height: 32px; border-bottom: 1px solid var(--line); }
+  .gantt-row.depth-0 { background: var(--paper-tint); }
+  .gantt-row:hover { background: rgba(227, 6, 19, .03); }
+  .gantt-bar {
+    position: absolute; top: 6px; height: 20px;
+    background: var(--blue); border-radius: 4px;
+    cursor: pointer; display: flex; align-items: center;
+    padding: 0 6px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    color: #fff; white-space: nowrap; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .1); transition: all .12s;
+    min-width: 8px; border: none;
+  }
+  .gantt-bar:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0, 0, 0, .18); z-index: 6; }
+  .gantt-bar.critical { box-shadow: 0 0 0 2px var(--red), 0 1px 2px rgba(0,0,0,.1); }
+  .gantt-bar.summary {
+    height: 8px; top: 12px; border-radius: 2px;
+    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+    font-size: 0; pointer-events: none;
+  }
+</style>
