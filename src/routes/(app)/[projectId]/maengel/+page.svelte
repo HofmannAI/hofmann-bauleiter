@@ -4,6 +4,7 @@
   import { invalidateAll } from '$app/navigation';
   import { toast } from '$lib/components/Toast.svelte';
   import { enhance } from '$app/forms';
+  import { onMount } from 'svelte';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -27,8 +28,68 @@
 
   let showCreate = $state(false);
   let showBulk = $state(false);
+  let showSend = $state(false);
   let bulkText = $state('');
   let bulkGewerkId = $state('');
+  let sendGewerkId = $state('');
+  let sendBauleiter = $state('');
+  let sending = $state(false);
+
+  async function downloadAndSend() {
+    if (!sendGewerkId) return;
+    sending = true;
+    try {
+      const { downloadGewerkReport } = await import('$lib/pdf/defectReport');
+      const gewerk = parent.gewerke.find((g) => g.id === sendGewerkId);
+      const gewerkDefects = parent.defects.filter((d) => d.gewerkId === sendGewerkId);
+      // Fetch each defect's photos via API (serialized through page invalidation)
+      const apiDefects = await Promise.all(
+        gewerkDefects.map(async (d) => {
+          const res = await fetch(`/${parent.project.id}/maengel/${d.id}/photos.json`);
+          const photos = res.ok ? ((await res.json()) as { storagePath: string }[]) : [];
+          return {
+            id: d.id,
+            shortId: d.shortId,
+            title: d.title,
+            description: null,
+            status: d.status,
+            deadline: d.deadline,
+            photoStoragePaths: photos.map((p) => p.storagePath),
+            page: d.page,
+            xPct: d.xPct != null ? Number(d.xPct) : null,
+            yPct: d.yPct != null ? Number(d.yPct) : null
+          };
+        })
+      );
+      await downloadGewerkReport({
+        projectName: parent.project.name,
+        gewerkName: gewerk?.name ?? 'Gewerk',
+        bauleiterName: sendBauleiter || 'Bauleiter',
+        defects: apiDefects
+      });
+      toast('PDF heruntergeladen. Outlook öffnet sich.');
+      // Pick contact
+      const contact = parent.contacts.find((c) => c.gewerkId === sendGewerkId && c.email);
+      if (contact?.email) {
+        const subject = encodeURIComponent(`Mängelmeldung ${parent.project.name} - ${gewerk?.name ?? ''}`);
+        const body = encodeURIComponent(
+          `Sehr geehrte Damen und Herren,\n\n` +
+            `anbei die Mängelmeldung zum BV "${parent.project.name}" für das Gewerk ${gewerk?.name ?? ''}.\n\n` +
+            `Bitte hängen Sie das soeben heruntergeladene PDF an diese Mail an, bevor Sie sie absenden.\n\n` +
+            `Mit freundlichen Grüßen\n${sendBauleiter || 'Bauleiter'}`
+        );
+        window.location.href = `mailto:${contact.email}?subject=${subject}&body=${body}`;
+      } else {
+        toast('Kein Kontakt mit Email für dieses Gewerk hinterlegt.');
+      }
+      showSend = false;
+    } catch (e) {
+      console.error(e);
+      toast('Report-Generierung fehlgeschlagen.');
+    } finally {
+      sending = false;
+    }
+  }
 
   const STATUS_LABEL: Record<string, string> = {
     open: 'Offen', sent: 'Gesendet', acknowledged: 'Bestätigt',
@@ -45,6 +106,9 @@
       </a>
       <button class="btn btn-ghost btn-sm" onclick={() => (showBulk = true)}>
         <Icon name="list" size={14} /> Aus Protokoll
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick={() => (showSend = true)}>
+        <Icon name="send" size={14} /> Versand
       </button>
       <button class="btn btn-primary btn-sm" onclick={() => (showCreate = true)}>
         <Icon name="plus" size={14} /> Mangel
@@ -135,6 +199,45 @@
       </div>
       <button class="btn btn-primary btn-block" type="submit">Anlegen</button>
     </form>
+  </div>
+{/if}
+
+{#if showSend}
+  <button class="scrim open" onclick={() => (showSend = false)} aria-label="Schließen"></button>
+  <div class="sheet open" role="dialog" aria-label="An Handwerker senden">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-head-text">
+        <div class="sheet-eyebrow">PDF + Outlook</div>
+        <h3 class="sheet-title">An Handwerker senden</h3>
+      </div>
+      <button class="sheet-close" onclick={() => (showSend = false)} aria-label="Schließen"><Icon name="close" /></button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label class="field-label" for="sg">Gewerk</label>
+        <select id="sg" class="field-input" bind:value={sendGewerkId}>
+          <option value="">— wählen —</option>
+          {#each parent.gewerke as g}
+            {@const cnt = parent.defects.filter((d) => d.gewerkId === g.id).length}
+            <option value={g.id} disabled={cnt === 0}>{g.name} ({cnt})</option>
+          {/each}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="sb">Bauleiter (Unterschrift)</label>
+        <input id="sb" class="field-input" bind:value={sendBauleiter} placeholder="Vor- und Nachname" />
+      </div>
+      <p class="field-hint">
+        Der Report (PDF) wird heruntergeladen, danach öffnet sich Outlook mit
+        einer vorbereiteten Email. <b>PDF dort manuell anhängen</b>, dann senden.
+      </p>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary btn-block" onclick={downloadAndSend} disabled={sending || !sendGewerkId}>
+        <Icon name="send" size={16} /> {sending ? 'Erstelle…' : 'PDF erzeugen & Outlook öffnen'}
+      </button>
+    </div>
   </div>
 {/if}
 
