@@ -118,33 +118,98 @@
     return daysBetween(range.start, today) * dayWidth();
   }
 
-  // Drag-to-move state (mouse-based; touch users can use task editor)
-  let dragging = $state<null | { id: string; startDate: string; endDate: string; originX: number; previewOffset: number }>(null);
+  /* ===== Drag-to-move (Pointer Events: Maus + Touch) =====
+   *
+   * Touch braucht Long-Press (Schwelle 350ms) damit Scroll-Geste nicht
+   * übernommen wird. Maus startet sofort.
+   */
+  type DragState = {
+    id: string; startDate: string; endDate: string;
+    originX: number; previewOffset: number;
+    pointerId: number; pointerType: string;
+    armed: boolean; // true wenn Long-Press erfüllt (oder Maus)
+    moved: boolean; // user bewegt mehr als 4px
+  };
+  let dragging = $state<DragState | null>(null);
+  let pressTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function onBarMouseDown(e: MouseEvent, t: GTask) {
+  const TOUCH_LONG_PRESS_MS = 350;
+  const MOVE_THRESHOLD_PX = 4;
+
+  function onBarPointerDown(e: PointerEvent, t: GTask) {
     if (!onMove) return;
-    if (isParentMap.has(t.id)) return; // can't drag parent rows
-    e.preventDefault();
-    dragging = { id: t.id, startDate: t.startDate, endDate: t.endDate, originX: e.clientX, previewOffset: 0 };
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp, { once: true });
-  }
+    if (isParentMap.has(t.id)) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-  function onMouseMove(e: MouseEvent) {
-    if (!dragging) return;
-    const dx = e.clientX - dragging.originX;
-    dragging = { ...dragging, previewOffset: dx };
-  }
+    const initial: DragState = {
+      id: t.id,
+      startDate: t.startDate,
+      endDate: t.endDate,
+      originX: e.clientX,
+      previewOffset: 0,
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      armed: e.pointerType === 'mouse',
+      moved: false
+    };
+    dragging = initial;
 
-  function onMouseUp(_: MouseEvent) {
-    window.removeEventListener('mousemove', onMouseMove);
-    if (!dragging || !onMove) { dragging = null; return; }
-    const dxDays = Math.round(dragging.previewOffset / dayWidth());
-    if (dxDays !== 0) {
-      const newStart = addDays(dragging.startDate, dxDays);
-      const newEnd = addDays(dragging.endDate, dxDays);
-      onMove(dragging.id, newStart, newEnd);
+    if (e.pointerType !== 'mouse') {
+      // Long-press: warten bis 350ms verstrichen sind. Wenn user vorher
+      // scrollt (moved > threshold ohne armed), Drag verwerfen.
+      pressTimer = setTimeout(() => {
+        if (!dragging || dragging.id !== t.id || dragging.moved) return;
+        dragging = { ...dragging, armed: true };
+        // haptic feedback
+        if (typeof navigator !== 'undefined' && (navigator as Navigator & { vibrate?: (n: number) => boolean }).vibrate) {
+          (navigator as Navigator & { vibrate: (n: number) => boolean }).vibrate(15);
+        }
+      }, TOUCH_LONG_PRESS_MS);
     }
+
+    // Wir nutzen pointercapture damit auch Move/Up außerhalb der Bar greifen
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onBarPointerMove(e: PointerEvent) {
+    if (!dragging || dragging.pointerId !== e.pointerId) return;
+    const dx = e.clientX - dragging.originX;
+    const moved = Math.abs(dx) > MOVE_THRESHOLD_PX;
+
+    if (!dragging.armed) {
+      // touch: Bewegung vor Armed-Phase = Scroll-Intent → Drag abbrechen
+      if (moved) {
+        if (pressTimer) clearTimeout(pressTimer);
+        dragging = null;
+      } else {
+        dragging = { ...dragging, moved };
+      }
+      return;
+    }
+    // armed: Drag aktiv, Default verhindern damit Touch nicht scrollt
+    e.preventDefault();
+    dragging = { ...dragging, previewOffset: dx, moved: true };
+  }
+
+  function onBarPointerUp(e: PointerEvent) {
+    if (!dragging || dragging.pointerId !== e.pointerId) return;
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    const wasArmed = dragging.armed;
+    const offset = dragging.previewOffset;
+    const t = { id: dragging.id, startDate: dragging.startDate, endDate: dragging.endDate };
+    dragging = null;
+    if (!wasArmed || !onMove) return;
+    const dxDays = Math.round(offset / dayWidth());
+    if (dxDays !== 0) {
+      const newStart = addDays(t.startDate, dxDays);
+      const newEnd = addDays(t.endDate, dxDays);
+      onMove(t.id, newStart, newEnd);
+    }
+  }
+
+  function onBarPointerCancel(e: PointerEvent) {
+    if (!dragging || dragging.pointerId !== e.pointerId) return;
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     dragging = null;
   }
 </script>
@@ -210,10 +275,14 @@
               <button
                 class="gantt-bar"
                 class:critical={criticalPathIds.has(t.id)}
-                class:dragging={dragging?.id === t.id}
-                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
-                onclick={() => { if (!dragging) onSelect?.(t.id); }}
-                onmousedown={(e) => onBarMouseDown(e, t)}
+                class:dragging={dragging?.id === t.id && dragging.armed}
+                class:armed-touch={dragging?.id === t.id && dragging.armed && dragging.pointerType !== 'mouse'}
+                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
+                onclick={() => { if (!dragging || !dragging.moved) onSelect?.(t.id); }}
+                onpointerdown={(e) => onBarPointerDown(e, t)}
+                onpointermove={onBarPointerMove}
+                onpointerup={onBarPointerUp}
+                onpointercancel={onBarPointerCancel}
               >
                 <span class="gantt-bar-label">{t.name}</span>
                 <span class="gantt-bar-tooltip" role="tooltip">
@@ -378,8 +447,19 @@
     min-width: 8px; border: none;
   }
   .gantt-bar:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0, 0, 0, .18); z-index: 6; }
-  .gantt-bar.critical { box-shadow: 0 0 0 2px var(--red), 0 1px 2px rgba(0,0,0,.1); }
+  .gantt-bar.critical {
+    box-shadow: 0 0 0 2px var(--red), 0 1px 2px rgba(0,0,0,.1);
+    animation: critPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes critPulse {
+    0%   { filter: brightness(1.0); }
+    50%  { filter: brightness(1.18); }
+    100% { filter: brightness(1.0); }
+  }
+  @media (prefers-reduced-motion: reduce) { .gantt-bar.critical { animation: none; } }
   .gantt-bar.dragging { opacity: .7; cursor: grabbing; z-index: 9; }
+  .gantt-bar.armed-touch { box-shadow: 0 0 0 3px var(--red), 0 4px 14px rgba(227, 6, 19, 0.35); }
+  .gantt-bar { touch-action: pan-y; }
   .gantt-bar { cursor: grab; }
   .gantt-bar-label { display: block; }
   .gantt-bar-tooltip {
