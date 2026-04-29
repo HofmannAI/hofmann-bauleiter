@@ -57,6 +57,16 @@ export async function uploadDefectPhoto(projectId: string, defectId: string, fil
   return { path, width, height };
 }
 
+export async function uploadMusterdetailImage(projectId: string, file: File) {
+  const { blob, width, height } = await compressImage(file);
+  const sb = getSupabaseBrowser();
+  const id = crypto.randomUUID();
+  const path = `${projectId}/${id}.jpg`;
+  const { error } = await sb.storage.from('musterdetails').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+  if (error) throw error;
+  return { path, width, height };
+}
+
 export async function getSignedUrl(bucket: string, path: string, expiresIn = 300): Promise<string | null> {
   const sb = getSupabaseBrowser();
   const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, expiresIn);

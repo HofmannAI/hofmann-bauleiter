@@ -65,6 +65,18 @@
       <span class="scope-icon"><Icon name="defect" size={15} /></span>
       <span>Mängel</span>
     </a>
+    <a class="quick-card" href={`/${parent.project.id}/kontakte`}>
+      <span class="scope-icon"><Icon name="phone" size={15} /></span>
+      <span>Kontakte</span>
+    </a>
+    <a class="quick-card" href={`/${parent.project.id}/gewerk-checklisten`}>
+      <span class="scope-icon"><Icon name="apartment" size={15} /></span>
+      <span>Gewerk-Checks</span>
+    </a>
+    <a class="quick-card" href={`/${parent.project.id}/musterdetails`}>
+      <span class="scope-icon"><Icon name="file" size={15} /></span>
+      <span>Musterdetails</span>
+    </a>
   </div>
 
   <h2 class="section-title">Letzte Aktivität <span class="count">{parent.recent.length}</span></h2>
