@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
+  import DraftPhotoStrip, { type DraftPhoto } from '$lib/components/DraftPhotoStrip.svelte';
   import { fmtDateDe } from '$lib/util/time';
   import { invalidateAll } from '$app/navigation';
   import { toast } from '$lib/components/Toast.svelte';
@@ -12,6 +13,13 @@
   type Status = 'all' | 'open' | 'sent' | 'acknowledged' | 'resolved';
   let statusFilter = $state<Status>('all');
   let gewerkFilter = $state<string>('all');
+
+  let draftPhotos = $state<DraftPhoto[]>([]);
+  let draftPhotosJson = $derived(
+    JSON.stringify(
+      draftPhotos.map((p) => ({ storagePath: p.storagePath, width: p.width, height: p.height }))
+    )
+  );
 
   let visible = $derived(
     parent.defects.filter((d) => {
@@ -179,9 +187,11 @@
       <button class="sheet-close" onclick={() => (showCreate = false)} aria-label="Schließen"><Icon name="close" /></button>
     </div>
     <form method="POST" action="?/create" use:enhance class="sheet-body">
+      <DraftPhotoStrip projectId={parent.project.id} bind:photos={draftPhotos} />
+      <input type="hidden" name="photos" value={draftPhotosJson} />
       <div class="field">
         <label class="field-label" for="t">Titel</label>
-        <input id="t" name="title" class="field-input" required maxlength="160" />
+        <input id="t" name="title" class="field-input" required maxlength="160" autofocus />
       </div>
       <div class="field">
         <label class="field-label" for="g">Gewerk</label>

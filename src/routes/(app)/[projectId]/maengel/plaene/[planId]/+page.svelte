@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Icon from '$lib/components/Icon.svelte';
   import PinPreview from '$lib/components/PinPreview.svelte';
+  import DraftPhotoStrip, { type DraftPhoto } from '$lib/components/DraftPhotoStrip.svelte';
   import { goto, invalidateAll } from '$app/navigation';
   import { toast } from '$lib/components/Toast.svelte';
   import { haptic } from '$lib/motion';
@@ -18,6 +19,7 @@
   let loading = $state(true);
 
   let pinDraft = $state<{ xPct: number; yPct: number } | null>(null);
+  let pinDraftPhotos = $state<DraftPhoto[]>([]);
   let title = $state('');
   let gewerkId = $state('');
   let creating = $state(false);
@@ -102,10 +104,18 @@
     fd.append('xPct', pinDraft.xPct.toFixed(2));
     fd.append('yPct', pinDraft.yPct.toFixed(2));
     fd.append('priority', '2');
+    if (pinDraftPhotos.length > 0) {
+      fd.append('photos', JSON.stringify(
+        pinDraftPhotos.map((p) => ({ storagePath: p.storagePath, width: p.width, height: p.height }))
+      ));
+    }
     const res = await fetch(`/${parent.project.id}/maengel/plaene/${parent.plan.id}?/createPin`, { method: 'POST', body: fd });
     creating = false;
     if (res.ok) {
       pinDraft = null;
+      pinDraftPhotos = [];
+      title = '';
+      gewerkId = '';
       toast('Mangel angelegt.');
       haptic(15);
       await invalidateAll();
@@ -273,6 +283,7 @@
       <button class="sheet-close" onclick={() => (pinDraft = null)} aria-label="Schließen"><Icon name="close" /></button>
     </div>
     <div class="sheet-body">
+      <DraftPhotoStrip projectId={parent.project.id} bind:photos={pinDraftPhotos} />
       <div class="field">
         <label class="field-label" for="t">Titel</label>
         <input id="t" class="field-input" bind:value={title} placeholder="Kurze Beschreibung" required />

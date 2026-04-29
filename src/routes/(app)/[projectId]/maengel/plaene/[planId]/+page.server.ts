@@ -2,7 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { gewerke, defectPhotos } from '$lib/db/schema';
+import { gewerke, defectPhotos, defectHistory } from '$lib/db/schema';
 import { asc, inArray, eq, and } from 'drizzle-orm';
 import { getPlan, createDefect, updateDefectFields } from '$lib/db/defectQueries';
 
@@ -36,7 +36,14 @@ const pinSchema = z.object({
   page: z.coerce.number().int().min(1).max(500),
   xPct: z.coerce.number().min(0).max(100),
   yPct: z.coerce.number().min(0).max(100),
-  priority: z.coerce.number().int().min(1).max(3).default(2)
+  priority: z.coerce.number().int().min(1).max(3).default(2),
+  photos: z.string().optional()
+});
+
+const photoEntry = z.object({
+  storagePath: z.string().min(3).max(300),
+  width: z.coerce.number().int().min(1).max(10000),
+  height: z.coerce.number().int().min(1).max(10000)
 });
 
 const movePinSchema = z.object({
@@ -57,7 +64,7 @@ export const actions: Actions = {
     const parsed = pinSchema.safeParse(fd);
     if (!parsed.success) return fail(400, { error: 'Ungültige Eingabe.' });
 
-    await createDefect({
+    const row = await createDefect({
       projectId: params.projectId,
       title: parsed.data.title,
       gewerkId: parsed.data.gewerkId || null,
@@ -68,6 +75,31 @@ export const actions: Actions = {
       priority: parsed.data.priority,
       createdBy: locals.user.id
     });
+
+    if (parsed.data.photos) {
+      try {
+        const photos = z.array(photoEntry).max(20).parse(JSON.parse(parsed.data.photos));
+        for (let i = 0; i < photos.length; i++) {
+          const p = photos[i];
+          await db.insert(defectPhotos).values({
+            defectId: row.id,
+            storagePath: p.storagePath,
+            sortOrder: i,
+            uploadedBy: locals.user.id
+          });
+        }
+        if (photos.length > 0) {
+          await db.insert(defectHistory).values({
+            defectId: row.id,
+            action: 'photo_added',
+            byUser: locals.user.id,
+            details: { count: photos.length, source: 'create_pin' }
+          });
+        }
+      } catch (e) {
+        console.warn('[createPin] photos parse failed:', e);
+      }
+    }
     return { ok: true };
   },
 
