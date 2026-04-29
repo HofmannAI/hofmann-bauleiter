@@ -2,21 +2,22 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { defectPhotos, defectHistory, gewerke, contacts } from '$lib/db/schema';
+import { defectPhotos, defectHistory, gewerke, contacts, textbausteine } from '$lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import { getDefect, updateDefectFields, listContactsForProject } from '$lib/db/defectQueries';
 
 export const load: PageServerLoad = async ({ params }) => {
   const detail = await getDefect(params.projectId, params.defectId);
   if (!detail) error(404, 'Mangel nicht gefunden');
-  if (!db) return { ...detail, gewerke: [], contacts: [] };
+  if (!db) return { ...detail, gewerke: [], contacts: [], textbausteine: [] };
 
-  const [gewerkeRows, contactsRows] = await Promise.all([
+  const [gewerkeRows, contactsRows, textRows] = await Promise.all([
     db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)),
-    listContactsForProject(params.projectId)
+    listContactsForProject(params.projectId),
+    db.select().from(textbausteine).orderBy(asc(textbausteine.sortOrder))
   ]);
 
-  return { ...detail, gewerke: gewerkeRows, contacts: contactsRows };
+  return { ...detail, gewerke: gewerkeRows, contacts: contactsRows, textbausteine: textRows };
 };
 
 const fieldsSchema = z.object({

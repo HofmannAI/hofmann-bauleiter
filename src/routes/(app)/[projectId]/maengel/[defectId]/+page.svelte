@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
   import PhotoAnnotator from '$lib/components/PhotoAnnotator.svelte';
+  import VoiceInput from '$lib/components/VoiceInput.svelte';
   import { uploadDefectPhoto, getSignedUrl } from '$lib/storage/photos';
   import { toast } from '$lib/components/Toast.svelte';
   import { invalidateAll } from '$app/navigation';
@@ -152,7 +153,39 @@
   </div>
 
   <div class="field">
-    <label class="field-label" for="d">Beschreibung</label>
+    <div class="field-label-row">
+      <label class="field-label" for="d">Beschreibung</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        {#if parent.textbausteine.length > 0}
+          <select
+            class="textbaustein-picker"
+            onchange={(e) => {
+              const id = (e.currentTarget as HTMLSelectElement).value;
+              if (!id) return;
+              const tb = parent.textbausteine.find((x) => x.id === id);
+              if (!tb) return;
+              description = description ? description + '\n\n' + tb.body : tb.body;
+              (e.currentTarget as HTMLSelectElement).value = '';
+              save();
+            }}
+            aria-label="Textbaustein einfügen"
+          >
+            <option value="">+ Textbaustein</option>
+            {#each parent.gewerke as g}
+              {@const items = parent.textbausteine.filter((tb) => tb.gewerkId === g.id)}
+              {#if items.length > 0}
+                <optgroup label={g.name}>
+                  {#each items as tb}
+                    <option value={tb.id}>{tb.label}</option>
+                  {/each}
+                </optgroup>
+              {/if}
+            {/each}
+          </select>
+        {/if}
+        <VoiceInput onResult={(t) => (description = t)} />
+      </div>
+    </div>
     <textarea id="d" class="field-input" rows="4" bind:value={description} onblur={save}></textarea>
   </div>
 
@@ -279,6 +312,10 @@
   .photo-badge { position: absolute; bottom: 4px; left: 4px; background: var(--red); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
   .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(0, 0, 0, .95); display: flex; align-items: center; justify-content: center; padding: 0; border: none; cursor: zoom-out; }
   .lightbox img { max-width: 96vw; max-height: 92vh; object-fit: contain; }
+  .field-label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .field-label-row .field-label { margin-bottom: 0; }
+  .textbaustein-picker { background: var(--paper-tint); border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-family: inherit; cursor: pointer; }
+  .textbaustein-picker:hover { border-color: var(--red); color: var(--red); }
   .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-bottom: 14px; }
   .photo-add-tile { aspect-ratio: 1; border: 2px dashed var(--line-strong); border-radius: var(--r-md); background: var(--paper-tint); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); transition: all .15s; cursor: pointer; }
   .photo-add-tile:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }

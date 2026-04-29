@@ -250,6 +250,7 @@ export const defectPhotos = pgTable('defect_photos', {
   defectId: uuid('defect_id').notNull().references(() => defects.id, { onDelete: 'cascade' }),
   storagePath: text('storage_path').notNull(),
   caption: text('caption'),
+  sortOrder: integer('sort_order').default(0).notNull(),
   uploadedBy: uuid('uploaded_by').references(() => profiles.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
@@ -300,6 +301,17 @@ export const musterdetails = pgTable('musterdetails', {
   label: text('label').notNull(),
   storagePath: text('storage_path').notNull(),
   uploadedBy: uuid('uploaded_by').references(() => profiles.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+/* ----- Textbausteine (defect-text snippets per gewerk) ----- */
+
+export const textbausteine = pgTable('textbausteine', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  gewerkId: uuid('gewerk_id').references(() => gewerke.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(),
+  body: text('body').notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
 

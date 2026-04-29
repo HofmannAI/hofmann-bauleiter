@@ -8,6 +8,20 @@
       "when": 1777412625269,
       "tag": "0000_ordinary_the_order",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777442066998,
+      "tag": "0003_defect_photo_sort_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777442140123,
+      "tag": "0004_textbausteine",
+      "breakpoints": true
     }
   ]
 }

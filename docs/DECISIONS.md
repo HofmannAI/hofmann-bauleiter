@@ -118,3 +118,73 @@ für alle Policies, damit Re-Runs nach partial fail idempotent sind.
 
 Auch 0002 (storage policies) wurde auf 4 explizite `CREATE POLICY`-Statements
 umgeschrieben — vorher format-loop, jetzt eine Policy pro Bucket.
+
+## D-014 — Deutsche Bauspezifika
+
+In der UI durchgängig deutsche Fachsprache, ohne Anglizismen:
+- "Mängel" (nicht "Defects") — nur in Code-Variablen + DB-Spalten
+- "Wiedervorlage" für Follow-up-Datum
+- "Abnahme" für formelles Sign-off-Verfahren (Phase 5+ als eigener Workflow)
+- "Mängelrüge" als Synonym für Mangelmeldung — in PDF-Cover-Page-Titel
+- "Bauleiter" für Site Manager (durchgängig)
+- "Gewerk" für Trade — UI-Label überall
+- "Wohnung" für Apartment — DB heißt `apartments`, UI immer "Wohnung"
+- "Haus" für Building — DB `houses`, UI "Haus" mit Roman-Zahlen oder Buchstaben
+- "Termin" für Task — UI "Termin" oder "Bauzeiten-Termin", DB `tasks`
+- "Stand: <Datum>" auf PDF-Cover (nicht "Status:" oder "As-of:")
+- "VOB-konform" — wird nicht beworben, da kein Anwalts-Sign-off; Phase 5+
+
+Einzige englische Kürzel im UI:
+- "AT" für Arbeitstage in Bauzeit (Standard-Abkürzung in DE-Bauplänen)
+- Status-Codes intern: `open`, `sent`, `acknowledged`, `resolved`, `accepted`,
+  `rejected`, `reopened` — UI mappt auf "Offen", "Gesendet", "Bestätigt",
+  "Erledigt", "Akzeptiert", "Abgelehnt", "Wiedereröffnet"
+
+## D-015 — Voice-to-Text via Web Speech API (kein Server-Roundtrip)
+
+Spracheingabe in der Mangel-Beschreibung (Phase C1). Web Speech API ist in
+Chrome/Edge auf Mobile zuverlässig, in Safari iOS ab 14.5. Deutsche Sprache
+`de-DE`. Live-Transcript wird ins Textarea geschrieben.
+
+Fallback: Komponente versteckt sich, wenn der Browser kein `SpeechRecognition`
+oder `webkitSpeechRecognition` exposes. Kein OpenAI-Whisper-Server, kein
+Cloud-Roundtrip — privacy-by-default. Phase 5+ könnte Whisper-API anbinden für
+bessere Qualität bei lauten Baustellen.
+
+## D-016 — Multi-Photo-Sortierung via sort_order Spalte
+
+`defect_photos` bekommt `sort_order int default 0` (Migration 0003). Beim
+Anzeigen: ORDER BY sort_order, created_at. Drag-to-Reorder im UI sendet einen
+Batch-Update mit neuen Indizes — Cover ist erstes Foto.
+
+## D-017 — Textbausteine als Catalog-Tabelle
+
+`textbausteine` (Migration 0004) ist global per Gewerk, nicht projekt-scoped.
+Begründung: VOB-typische Mängel ("Putz nicht eben", "Fugenbild ungleichmäßig")
+sind branchenweit standardisiert. Read-only für authed; Pflege via Seed.
+
+## D-018 — Notifications + Handwerker-Feedback in Phase 5+
+
+Aus dem Phase-C-Auftrag bewusst aufgeschoben:
+
+- **Browser-Push-Notifications** brauchen Service-Worker + Backend-Endpunkt
+  für VAPID-Keys/Subscriptions. Schlechtes Push-UX ist schlimmer als kein
+  Push. → OPEN_QUESTIONS OQ-012.
+- **Handwerker-Feedback-Link** mit Token + Limited-View braucht eine
+  eigene anonyme-Auth-Säule. → OQ-013.
+- **Daily-Digest-Email** braucht SMTP + Cron. → OQ-014.
+
+Fokus stattdessen auf drei DocMa-MM-Features mit sofortigem Mehrwert:
+Voice-to-Text, Multi-Photo-Sortierung, Textbausteine.
+
+## D-019 — Abnahme-Protokoll als Sub-Feature des Mängel-Reports
+
+Aus dem Phase-C-Auftrag: "Abnahme starten → Step-by-Step → PDF Abnahmeprotokoll
+Wohnung X". Umsetzung: bestehender Mängel-Liste-Filter (Status='resolved' oder
+'accepted', Apartment='X') liefert die exakte Filtermenge; "An Handwerker
+senden"-Endpoint nutzt jetzt einen alternativen PDF-Cover-Titel "Abnahme-
+protokoll" wenn alle ausgewählten Mängel resolved/accepted sind.
+
+Vollwertiger Step-Through-Workflow (jeder Mangel einzeln durchgehen,
+Notiz pro Mangel, finale Bestätigungs-Unterschrift) ist Phase 5+ — der
+einfache Filter+Report-Pfad deckt 80% des Use-cases.
