@@ -300,6 +300,7 @@
               <button
                 class="gantt-bar"
                 class:critical={criticalPathIds.has(t.id)}
+                class:dimmed={criticalPathIds.size > 0 && !criticalPathIds.has(t.id)}
                 class:dragging={dragging?.id === t.id && dragging.armed}
                 class:armed-touch={dragging?.id === t.id && dragging.armed && dragging.pointerType !== 'mouse'}
                 style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
@@ -313,6 +314,9 @@
                 <span class="gantt-bar-tooltip" role="tooltip">
                   <span class="tooltip-name">{t.name}</span>
                   <span class="tooltip-meta">{t.startDate} → {t.endDate}</span>
+                  {#if criticalPathIds.has(t.id)}
+                    <span class="tooltip-crit">Kritisch — Verzögerung wirkt 1:1 auf Übergabe</span>
+                  {/if}
                 </span>
               </button>
             {/if}
@@ -492,6 +496,21 @@
     border-radius: 2px;
     pointer-events: none;
     z-index: 1;
+  }
+  .gantt-bar.dimmed { opacity: 0.32; filter: saturate(0.6); transition: opacity var(--d-std) var(--ease-out-expo); }
+  .gantt-bar.dimmed:hover { opacity: 0.7; }
+  .tooltip-crit {
+    display: block;
+    margin-top: 4px;
+    padding: 3px 6px;
+    background: var(--red);
+    color: #fff;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
   }
   .gantt-bar { cursor: grab; }
   .gantt-bar-label { display: block; }
