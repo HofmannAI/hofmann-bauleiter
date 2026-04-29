@@ -94,7 +94,7 @@
         </h3>
         <div class="aufgabe-list">
           {#each grouped[group] as a (a.id)}
-            <a class="aufgabe-card" href={a.href}>
+            <a class="aufgabe-card" href={a.href} data-overdue={a.daysFromToday < 0} data-prio={a.priority}>
               <span class="aufgabe-stripe" style={`background:${a.gewerkColor ?? '#6B6660'}`}></span>
               <span class="aufgabe-body">
                 <span class="aufgabe-line1">
@@ -126,8 +126,10 @@
   .aufgabe-group.overdue { color: var(--red); }
   .aufgabe-group .count { font-family: var(--mono); font-size: 11px; }
   .aufgabe-list { display: flex; flex-direction: column; gap: 6px; }
-  .aufgabe-card { display: flex; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; align-items: center; text-decoration: none; color: inherit; transition: all .12s; }
-  .aufgabe-card:hover { border-color: var(--line-strong); transform: translateX(2px); }
+  .aufgabe-card { display: flex; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; align-items: center; text-decoration: none; color: inherit; }
+  .aufgabe-card:hover { border-color: var(--line-strong); transform: translateY(-1px); box-shadow: var(--shadow-1); }
+  .aufgabe-card[data-overdue="true"] { background: linear-gradient(to right, var(--tint-red), var(--paper) 35%); border-left: 3px solid var(--red); }
+  .aufgabe-card[data-prio="1"] .aufgabe-title { font-weight: 800; }
   .aufgabe-stripe { width: 4px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
   .aufgabe-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
   .aufgabe-line1 { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }

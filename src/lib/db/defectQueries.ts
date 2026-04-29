@@ -221,6 +221,7 @@ export async function getPlan(projectId: string, planId: string) {
       page: defects.page,
       xPct: defects.xPct,
       yPct: defects.yPct,
+      gewerkId: defects.gewerkId,
       gewerkColor: gewerke.color
     })
     .from(defects)

@@ -97,3 +97,38 @@ Bauzeitenplan-Engine, Aufgaben" — Body-Vorschlag siehe `docs/PROGRESS.md`.
 
 Frankfurt-Region ist DSGVO-konform, aber AV-Vertrag (Auftragsverarbeitung)
 muss noch unterzeichnet werden (Supabase Dashboard → Settings → Compliance).
+
+## OQ-012 — Browser-Push-Notifications
+
+In Phase 5+: Service-Worker mit `push`-Event, VAPID-Keys generieren
+(`web-push` library), Backend-Endpunkt für Subscriptions speichern + bei
+relevanten Events (Mangel ändert sich, Daily-Digest) push schicken.
+
+Frage an User: Welche Events sollen pushen? Vorschlag (per Bauleiter
+opt-in Settings):
+- "Wenn ein Mangel mit ich = Created-By Status ändert"
+- "Wenn Aufgabe heute fällig ist"
+- "Wenn jemand mich in Notiz erwähnt" (Phase 5+)
+
+## OQ-013 — Handwerker-Feedback via Public-Token-Link
+
+Workflow: Bauleiter sendet PDF (heute), Handwerker bekommt extra einen
+Magic-Link mit Limited-Token. Klickt Link → sieht eigene Mängel als Liste
+mit "Erledigt"-Button + Foto-Upload. Bauleiter sieht in App: "Hans Mustermann
+hat M-001 als erledigt markiert + Foto gesendet."
+
+Fragen:
+- Wie viele Tokens pro Mangel? Einmal-Use oder gleicher Link für alle Mängel?
+- Soll Handwerker auch kommentieren können oder nur erledigt-markieren?
+- Token-Lifetime (1 Woche? 30 Tage? bis manuell widerrufen?)
+
+Phase 5+. Komplette anonyme-Auth-Säule mit eigener RLS-Schicht.
+
+## OQ-014 — Email-Versand für Notifications
+
+Wenn in-App-Notifications und Push reichen → keine Email nötig.
+Sonst: SMTP (Postmark, SendGrid) oder M365 Graph. Daily-Digest um 7:00
+mit allen offenen Mängeln/Aufgaben. → Cron via Vercel Cron-Jobs oder
+Supabase Edge-Functions.
+
+Aufwand ~1 Tag. Phase 5+.

@@ -137,24 +137,33 @@
       <div class="empty-text">Keine Mängel in diesem Filter.</div>
     </div>
   {:else}
-    <div class="defect-list">
-      {#each visible as d (d.id)}
-        <a class="defect-card" href={`/${parent.project.id}/maengel/${d.id}`}>
-          <span class="defect-stripe" style={`background:${d.gewerkColor ?? '#6B6660'}`}></span>
-          <span class="defect-body">
-            <span class="defect-line1">
-              <span class="defect-num">{d.shortId ?? '-'}</span>
-              <span class="defect-title">{d.title}</span>
-            </span>
-            <span class="defect-line2">
-              {#if d.gewerkName}<span>{d.gewerkName}</span>{/if}
-              {#if d.deadline}<span>· Deadline {fmtDateDe(d.deadline)}</span>{/if}
-            </span>
-          </span>
-          <span class="defect-status status-{d.status}">{STATUS_LABEL[d.status] ?? d.status}</span>
-        </a>
-      {/each}
-    </div>
+    {#each [['open','Offen'],['reopened','Wiedereröffnet'],['sent','Gesendet'],['acknowledged','Bestätigt'],['resolved','Erledigt'],['accepted','Akzeptiert'],['rejected','Abgelehnt']] as [grpStatus, grpLabel]}
+      {@const grp = visible.filter((d) => d.status === grpStatus)}
+      {#if grp.length > 0}
+        <h3 class="group-header status-{grpStatus}">
+          {grpLabel}
+          <span class="count">{grp.length}</span>
+        </h3>
+        <div class="defect-list">
+          {#each grp as d (d.id)}
+            <a class="defect-card" class:overdue={d.deadline && new Date(d.deadline + 'T00:00:00') < new Date()} href={`/${parent.project.id}/maengel/${d.id}`}>
+              <span class="defect-stripe" style={`background:${d.gewerkColor ?? '#6B6660'}`}></span>
+              <span class="defect-body">
+                <span class="defect-line1">
+                  <span class="defect-num">{d.shortId ?? '-'}</span>
+                  <span class="defect-title">{d.title}</span>
+                </span>
+                <span class="defect-line2">
+                  {#if d.gewerkName}<span>{d.gewerkName}</span>{/if}
+                  {#if d.deadline}<span>· Deadline {fmtDateDe(d.deadline)}</span>{/if}
+                </span>
+              </span>
+              {#if d.priority === 1}<span class="defect-prio">!</span>{/if}
+            </a>
+          {/each}
+        </div>
+      {/if}
+    {/each}
   {/if}
 </div>
 
@@ -298,4 +307,24 @@
   .status-sent, .status-acknowledged { background: var(--amber-soft); color: var(--amber); }
   .status-resolved, .status-accepted { background: var(--green-soft); color: var(--green); }
   .status-rejected { background: var(--grey-soft); color: var(--muted); }
+  .group-header {
+    position: sticky; top: 56px; z-index: 10;
+    margin: 16px 0 6px; padding: 6px 12px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    border-radius: 999px;
+    background: var(--glass-light);
+    -webkit-backdrop-filter: var(--blur-std);
+    backdrop-filter: var(--blur-std);
+    box-shadow: var(--shadow-1);
+    display: inline-flex; align-items: center; gap: 8px;
+    width: fit-content;
+  }
+  .group-header.status-open, .group-header.status-reopened { color: var(--red); }
+  .group-header.status-sent, .group-header.status-acknowledged { color: var(--amber); }
+  .group-header.status-resolved, .group-header.status-accepted { color: var(--green); }
+  .group-header.status-rejected { color: var(--muted); }
+  .group-header .count { font-size: 10px; opacity: 0.7; }
+  .defect-card.overdue { border-color: rgba(227, 6, 19, 0.3); background: linear-gradient(to right, var(--tint-red), var(--paper) 30%); }
+  .defect-prio { font-family: var(--display); font-weight: 900; font-size: 18px; color: var(--red); width: 24px; text-align: center; flex-shrink: 0; }
 </style>

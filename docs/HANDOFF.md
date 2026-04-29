@@ -140,3 +140,136 @@ für die Originalliste.
 Bauleitern → `v1.0.0`.
 
 Viel Erfolg beim ersten Live-Einsatz!
+
+---
+
+# Live-Schaltung in 10 Minuten
+
+Schritt-für-Schritt-Anleitung für den ersten Production-Deploy.
+Mache es zur „Mittagspause"-Aktion: Migration läuft, Vercel deployed,
+Magic-Link-Test, Bauleiter-Einladung. Du brauchst dafür ca. 10 Minuten
+sobald PR #2 (Migration-Fix) gemergt ist.
+
+## Schritt 1 — Supabase: Migrations + Seeds (3 Min)
+
+1. Öffne `https://supabase.com/dashboard/project/<dein-projekt>/sql/new`
+   (SQL-Editor, neuer Tab).
+2. Datei `supabase/migrations/0000_ordinary_the_order.sql` aus dem Repo
+   kopieren → in den SQL-Editor einfügen → **RUN** klicken. Erfolg = "No rows returned".
+3. Wiederhole mit `0001_rls_and_triggers.sql` → **RUN**.
+4. Wiederhole mit `0002_storage_buckets.sql` → **RUN**.
+5. Wiederhole mit `0003_defect_photo_sort_order.sql` → **RUN**.
+6. Wiederhole mit `0004_textbausteine.sql` → **RUN**.
+7. Stamm-Daten seeden: lokales Terminal,
+   ```bash
+   pnpm install
+   cp .env.example .env  # und Werte aus docs/SECRETS.md eintragen
+   pnpm seed
+   pnpm seed:contacts
+   ```
+   Resultat im Supabase-Dashboard → "Table Editor" → `gewerke` (20 Reihen),
+   `checklists` (~11), `gewerk_checklist_templates` (~38),
+   `textbausteine` (~30), `contacts` (20 globale Dummies).
+
+> **Falls du die echten Handwerker-Kontakte schon hast**: bearbeite
+> `data/contacts.csv` lokal und führe `pnpm seed:contacts` erneut aus.
+> Globale Dummies werden ersetzt; projekt-spezifische Kontakte bleiben.
+
+## Schritt 2 — Vercel: GitHub-Repo importieren (2 Min)
+
+1. Öffne `https://vercel.com/new`
+2. **Import Git Repository** → suche „hofmann-bauleiter" → **Import**
+3. Framework wird automatisch als **SvelteKit** erkannt → kein Eingriff nötig
+4. **Build & Output Settings** lassen wie sie sind (SvelteKit-Defaults)
+5. **Environment Variables** → klicke „Add" für jede der folgenden:
+
+| Variable | Wert | Quelle |
+|---|---|---|
+| `PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` | Supabase → Settings → API |
+| `PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_…` | Supabase → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | `sb_secret_…` | Supabase → Settings → API |
+| `SUPABASE_DB_PASSWORD` | `<dein-passwort>` | docs/SECRETS.md |
+| `DATABASE_URL` | `postgres://postgres.<ref>:<pw>@aws-0-eu-central-1.pooler.supabase.com:6543/postgres` | Supabase → Settings → Database → Connection string |
+
+> Wichtig: Für jede Variable die Checkboxen **Production**, **Preview**,
+> **Development** ankreuzen.
+
+6. Region (Function-Region) prüfen — sollte **Frankfurt (fra1)** sein
+   (steht so in `vercel.json`).
+
+## Schritt 3 — Deploy (1 Min)
+
+7. Klicke **Deploy**.
+8. Warte ~60-90 Sekunden. Beim ersten Build kann es 2 Minuten dauern.
+9. Wenn fertig: Du bekommst eine URL wie `https://hofmann-bauleiter-xyz.vercel.app`.
+   **Diese URL kopieren** — gleich brauchst du sie zweimal.
+
+## Schritt 4 — Supabase Auth-URLs setzen (1 Min)
+
+10. Öffne `https://supabase.com/dashboard/project/<ref>/auth/url-configuration`
+11. **Site URL**: kopierte Vercel-URL einfügen (`https://hofmann-bauleiter-xyz.vercel.app`)
+12. **Redirect URLs**: dieselbe URL plus `/auth/callback` (z.B.
+    `https://hofmann-bauleiter-xyz.vercel.app/auth/callback`)
+13. **Save**.
+
+## Schritt 5 — Magic-Link-Test mit eigener Email (2 Min)
+
+14. Öffne deine Vercel-URL im Browser → du landest auf `/login`.
+15. Gib deine eigene Email-Adresse ein (z.B. `laurenz.hofmann@hofmann-haus.com`).
+16. Klicke **Magic-Link senden**.
+17. Öffne deinen Posteingang → Mail von Supabase Auth → Link klicken.
+18. Du landest auf `/projects` (leer).
+19. Im Supabase Dashboard → "Table Editor" → `profiles` siehst du jetzt
+    deinen Eintrag automatisch (Trigger `handle_new_user` hat ihn angelegt).
+
+> **Wenn der Link nicht funktioniert**: prüfe Site URL + Redirect URL aus
+> Schritt 4 noch mal — Tippfehler sind die häufigste Ursache.
+
+## Schritt 6 — Erstes Projekt anlegen + sich selbst Owner machen (1 Min)
+
+20. Auf der `/projects`-Seite → **Neues Projekt**
+21. Wähle „Gaisbach 13" als Template (lädt 150 Termine zum Spielen) oder
+    ein leeres Projekt mit beliebig vielen Häusern/Wohnungen.
+22. Speichern → du bist automatisch **Owner** dieses Projekts.
+
+## Schritt 7 — Andere Bauleiter einladen
+
+Es gibt zwei Wege:
+
+**A) Magic-Link, dann manuell ins Projekt:**
+1. Bauleiter X loggt sich auf der App-URL ein (Magic-Link an
+   `vorname.nachname@hofmann-haus.com`). Profil entsteht automatisch.
+2. Du als Owner musst ihn als Member zum Projekt zufügen — derzeit per SQL
+   im Supabase-Editor:
+   ```sql
+   INSERT INTO project_members (project_id, user_id, role)
+   SELECT '<projektId>', id, 'bauleiter' FROM profiles WHERE email = '<email>';
+   ```
+   (UI-Form für „weitere Bauleiter einladen" ist Phase 5+.)
+
+**B) Per-Projekt-Einladung gleich beim Setup:**
+Aktuell legt der Setup-Wizard nur den ersten User als Owner an. Im Phase 5+
+kann hier eine Multi-Select-Liste hin.
+
+## Schritt 8 — Echte Daten
+
+- `data/contacts.csv` mit den echten Hofmann-Handwerkern befüllen + `pnpm seed:contacts`
+- Erstes echtes Projekt anlegen (oder das Sample löschen + neu anlegen)
+- Plan hochladen (PDF), Pin droppen, Mangel anlegen — fertig.
+
+---
+
+## Trouble-Shooting
+
+| Problem | Ursache | Fix |
+|---|---|---|
+| Magic-Link kommt nicht | Site URL nicht gesetzt | Schritt 4 erneut |
+| 500-Fehler nach Login | DATABASE_URL falsch | Vercel Settings → Env Vars |
+| RLS-Fehler "permission denied" | Migration 0001 nicht durchgelaufen | SQL-Editor erneut ausführen |
+| Foto-Upload bricht ab | Storage-Bucket fehlt / Policy falsch | Migration 0002 erneut |
+| Voice-Input fehlt | Browser ohne SpeechRecognition | Chrome/Edge mobil oder Safari ≥14.5 |
+| Push fail mit 403 | GitHub-App-Permissions | siehe OQ-011 in `OPEN_QUESTIONS.md` |
+
+Für tieferen Kontext: `docs/DECISIONS.md` D-013 (RLS-Strategie), D-018 (was
+in Phase 5 noch fehlt) und `docs/UX_AUDIT.md` (was wir gebaut haben und
+bewusst weggelassen).

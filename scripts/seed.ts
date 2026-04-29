@@ -23,12 +23,14 @@ import {
   checklistSections,
   checklistItems,
   gewerkChecklistTemplates,
-  contacts
+  contacts,
+  textbausteine
 } from '../src/lib/db/schema';
 import { GEWERKE_SEED } from '../src/lib/seed/gewerke';
 import { CHECKLISTS } from '../src/lib/seed/checklists';
 import { GEWERK_CHECKLIST_TEMPLATES } from '../src/lib/seed/gewerk-checklists';
 import { CONTACTS_DUMMY } from '../src/lib/seed/contacts';
+import { TEXTBAUSTEINE_SEED } from '../src/lib/seed/textbausteine';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -142,9 +144,28 @@ async function seedGlobalContacts() {
   }
 }
 
+async function seedTextbausteine() {
+  console.log('[seed] textbausteine …');
+  await db.execute(sql`DELETE FROM textbausteine`);
+  const allGewerke = await db.select().from(gewerke);
+  const byName = new Map(allGewerke.map((g) => [g.name, g.id]));
+  for (let i = 0; i < TEXTBAUSTEINE_SEED.length; i++) {
+    const t = TEXTBAUSTEINE_SEED[i];
+    const gid = byName.get(t.gewerk);
+    if (!gid) continue;
+    await db.insert(textbausteine).values({
+      gewerkId: gid,
+      label: t.label,
+      body: t.body,
+      sortOrder: i
+    });
+  }
+}
+
 await seedGewerke();
 await seedChecklists();
 await seedGewerkChecklistTemplates();
+await seedTextbausteine();
 await seedGlobalContacts();
 console.log('[seed] done.');
 await client.end();
