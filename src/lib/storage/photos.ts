@@ -57,6 +57,19 @@ export async function uploadDefectPhoto(projectId: string, defectId: string, fil
   return { path, width, height };
 }
 
+export async function uploadTaskPhoto(projectId: string, taskId: string, file: File) {
+  const { blob, width, height } = await compressImage(file);
+  const sb = getSupabaseBrowser();
+  const photoId = crypto.randomUUID();
+  const path = `${projectId}/${taskId}/${photoId}.jpg`;
+  const { error } = await sb.storage.from('task-photos').upload(path, blob, {
+    contentType: 'image/jpeg',
+    upsert: false
+  });
+  if (error) throw error;
+  return { path, width, height };
+}
+
 export async function uploadMusterdetailImage(projectId: string, file: File) {
   const { blob, width, height } = await compressImage(file);
   const sb = getSupabaseBrowser();

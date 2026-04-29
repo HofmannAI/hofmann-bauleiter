@@ -2,14 +2,20 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks, activity } from '$lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { tasks, activity, taskPhotos } from '$lib/db/schema';
+import { eq, and, asc } from 'drizzle-orm';
 import { getTaskWithApartmentProgress, setApartmentProgress } from '$lib/db/taskQueries';
 
 export const load: PageServerLoad = async ({ params }) => {
   const detail = await getTaskWithApartmentProgress(params.projectId, params.taskId);
   if (!detail) error(404, 'Termin nicht gefunden');
-  return detail;
+  if (!db) return { ...detail, photos: [] };
+  const photos = await db
+    .select()
+    .from(taskPhotos)
+    .where(eq(taskPhotos.taskId, params.taskId))
+    .orderBy(asc(taskPhotos.sortOrder), asc(taskPhotos.createdAt));
+  return { ...detail, photos };
 };
 
 const aptProgressSchema = z.object({
@@ -20,6 +26,13 @@ const aptProgressSchema = z.object({
   plannedEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal('')).optional(),
   notes: z.string().max(2000).optional()
 });
+
+const linkPhotoSchema = z.object({
+  storagePath: z.string().min(3).max(300),
+  caption: z.string().max(200).optional()
+});
+
+const deletePhotoSchema = z.object({ photoId: z.string().uuid() });
 
 export const actions: Actions = {
   saveFields: async ({ request, params, locals }) => {
@@ -63,6 +76,35 @@ export const actions: Actions = {
       notes: parsed.data.notes,
       doneBy: locals.user.id
     });
+    return { ok: true };
+  },
+
+  linkPhoto: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const parsed = linkPhotoSchema.safeParse(fd);
+    if (!parsed.success) return fail(400);
+    // sort_order = current count
+    const existing = await db.select({ id: taskPhotos.id }).from(taskPhotos).where(eq(taskPhotos.taskId, params.taskId));
+    await db.insert(taskPhotos).values({
+      taskId: params.taskId,
+      storagePath: parsed.data.storagePath,
+      caption: parsed.data.caption ?? null,
+      sortOrder: existing.length,
+      uploadedBy: locals.user.id
+    });
+    return { ok: true };
+  },
+
+  deletePhoto: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const parsed = deletePhotoSchema.safeParse(fd);
+    if (!parsed.success) return fail(400);
+    const [row] = await db.select().from(taskPhotos).where(eq(taskPhotos.id, parsed.data.photoId)).limit(1);
+    if (!row) return fail(404);
+    await db.delete(taskPhotos).where(eq(taskPhotos.id, parsed.data.photoId));
+    try { await locals.supabase.storage.from('task-photos').remove([row.storagePath]); } catch (_e) { /* best effort */ }
     return { ok: true };
   },
 

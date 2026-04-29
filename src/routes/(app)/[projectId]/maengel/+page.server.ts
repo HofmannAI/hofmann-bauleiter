@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { gewerke } from '$lib/db/schema';
+import { gewerke, defectPhotos, defectHistory } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
 import { asc } from 'drizzle-orm';
 
@@ -16,6 +16,12 @@ export const load: PageServerLoad = async ({ params }) => {
   return { defects, plans, contacts, gewerke: gewerkeRows };
 };
 
+const photoEntry = z.object({
+  storagePath: z.string().min(3).max(300),
+  width: z.coerce.number().int().min(1).max(10000),
+  height: z.coerce.number().int().min(1).max(10000)
+});
+
 const createSchema = z.object({
   title: z.string().min(1).max(160),
   description: z.string().max(4000).optional(),
@@ -23,7 +29,8 @@ const createSchema = z.object({
   apartmentId: z.string().uuid().optional().or(z.literal('')),
   contactId: z.string().uuid().optional().or(z.literal('')),
   deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
-  priority: z.coerce.number().int().min(1).max(3).default(2)
+  priority: z.coerce.number().int().min(1).max(3).default(2),
+  photos: z.string().optional() // JSON-serialized photoEntry[]
 });
 
 export const actions: Actions = {
@@ -44,6 +51,33 @@ export const actions: Actions = {
       priority: parsed.data.priority,
       createdBy: locals.user.id
     });
+
+    // Optional photos already uploaded to draft path — link them now
+    if (parsed.data.photos) {
+      try {
+        const photos = z.array(photoEntry).max(20).parse(JSON.parse(parsed.data.photos));
+        for (let i = 0; i < photos.length; i++) {
+          const p = photos[i];
+          await db.insert(defectPhotos).values({
+            defectId: row.id,
+            storagePath: p.storagePath,
+            sortOrder: i,
+            uploadedBy: locals.user.id
+          });
+        }
+        if (photos.length > 0) {
+          await db.insert(defectHistory).values({
+            defectId: row.id,
+            action: 'photo_added',
+            byUser: locals.user.id,
+            details: { count: photos.length, source: 'create_sheet' }
+          });
+        }
+      } catch (e) {
+        console.warn('[create-with-photos] photos parse failed:', e);
+      }
+    }
+
     redirect(303, `/${params.projectId}/maengel/${row.id}`);
   },
 

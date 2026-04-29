@@ -172,6 +172,27 @@ export const taskDependencies = pgTable(
   (t) => ({ uniq: unique().on(t.predecessorId, t.successorId) })
 );
 
+export const taskPhotos = pgTable('task_photos', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  taskId: uuid('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  storagePath: text('storage_path').notNull(),
+  caption: text('caption'),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  uploadedBy: uuid('uploaded_by').references(() => profiles.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+export const taskBaselines = pgTable('task_baselines', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  taskId: uuid('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  plannedStart: date('planned_start').notNull(),
+  plannedEnd: date('planned_end').notNull(),
+  snapshotLabel: text('snapshot_label').notNull(),
+  snapshotAt: timestamp('snapshot_at', { withTimezone: true }).defaultNow().notNull(),
+  createdBy: uuid('created_by').references(() => profiles.id)
+});
+
 export const taskApartmentProgress = pgTable(
   'task_apartment_progress',
   {

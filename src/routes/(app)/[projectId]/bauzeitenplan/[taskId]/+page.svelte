@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import Icon from '$lib/components/Icon.svelte';
   import { toast } from '$lib/components/Toast.svelte';
+  import { uploadTaskPhoto, getSignedUrl } from '$lib/storage/photos';
+  import { haptic } from '$lib/motion';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -9,8 +11,56 @@
   let name = $state(data.task.name);
   let notes = $state(data.task.notes ?? '');
   let color = $state(data.task.color ?? '#3B6CC4');
+  let uploadingPhoto = $state(false);
+  let photoUrls = $state<Record<string, string>>({});
+  let lightbox = $state<string | null>(null);
 
   const SWATCHES = ['#E8833A', '#3B6CC4', '#3FAA60', '#D4A22A', '#7A7570', '#C9482F', '#1E96A8', '#7CB246'];
+
+  $effect(() => {
+    const photos = parent.photos ?? [];
+    (async () => {
+      const next: Record<string, string> = {};
+      for (const p of photos) {
+        if (photoUrls[p.id]) {
+          next[p.id] = photoUrls[p.id];
+          continue;
+        }
+        const url = await getSignedUrl('task-photos', p.storagePath, 600);
+        if (url) next[p.id] = url;
+      }
+      photoUrls = next;
+    })();
+  });
+
+  async function onTaskPhotoFiles(files: FileList | null) {
+    if (!files) return;
+    uploadingPhoto = true;
+    try {
+      for (const f of Array.from(files)) {
+        const { path } = await uploadTaskPhoto(parent.project.id, parent.task.id, f);
+        const fd = new FormData();
+        fd.append('storagePath', path);
+        await fetch('?/linkPhoto', { method: 'POST', body: fd });
+      }
+      haptic(15);
+      toast('Fotos hochgeladen.');
+      await invalidateAll();
+    } catch (e) {
+      console.error(e);
+      toast('Foto-Upload fehlgeschlagen.');
+    } finally {
+      uploadingPhoto = false;
+    }
+  }
+
+  async function delTaskPhoto(photoId: string) {
+    if (!confirm('Foto löschen?')) return;
+    const fd = new FormData();
+    fd.append('photoId', photoId);
+    await fetch('?/deletePhoto', { method: 'POST', body: fd });
+    await invalidateAll();
+  }
 
   async function postForm(action: string, fields: Record<string, string>) {
     const fd = new FormData();
@@ -79,6 +129,29 @@
     <textarea id="task-notes" class="field-input" rows="3" bind:value={notes} onblur={save}></textarea>
   </div>
 
+  <div class="field">
+    <span class="field-label">Fotos {parent.photos?.length ?? 0}</span>
+    <div class="task-photos">
+      {#each parent.photos ?? [] as p (p.id)}
+        <div class="task-photo-tile">
+          {#if photoUrls[p.id]}
+            <button class="task-photo-img" onclick={() => (lightbox = photoUrls[p.id])} aria-label="Foto vergrößern" type="button">
+              <img src={photoUrls[p.id]} alt={p.caption ?? 'Termin-Foto'} />
+            </button>
+          {/if}
+          <button class="task-photo-del" onclick={() => delTaskPhoto(p.id)} aria-label="Foto löschen" type="button">
+            <Icon name="close" size={11} />
+          </button>
+        </div>
+      {/each}
+      <label class="task-photo-add">
+        <Icon name="photo" size={20} />
+        <span>{uploadingPhoto ? 'Lädt…' : 'Foto'}</span>
+        <input type="file" accept="image/*" capture="environment" multiple hidden onchange={(e) => onTaskPhotoFiles((e.currentTarget as HTMLInputElement).files)} />
+      </label>
+    </div>
+  </div>
+
   {#if parent.predecessors.length > 0}
     <div class="field">
       <span class="field-label">Vorgänger</span>
@@ -123,6 +196,12 @@
   </div>
 </div>
 
+{#if lightbox}
+  <button class="lightbox" onclick={() => (lightbox = null)} aria-label="Schließen">
+    <img src={lightbox} alt="Foto vergrößert" />
+  </button>
+{/if}
+
 <style>
   .back-link { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 0; margin-bottom: 12px; text-decoration: none; }
   .back-link:hover { color: var(--ink); }
@@ -151,4 +230,14 @@
   .apt-text { flex: 1; min-width: 0; }
   .apt-line1 { display: block; font-size: 14px; font-weight: 600; }
   .apt-line2 { display: block; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .task-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 4px; }
+  .task-photo-tile { aspect-ratio: 1; border-radius: var(--r-md); overflow: hidden; background: var(--grey-soft); border: 1px solid var(--line); position: relative; }
+  .task-photo-img { width: 100%; height: 100%; padding: 0; border: none; cursor: zoom-in; }
+  .task-photo-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .task-photo-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(15, 15, 16, .7); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .task-photo-add { aspect-ratio: 1; border: 2px dashed var(--line-strong); border-radius: var(--r-md); background: var(--paper-tint); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); cursor: pointer; }
+  .task-photo-add:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+  .task-photo-add span { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(0, 0, 0, .95); display: flex; align-items: center; justify-content: center; padding: 0; border: none; cursor: zoom-out; }
+  .lightbox img { max-width: 96vw; max-height: 92vh; object-fit: contain; }
 </style>
