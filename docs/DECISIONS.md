@@ -95,3 +95,26 @@ das per JS-Hack zu umgehen.
 `CHECKLISTS` und `SAMPLE_GAISBACH` aus `prototype.html` werden als
 `src/lib/seed/checklists.ts` und `src/lib/seed/gaisbach.ts` portiert. Vorteil:
 typsicher, kein SQL-Quoting-Hell. Beim Seed-Run werden sie via Drizzle insertet.
+
+## D-013 — RLS-Policies explizit pro Tabelle (kein dynamisches SQL)
+
+Der erste Wurf von `0001_rls_and_triggers.sql` hatte einen `DO $$ FOREACH …`-
+Block, der per `format()` Policy-SQL pro Tabelle generierte. Postgres validiert
+Spalten-Referenzen aber schon beim PARSE (nicht erst beim runtime-`CASE`-Eval),
+also fliegt z.B. `houses.house_id` (existiert nicht — `house_id` gehört zu
+`apartments`) sofort raus.
+
+**Entscheidung**: keine Policy-Generation-Loops mehr. Jede Tabelle bekommt ihr
+eigenes explizites `CREATE POLICY`-Statement mit der korrekten USING-Klausel
+basierend auf ihrem realen Schema (siehe `0000_…sql`). Für Tabellen ohne
+direktes `project_id` (`apartments`, `checklist_photos`, `task_dependencies`,
+`task_apartment_progress`, `defect_photos`, `defect_history`) wird via
+`EXISTS (SELECT 1 FROM <parent>)`-Subquery auf die Membership des
+übergeordneten Projekts geprüft.
+
+Außerdem: Migration ist in `BEGIN;`/`COMMIT;` gewrapped, damit bei einem
+Fehler nichts halb angelegt wird, und beginnt mit `DROP POLICY IF EXISTS`
+für alle Policies, damit Re-Runs nach partial fail idempotent sind.
+
+Auch 0002 (storage policies) wurde auf 4 explizite `CREATE POLICY`-Statements
+umgeschrieben — vorher format-loop, jetzt eine Policy pro Bucket.
