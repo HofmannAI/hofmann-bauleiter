@@ -1,9 +1,12 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
+  import PhotoAnnotator from '$lib/components/PhotoAnnotator.svelte';
   import { uploadDefectPhoto, getSignedUrl } from '$lib/storage/photos';
   import { toast } from '$lib/components/Toast.svelte';
   import { invalidateAll } from '$app/navigation';
   import { fmtDateDe, timeAgo } from '$lib/util/time';
+  import { haptic } from '$lib/motion';
+  import { getSupabaseBrowser } from '$lib/auth/supabase-browser';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -20,6 +23,8 @@
   let photoUrls = $state<Record<string, string>>({});
   let photoUploading = $state(false);
   let mailtoOpen = $state(false);
+  let annotating = $state<{ photoId: string; url: string } | null>(null);
+  let lightbox = $state<string | null>(null);
 
   async function loadPhotoUrls() {
     const out: Record<string, string> = {};
@@ -77,6 +82,31 @@
     if (!confirm('Foto löschen?')) return;
     await postForm('deletePhoto', { photoId });
     await invalidateAll();
+  }
+
+  function startAnnotate(photoId: string) {
+    const url = photoUrls[photoId];
+    if (!url) return;
+    annotating = { photoId, url };
+  }
+
+  async function saveAnnotated(blob: Blob) {
+    if (!annotating) return;
+    try {
+      const sb = getSupabaseBrowser();
+      const photoId = crypto.randomUUID();
+      const path = `${parent.project.id}/${parent.defect.id}/${photoId}.jpg`;
+      const { error } = await sb.storage.from('defect-photos').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+      if (error) throw error;
+      await postForm('linkPhoto', { storagePath: path, caption: 'annotiert' });
+      haptic(15);
+      toast('Annotation gespeichert.');
+      annotating = null;
+      await invalidateAll();
+    } catch (e) {
+      console.error(e);
+      toast('Fehler beim Speichern.');
+    }
   }
 
   function buildMailto(): string {
@@ -170,9 +200,15 @@
     {#each parent.photos as p (p.id)}
       <div class="photo-tile">
         {#if photoUrls[p.id]}
-          <img src={photoUrls[p.id]} alt={p.caption ?? 'Mangel-Foto'} />
+          <button class="photo-tile-img" onclick={() => (lightbox = photoUrls[p.id])} aria-label="Foto vergrößern">
+            <img src={photoUrls[p.id]} alt={p.caption ?? 'Mangel-Foto'} />
+          </button>
+          {#if p.caption === 'annotiert'}<span class="photo-badge">✎</span>{/if}
         {/if}
-        <button class="photo-tile-del" onclick={() => delPhoto(p.id)} aria-label="Foto löschen">
+        <button class="photo-tile-action photo-tile-anno" onclick={() => startAnnotate(p.id)} aria-label="Annotieren">
+          <Icon name="edit" size={12} />
+        </button>
+        <button class="photo-tile-action photo-tile-del" onclick={() => delPhoto(p.id)} aria-label="Foto löschen">
           <Icon name="close" size={12} />
         </button>
       </div>
@@ -211,6 +247,20 @@
   </div>
 </div>
 
+{#if annotating}
+  <PhotoAnnotator
+    sourceUrl={annotating.url}
+    onCancel={() => (annotating = null)}
+    onSave={saveAnnotated}
+  />
+{/if}
+
+{#if lightbox}
+  <button class="lightbox" onclick={() => (lightbox = null)} aria-label="Schließen">
+    <img src={lightbox} alt="Foto vergrößert" />
+  </button>
+{/if}
+
 <style>
   .back-link { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 0; margin-bottom: 12px; text-decoration: none; }
   .back-link:hover { color: var(--ink); }
@@ -220,9 +270,15 @@
   .defect-title-input:focus { border-bottom: 2px solid var(--red); outline: none; }
   .status-pill { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
   .status-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
-  .photo-tile { aspect-ratio: 1; border-radius: var(--r-md); overflow: hidden; background: var(--grey-soft); border: 1px solid var(--line); position: relative; cursor: pointer; }
+  .photo-tile { aspect-ratio: 1; border-radius: var(--r-md); overflow: hidden; background: var(--grey-soft); border: 1px solid var(--line); position: relative; }
+  .photo-tile-img { width: 100%; height: 100%; padding: 0; border: none; cursor: zoom-in; }
   .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .photo-tile-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(15, 15, 16, .7); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: .85; cursor: pointer; }
+  .photo-tile-action { position: absolute; width: 26px; height: 26px; background: rgba(15, 15, 16, .7); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .photo-tile-anno { top: 4px; left: 4px; }
+  .photo-tile-del { top: 4px; right: 4px; }
+  .photo-badge { position: absolute; bottom: 4px; left: 4px; background: var(--red); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+  .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(0, 0, 0, .95); display: flex; align-items: center; justify-content: center; padding: 0; border: none; cursor: zoom-out; }
+  .lightbox img { max-width: 96vw; max-height: 92vh; object-fit: contain; }
   .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-bottom: 14px; }
   .photo-add-tile { aspect-ratio: 1; border: 2px dashed var(--line-strong); border-radius: var(--r-md); background: var(--paper-tint); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); transition: all .15s; cursor: pointer; }
   .photo-add-tile:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }

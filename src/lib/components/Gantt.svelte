@@ -177,6 +177,7 @@
       </div>
       {#if todayPos() !== null}
         <div class="gantt-today-line" style={`left:${todayPos()}px`}>
+          <span class="gantt-today-pulse"></span>
           <span class="gantt-today-label">Heute</span>
         </div>
       {/if}
@@ -310,6 +311,20 @@
     padding: 2px 6px; border-radius: 4px;
     text-transform: uppercase; letter-spacing: .04em;
     white-space: nowrap;
+  }
+  .gantt-today-pulse {
+    position: absolute; left: -3px; top: -3px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red);
+    animation: pulse 2s ease-out infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(227, 6, 19, 0.55); }
+    70%  { box-shadow: 0 0 0 14px rgba(227, 6, 19, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(227, 6, 19, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gantt-today-pulse { animation: none; }
   }
   .gantt-rows { position: relative; }
   .gantt-row { position: relative; height: 32px; border-bottom: 1px solid var(--line); }
