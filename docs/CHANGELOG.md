@@ -4,6 +4,87 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 
 ---
 
+## [1.0.0-rc2] — 2026-04-30
+
+### Migrations (Phase A nachgereicht + neu)
+- `0003_defect_photo_sort_order.sql`: `sort_order` int auf `defect_photos`
+  für Multi-Photo-Reihenfolge (Cover = erstes Foto)
+- `0004_textbausteine.sql`: Catalog-Tabelle für Standard-Mängel-Texte pro
+  Gewerk + RLS-Read-Policy
+- Beide transaktional + idempotent (BEGIN/COMMIT, IF NOT EXISTS, DROP
+  POLICY IF EXISTS)
+
+### Premium-UX (Phase B, 3 Iterations-Loops)
+
+UX-Foundation:
+- `motion.ts`: Spring-Easing-System (ease-out-expo/quint/spring),
+  Durations (--d-micro/fast/std/page), Reduced-Motion-Support
+- App.css: Glass-Surfaces (--glass-light/dark/frost), Blur-Tokens,
+  Depth-Layer-System (L0-L3), Status-Tints, universelle Press-States
+
+Komponenten:
+- `Sheet.svelte`: Reusable Bottom-Sheet mit Frosted-Top, Pointer-Drag-
+  to-Close, ESC-Close, haptic feedback
+- `PinPreview.svelte`: Glass-Floating-Card auf Plan-Viewer mit Foto +
+  Quick-Status-Menu
+- `PhotoAnnotator.svelte`: Roter Kreis/Pfeil/Freihand/Stempel-Tools mit
+  Undo, speichert annotierte Version als zusätzliches Foto
+- `CommandPalette.svelte`: Cmd+K + Vim-chord-Nav (g+d, g+c, g+b, …)
+- `Skeleton.svelte`: Shimmer-Placeholder
+
+Page-Polish:
+- Topbar + Tabbar Glass-Background (backdrop-blur 20px), Tab-Pill-
+  Indicator, supports-fallback für ältere Browser
+- Toast Glass + scale-fade
+- Plan-Viewer: drag-to-move pins, gewerk-filter chips, status-color halo
+- Mängel-Liste: sticky Status-Group-Headers, overdue-Gradient,
+  Prio-1-Badge
+- Aufgaben-Cards: overdue-Gradient + Priority-Hervorhebung
+- Mängel-Detail: Photo-Tile mit Annotation-Button + Lightbox-Zoom
+- Bauzeit: Bar-Hover-Tooltip (Glass), pulsierender Today-Dot,
+  Wochenend-Hatch-Pattern
+- Dashboard: Hero-Progress-Ring mit Counter-Animation, Activity-Feed
+  mit deterministisch-farbigen Initialen-Avataren
+
+Shortcuts:
+- `docs/SHORTCUTS.md` dokumentiert alle Bindings
+- Cmd+K, /, ? für Palette
+- n für „neuer Mangel"
+- g+d/c/b/a/m/k Vim-Chord-Navigation
+
+### DocMa-Features (Phase C — 3 von 6)
+
+In rc2:
+- `VoiceInput.svelte`: Web Speech API mit de-DE für Mängel-Beschreibung,
+  Mikrofon-Button mit Pulse-Animation, Browser-Detection mit Fallback
+- Multi-Photo-Reihenfolge via `sort_order` (Cover = erstes Foto)
+- Textbausteine: 30 VOB-typische Mängel-Texte pro Gewerk
+  (Maler/Fliesenleger/Elektro/Sanitär/Trockenbau/Parkett/Türen/Fenster/
+  Rohbau/Außenanlagen), Dropdown im Mängel-Editor
+
+Phase 5+ (in OPEN_QUESTIONS):
+- Browser-Push-Notifications (OQ-012)
+- Handwerker-Feedback-Public-Link (OQ-013)
+- Email-Daily-Digest (OQ-014)
+- Vollwertiger Step-Through-Abnahme-Workflow (D-019)
+
+### Deutsche Bauspezifika (Phase C7)
+- Audit aller UI-Strings dokumentiert in DECISIONS D-014
+- "Wiedervorlage", "Bauleiter", "Gewerk", "Termin", "Stand:" durchgängig
+- Status-Mapping internal→user-facing (open→Offen, sent→Gesendet, etc.)
+
+### Deploy-Vorbereitung (Phase D)
+- `vercel.json`: Framework-Detection, Frankfurt-Region, Security-Headers
+  (X-Frame-Options DENY, Permissions-Policy für Mic/Cam), Long-Cache für
+  immutable assets
+- `.env.example`: Heavily-commented mit Quellenangaben pro Variable
+- `docs/HANDOFF.md` ergänzt um „Live-Schaltung in 10 Minuten"-Anleitung
+  (8 Schritte, Env-Vars-Tabelle, Trouble-Shooting-Matrix)
+
+### Tag `v1.0.0-rc2`
+
+---
+
 ## [1.0.0-rc1] — 2026-04-29
 
 ### Phase 4 — Polish + Deploy
