@@ -70,6 +70,29 @@ nötig). Wer ist Tenant-Admin? Welche Permissions sind ok?
 Supabase-Free-Tier macht nightly Backups mit 7 Tagen Retention. Reicht das?
 Sonst: Pro-Tier ($25/mo) für 30 Tage. User-Entscheidung.
 
+## OQ-011 — GitHub-Push-Permission
+
+Der lokale Build-Container kann nicht auf den Remote pushen:
+
+```
+remote: Permission to HofmannAI/hofmann-bauleiter.git denied to HofmannAI.
+fatal: ... 403
+```
+
+Auch die GitHub-MCP-Integration hat nur Read-Scope (`create_branch` → 403
+"Resource not accessible by integration"). Der gesamte Branch
+`claude/setup-docs-secrets-WMSDP` ist lokal commitet (alle Phasen 1, 2 und
+große Teile Phase 3) — er muss vom User selbst gepusht werden:
+
+```bash
+git fetch  # holt nichts neues, da nur lokaler State existiert
+git push -u origin claude/setup-docs-secrets-WMSDP
+```
+
+oder via Repository-Owner mit Write-Token. Anschließend kann der Draft-PR
+gegen `main` geöffnet werden mit Titel "Phase 1+2: Foundation, Checklisten,
+Bauzeitenplan-Engine, Aufgaben" — Body-Vorschlag siehe `docs/PROGRESS.md`.
+
 ## OQ-010 — DSGVO / AV-Vertrag mit Supabase
 
 Frankfurt-Region ist DSGVO-konform, aber AV-Vertrag (Auftragsverarbeitung)
