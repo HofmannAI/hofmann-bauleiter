@@ -2,15 +2,44 @@ import { redirect, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks } from '$lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { tasks, taskBaselines, gewerke, houses, apartments, activity } from '$lib/db/schema';
+import { eq, and, asc, desc } from 'drizzle-orm';
 import { loadGaisbachSample } from '$lib/db/projectQueries';
 import { getProjectTasksAndDeps, applyTaskUpdates } from '$lib/db/taskQueries';
 import { propagate, type EngineTask, type EngineDep } from '$lib/gantt/engine';
 
 export const load: PageServerLoad = async ({ params }) => {
   const { tasks: tRows, deps } = await getProjectTasksAndDeps(params.projectId);
-  return { tasks: tRows, deps };
+  if (!db) return { tasks: tRows, deps, gewerke: [], houses: [], baselineLabels: [] };
+
+  const [gewerkeRows, houseRows] = await Promise.all([
+    db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)),
+    db.select().from(houses).where(eq(houses.projectId, params.projectId)).orderBy(asc(houses.sortOrder))
+  ]);
+
+  // Aggregate apartments per house
+  const houseTree = await Promise.all(
+    houseRows.map(async (h) => ({
+      ...h,
+      apartments: await db.select().from(apartments).where(eq(apartments.houseId, h.id)).orderBy(asc(apartments.sortOrder))
+    }))
+  );
+
+  // Distinct baseline labels for picker
+  const baselineRows = await db
+    .select({ label: taskBaselines.snapshotLabel, snapshotAt: taskBaselines.snapshotAt })
+    .from(taskBaselines)
+    .where(eq(taskBaselines.projectId, params.projectId))
+    .orderBy(desc(taskBaselines.snapshotAt));
+  const seen = new Set<string>();
+  const baselineLabels: { label: string; snapshotAt: Date }[] = [];
+  for (const r of baselineRows) {
+    if (seen.has(r.label)) continue;
+    seen.add(r.label);
+    baselineLabels.push({ label: r.label, snapshotAt: r.snapshotAt });
+  }
+
+  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels };
 };
 
 const moveSchema = z.object({
@@ -115,5 +144,55 @@ export const actions: Actions = {
       .where(and(eq(tasks.id, id), eq(tasks.projectId, params.projectId)));
 
     return { ok: true };
+  },
+
+  freezeBaseline: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const label = String(fd.label ?? '').trim() ||
+      `Stand ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+
+    const allTasks = await db
+      .select({ id: tasks.id, startDate: tasks.startDate, endDate: tasks.endDate })
+      .from(tasks)
+      .where(eq(tasks.projectId, params.projectId));
+
+    if (allTasks.length === 0) return fail(400, { error: 'Keine Termine zum Einfrieren.' });
+
+    // Insert in batches of 100 to be safe
+    for (let i = 0; i < allTasks.length; i += 100) {
+      const batch = allTasks.slice(i, i + 100).map((t) => ({
+        taskId: t.id,
+        projectId: params.projectId,
+        plannedStart: t.startDate,
+        plannedEnd: t.endDate,
+        snapshotLabel: label,
+        createdBy: locals.user!.id
+      }));
+      await db.insert(taskBaselines).values(batch);
+    }
+
+    await db.insert(activity).values({
+      projectId: params.projectId,
+      userId: locals.user.id,
+      type: 'baseline_frozen',
+      message: `Baseline "${label}" eingefroren — ${allTasks.length} Termine`,
+      refTable: 'task_baselines',
+      refId: null
+    });
+
+    return { ok: true, label, count: allTasks.length };
+  },
+
+  baselineForLabel: async ({ request, params }) => {
+    if (!db) return fail(500);
+    const fd = Object.fromEntries(await request.formData());
+    const label = String(fd.label ?? '');
+    if (!label) return { ok: true, baseline: [] };
+    const rows = await db
+      .select({ taskId: taskBaselines.taskId, plannedStart: taskBaselines.plannedStart, plannedEnd: taskBaselines.plannedEnd })
+      .from(taskBaselines)
+      .where(and(eq(taskBaselines.projectId, params.projectId), eq(taskBaselines.snapshotLabel, label)));
+    return { ok: true, baseline: rows };
   }
 };

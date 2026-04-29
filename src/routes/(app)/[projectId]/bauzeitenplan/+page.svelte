@@ -2,7 +2,8 @@
   import Gantt from '$lib/components/Gantt.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
+  import { invalidateAll, goto } from '$app/navigation';
+  import { page } from '$app/state';
   import { criticalPath, type EngineTask, type EngineDep } from '$lib/gantt/engine';
   import { toast } from '$lib/components/Toast.svelte';
 
@@ -11,6 +12,99 @@
 
   let selected = $state<string | null>(null);
   let selectedTask = $derived(parent.tasks.find((t) => t.id === selected) ?? null);
+
+  // ---- Filters: gewerk + house (multi-select) — persist in URL ----
+  let gewerkFilter = $state<Set<string>>(new Set());
+  let houseFilter = $state<Set<string>>(new Set());
+  let lookahead = $state<0 | 3 | 4 | 6>(0);
+
+  // Hydrate from URL once on mount
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const g = sp.get('gewerke');
+    const h = sp.get('haus');
+    const la = sp.get('la');
+    if (g) gewerkFilter = new Set(g.split(','));
+    if (h) houseFilter = new Set(h.split(','));
+    if (la === '3' || la === '4' || la === '6') lookahead = Number(la) as 3 | 4 | 6;
+  });
+
+  // Persist back to URL
+  function syncUrl() {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    if (gewerkFilter.size) sp.set('gewerke', [...gewerkFilter].join(','));
+    else sp.delete('gewerke');
+    if (houseFilter.size) sp.set('haus', [...houseFilter].join(','));
+    else sp.delete('haus');
+    if (lookahead) sp.set('la', String(lookahead));
+    else sp.delete('la');
+    const next = sp.toString();
+    const url = next ? `?${next}` : page.url.pathname;
+    history.replaceState({}, '', url);
+  }
+
+  function toggleGewerkFilter(id: string) {
+    const next = new Set(gewerkFilter);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    gewerkFilter = next;
+    syncUrl();
+  }
+  function toggleHouseFilter(id: string) {
+    const next = new Set(houseFilter);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    houseFilter = next;
+    syncUrl();
+  }
+  $effect(() => {
+    void lookahead;
+    syncUrl();
+  });
+
+  // tasks gefiltert (hierarchy bleibt: Eltern bleiben sichtbar wenn ein Kind matcht)
+  let visibleTasks = $derived.by(() => {
+    if (gewerkFilter.size === 0 && houseFilter.size === 0) return parent.tasks;
+    // Determine matching by gewerk + house-name heuristic in task name
+    const houseNames = parent.houses.filter((h) => houseFilter.has(h.id)).map((h) => h.name.toLowerCase());
+    const matches = new Set<string>();
+    for (const t of parent.tasks) {
+      const gewerkOk = gewerkFilter.size === 0 || (t.gewerkId != null && gewerkFilter.has(t.gewerkId));
+      const houseOk = houseFilter.size === 0 || houseNames.some((hn) => t.name.toLowerCase().includes(hn));
+      if (gewerkOk && houseOk) matches.add(t.id);
+    }
+    // Add ancestors of every match
+    const byId = new Map(parent.tasks.map((t) => [t.id, t]));
+    for (const id of [...matches]) {
+      let p = byId.get(id)?.parentId ?? null;
+      while (p) {
+        matches.add(p);
+        p = byId.get(p)?.parentId ?? null;
+      }
+    }
+    return parent.tasks.filter((t) => matches.has(t.id));
+  });
+
+  // ---- Baseline ----
+  let baselineLabel = $state('');
+  let activeBaseline = $state<{ taskId: string; plannedStart: string; plannedEnd: string }[]>([]);
+
+  async function loadBaseline(label: string) {
+    baselineLabel = label;
+    if (!label) {
+      activeBaseline = [];
+      return;
+    }
+    try {
+      const res = await fetch(`/${parent.project.id}/bauzeitenplan/baseline.json?label=${encodeURIComponent(label)}`);
+      if (res.ok) activeBaseline = await res.json();
+    } catch (e) {
+      console.error(e);
+      toast('Baseline konnte nicht geladen werden.');
+    }
+  }
 
   let showCritical = $state(false);
   let cpIds = $derived.by(() => {
@@ -108,12 +202,94 @@
       <button class="filter-pill" class:active={showCritical} onclick={() => (showCritical = !showCritical)}>
         Kritischer Pfad {#if showCritical}<span class="badge">{cpIds.size}</span>{/if}
       </button>
+      {#each [3, 4, 6] as const as wks}
+        <button class="filter-pill" class:active={lookahead === wks} onclick={() => (lookahead = lookahead === wks ? 0 : wks)}>
+          Lookahead {wks}W
+        </button>
+      {/each}
+      <span class="extras-spacer"></span>
+      {#if parent.gewerke.length > 0}
+        <details class="filter-dropdown">
+          <summary class="filter-pill" class:active={gewerkFilter.size > 0}>
+            Gewerk{#if gewerkFilter.size > 0}<span class="badge">{gewerkFilter.size}</span>{/if}
+          </summary>
+          <div class="dropdown-panel">
+            {#each parent.gewerke as g}
+              {@const active = gewerkFilter.has(g.id)}
+              <label class="dropdown-item">
+                <input type="checkbox" checked={active} onchange={() => toggleGewerkFilter(g.id)} />
+                <span class="dot" style:background={g.color}></span>
+                <span>{g.name}</span>
+              </label>
+            {/each}
+            {#if gewerkFilter.size > 0}
+              <button class="dropdown-reset" onclick={() => (gewerkFilter = new Set())}>Zurücksetzen</button>
+            {/if}
+          </div>
+        </details>
+      {/if}
+      {#if parent.houses.length > 0}
+        <details class="filter-dropdown">
+          <summary class="filter-pill" class:active={houseFilter.size > 0}>
+            Haus{#if houseFilter.size > 0}<span class="badge">{houseFilter.size}</span>{/if}
+          </summary>
+          <div class="dropdown-panel">
+            {#each parent.houses as h}
+              {@const active = houseFilter.has(h.id)}
+              <label class="dropdown-item">
+                <input type="checkbox" checked={active} onchange={() => toggleHouseFilter(h.id)} />
+                <span>{h.name}</span>
+              </label>
+            {/each}
+            {#if houseFilter.size > 0}
+              <button class="dropdown-reset" onclick={() => (houseFilter = new Set())}>Zurücksetzen</button>
+            {/if}
+          </div>
+        </details>
+      {/if}
+      <details class="filter-dropdown">
+        <summary class="filter-pill" class:active={!!baselineLabel}>
+          {baselineLabel ? 'Baseline ✓' : 'Baseline'}
+        </summary>
+        <div class="dropdown-panel">
+          {#if parent.baselineLabels.length === 0}
+            <p class="dropdown-empty">Noch keine Baseline.</p>
+          {:else}
+            <label class="dropdown-item">
+              <input type="radio" name="baseline" checked={!baselineLabel} onchange={() => loadBaseline('')} />
+              <span>Aus</span>
+            </label>
+            {#each parent.baselineLabels as bl}
+              <label class="dropdown-item">
+                <input type="radio" name="baseline" checked={baselineLabel === bl.label} onchange={() => loadBaseline(bl.label)} />
+                <span>{bl.label}</span>
+              </label>
+            {/each}
+          {/if}
+          <form method="POST" action="?/freezeBaseline" use:enhance={() => async ({ result, update }) => {
+            await update();
+            if (result.type === 'success') {
+              const data = result.data as { label?: string; count?: number } | undefined;
+              if (data?.label) {
+                toast(`Baseline "${data.label}" eingefroren — ${data.count} Termine`);
+                await invalidateAll();
+              }
+            }
+          }} class="freeze-form">
+            <button class="btn btn-primary btn-sm btn-block" type="submit">
+              <Icon name="archive" size={14} /> Aktuellen Stand einfrieren
+            </button>
+          </form>
+        </div>
+      </details>
     </div>
     <Gantt
-      tasks={parent.tasks}
+      tasks={visibleTasks}
       criticalPathIds={cpIds}
       onSelect={(id) => (selected = id)}
       onMove={previewMove}
+      baseline={activeBaseline}
+      lookaheadWeeks={lookahead}
     />
   {/if}
 </div>
@@ -194,7 +370,19 @@
   .gantt-page { padding: 0; max-width: none; margin: 0; }
   .gantt-empty { padding: 60px 20px; text-align: center; }
   .gantt-empty-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
-  .gantt-extras { padding: 10px 14px; background: var(--paper-tint); border-bottom: 1px solid var(--line); display: flex; gap: 6px; }
+  .gantt-extras { padding: 10px 14px; background: var(--paper-tint); border-bottom: 1px solid var(--line); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .extras-spacer { flex: 1; }
+  .filter-dropdown { position: relative; }
+  .filter-dropdown summary { list-style: none; cursor: pointer; }
+  .filter-dropdown summary::-webkit-details-marker { display: none; }
+  .filter-dropdown[open] summary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .dropdown-panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 25; min-width: 200px; max-height: 320px; overflow-y: auto; background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-2); padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+  .dropdown-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; border-radius: 6px; }
+  .dropdown-item:hover { background: var(--paper-tint); }
+  .dropdown-item .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dropdown-empty { padding: 10px; color: var(--muted); font-size: 12px; text-align: center; margin: 0; }
+  .dropdown-reset { margin-top: 4px; font-size: 12px; color: var(--red); padding: 4px 6px; cursor: pointer; }
+  .freeze-form { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 
   .diff-list { max-height: 280px; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--line); border-radius: var(--r-md); }
   .diff-row { display: flex; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); align-items: center; font-size: 13px; }

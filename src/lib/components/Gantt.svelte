@@ -13,13 +13,22 @@
     sortOrder: number;
   };
 
+  type Baseline = { taskId: string; plannedStart: string; plannedEnd: string };
   type Props = {
     tasks: GTask[];
     onSelect?: (taskId: string) => void;
     onMove?: (taskId: string, newStart: string, newEnd: string) => void;
     criticalPathIds?: Set<string>;
+    baseline?: Baseline[];
+    lookaheadWeeks?: 0 | 3 | 4 | 6;
   };
-  let { tasks, onSelect, onMove, criticalPathIds = new Set<string>() }: Props = $props();
+  let { tasks, onSelect, onMove, criticalPathIds = new Set<string>(), baseline = [], lookaheadWeeks = 0 }: Props = $props();
+
+  let baselineMap = $derived.by(() => {
+    const m = new Map<string, { plannedStart: string; plannedEnd: string }>();
+    for (const b of baseline) m.set(b.taskId, { plannedStart: b.plannedStart, plannedEnd: b.plannedEnd });
+    return m;
+  });
 
   let zoom = $state<'day' | 'week' | 'month'>('week');
   let collapsed = $state<Record<string, boolean>>({});
@@ -29,6 +38,14 @@
   }
 
   let range = $derived.by(() => {
+    if (lookaheadWeeks > 0) {
+      const today = new Date();
+      const start = new Date(today);
+      start.setDate(start.getDate() - 3);
+      const end = new Date(today);
+      end.setDate(end.getDate() + lookaheadWeeks * 7);
+      return { start: fmtDate(start), end: fmtDate(end) };
+    }
     if (tasks.length === 0) {
       const t = new Date();
       return {
@@ -268,7 +285,15 @@
       {/if}
       <div class="gantt-rows">
         {#each visible as t (t.id)}
+          {@const bl = baselineMap.get(t.id)}
           <div class="gantt-row depth-{t.depth}">
+            {#if bl && !isParentMap.has(t.id)}
+              <div
+                class="gantt-baseline"
+                title={`Soll: ${bl.plannedStart} → ${bl.plannedEnd}`}
+                style={`left:${offsetPx(bl.plannedStart)}px;width:${Math.max(8, (daysBetween(bl.plannedStart, bl.plannedEnd) + 1) * dayWidth())}px`}
+              ></div>
+            {/if}
             {#if isParentMap.has(t.id)}
               <div class="gantt-bar summary" style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px`}></div>
             {:else}
@@ -460,6 +485,14 @@
   .gantt-bar.dragging { opacity: .7; cursor: grabbing; z-index: 9; }
   .gantt-bar.armed-touch { box-shadow: 0 0 0 3px var(--red), 0 4px 14px rgba(227, 6, 19, 0.35); }
   .gantt-bar { touch-action: pan-y; }
+  .gantt-baseline {
+    position: absolute; top: 22px; height: 4px;
+    background: transparent;
+    border: 1.5px dashed rgba(15, 15, 16, 0.45);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 1;
+  }
   .gantt-bar { cursor: grab; }
   .gantt-bar-label { display: block; }
   .gantt-bar-tooltip {
