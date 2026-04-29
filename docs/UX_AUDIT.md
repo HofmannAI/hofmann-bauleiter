@@ -255,3 +255,90 @@ Nach Hebelwirkung (visual impact pro Code-Aufwand):
 14. **Empty-State-Illustrations** (Brand-Polish, last)
 
 Realistic time-box: ~3h. Falls eng: 6, 9, 11, 14 vereinfachen oder verschieben.
+
+---
+
+## Loop 3 — Self-Critique nach Implementation
+
+> "Würde Tim Cook das auf der WWDC zeigen?" — die ehrliche Antwort und was es noch braucht.
+
+### Was sitzt gut
+
+**Topbar-Glass + Tabbar-Pill**: das fühlt sich wirklich wie iOS-Settings an. Der
+backdrop-blur(20px) macht den Unterschied. Active-Tab mit red-soft Pill ist
+charakteristisch genug, um auf einen Blick erkannt zu werden, ohne aufdringlich
+zu sein.
+
+**Plan-Viewer Pin-Workflow**: zwischen Tap-für-Preview, Drag-zum-Verschieben,
+Quick-Status-Menu im Inline-Card und Per-Gewerk-Filter haben wir die DocMa MM
+Feature-Parität auf dem Plan deutlich überholt. Der Halo (gewerk-color als
+Background, Status-Border als Halo) ist subtil, lesbar, und visuell klar.
+
+**Photo-Annotator**: sehr nahe an DocMa MM. Stempel-Bibliothek, Undo,
+4 Werkzeuge, sauberes Speicher-Verhalten (Original bleibt). Was noch nicht passt:
+keine Text-Stamp mit Custom-Eingabe (nur die 4 Voreinstellungen). Phase 5+ falls
+Bedarf.
+
+**Cmd+K**: chord-Navigation `g+d` etc. ist genau der Power-User-Move, den
+ein Bauleiter mit ein paar Tagen Routine schätzt. Suchfeld ist responsive,
+Filter ist instant.
+
+**Sheet drag-to-close**: die Pointer-Drag-Geste mit Spring-Snap ist pure iOS.
+
+### Was noch nicht gut sitzt
+
+1. **Skeleton-Screens fehlen**. Bei Initial-Load sehen alle Listen kurz „leer"
+   aus. Auf 3G wäre das spürbar. Status: aufgeschoben (Performance-relevant aber
+   nicht visual breakage).
+
+2. **Pull-to-Refresh fehlt**. Mobile-Native-Feel-Lücke. Aufgeschoben — Realtime
+   sync (Phase 1.7) deckt 80% der use-cases ab; manuelle Refresh ist halt
+   Browser-Reload.
+
+3. **Empty-State-Illustrationen** sind weiterhin "·"-Punkt. Brand-Polish-Lücke.
+   Aufgeschoben: SVG-Illustrations brauchen Designer-Input.
+
+4. **Dashboard Hero-Ring** zeigt 0% statisch. Sollte animiert auf Mount aufladen.
+   Quick-Fix: SVG `stroke-dashoffset` mit transition. → in Loop 3 nachgereicht.
+
+5. **Aktivität-Feed** hat Avatar-Bubbles als "Initialen-Kreis" noch nicht.
+   Aufgeschoben — braucht Profile-Color-Mapping.
+
+6. **Bauzeit Bar-Hover-Tooltip** mit Datum/Dauer fehlt. → in Loop 3 nachgereicht.
+
+7. **Mängel Multi-Select + Bulk-Actions** fehlt. Sticky-Group-Header sind drin,
+   aber Long-Press → Multi-Select ist Phase 5. (Volume zu klein für ROI im RC2.)
+
+8. **Swipe-Actions auf Mängel-Cards** (mobile): Phase 5. CapacitorJS oder reine
+   Touch-Gesten sind für ein 3-Tage-Build over-engineered.
+
+9. **Toast** ist jetzt Glas, aber Stack-Behavior fehlt (mehrere Toasts
+   überschreiben sich). Akzeptabel.
+
+### Was direkt nachgereicht wird
+
+- Hero-Progress-Ring animiert
+- Bauzeit-Bar Hover-Tooltip
+- Aktivität-Feed Avatar-Bubbles aus Initialen + deterministischer Color
+- Skeleton-Component für Listen (universell, billig)
+
+### Bewusst aufgeschoben (Phase 5+)
+
+- Text-Stamp mit Custom-Text in Annotator
+- Pull-to-Refresh
+- Multi-Select + Bulk-Actions auf Mängel-Liste
+- Swipe-Actions auf Mobile
+- Empty-State-SVGs
+- Dark-Mode
+- Bar-Drag Snap-Linien zwischen Tagen
+
+### Verdict
+
+**Würde Tim Cook das zeigen?** Nicht das ganze Produkt — Cron-Calendar wirkt
+auf jeder Pixelreihe noch polierter. Aber die **Plan-Viewer-Page**, der
+**Photo-Annotator** und das **Cmd+K-Erlebnis** haben "Hero-Demo"-Qualität.
+Der Rest ist iOS-Settings-solide.
+
+Für eine Branche, in der DocMa MM heute der Wettbewerber ist — und das ist eine
+Native-App von 2018 mit Native-Tooling — sind wir mit einer 3-Tage-Web-PWA auf
+sehr respektablem Niveau.

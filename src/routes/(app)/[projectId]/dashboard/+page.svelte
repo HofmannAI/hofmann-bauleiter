@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
   import { timeAgo } from '$lib/util/time';
+  import { onMount } from 'svelte';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -10,6 +11,47 @@
     .join(' · ') || 'Noch keine Häuser');
 
   let stats = $derived(parent.stats ?? { checklistsDone: 0, defectsOpen: 0, taskCount: 0 });
+
+  // Project progress: rough heuristic — done checklist items / (done + open defects + open tasks)
+  let percentTarget = $derived(() => {
+    const total = stats.checklistsDone + stats.defectsOpen + stats.taskCount;
+    if (total === 0) return 0;
+    return Math.min(100, Math.round((stats.checklistsDone / total) * 100));
+  });
+
+  let displayPercent = $state(0);
+  onMount(() => {
+    // Counter animation on mount
+    const target = percentTarget();
+    const start = performance.now();
+    const dur = 900;
+    function tick(now: number) {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3); // cubic-out
+      displayPercent = Math.round(target * eased);
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+
+  // Stroke-dashoffset: circumference 2πr where r=34
+  const C = 2 * Math.PI * 34; // 213.628
+  let dashOffset = $derived(C - (displayPercent / 100) * C);
+
+  // Avatar colors per profile id (deterministic hash)
+  function avatarColor(id: string | null | undefined): string {
+    if (!id) return 'var(--grey)';
+    let h = 0;
+    for (const c of id) h = (h << 5) - h + c.charCodeAt(0);
+    const palette = ['#E8833A', '#3B6CC4', '#3FAA60', '#D4A22A', '#7A7570', '#C9482F', '#1E96A8', '#7CB246', '#9F4EAB'];
+    return palette[Math.abs(h) % palette.length];
+  }
+  function initials(name: string | null | undefined): string {
+    if (!name) return '·';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
 </script>
 
 <div class="page">
@@ -21,9 +63,9 @@
       <div class="progress-ring">
         <svg viewBox="0 0 80 80">
           <circle class="ring-bg" cx="40" cy="40" r="34" />
-          <circle class="ring-fg" cx="40" cy="40" r="34" stroke-dasharray="213" stroke-dashoffset="213" />
+          <circle class="ring-fg" cx="40" cy="40" r="34" stroke-dasharray={C} stroke-dashoffset={dashOffset} />
         </svg>
-        <div class="progress-ring-label">0%</div>
+        <div class="progress-ring-label">{displayPercent}%</div>
       </div>
       <div class="hero-stats">
         <div>
@@ -89,12 +131,17 @@
     <div class="activity-feed">
       {#each parent.recent as a (a.id)}
         <div class="activity-item">
-          <span class="activity-icon" class:photo={a.type === 'photo'} class:defect={a.type === 'defect'}>
-            <Icon name={a.type === 'photo' ? 'photo' : a.type === 'defect' ? 'defect' : 'check'} size={15} />
+          <span class="avatar" style:background={avatarColor(a.userName)}>
+            {initials(a.userName)}
           </span>
           <span class="activity-text">
-            <span class="activity-line1">{a.message}</span>
-            <span class="activity-line2">{a.userName ?? 'System'} · {timeAgo(a.ts)}</span>
+            <span class="activity-line1">
+              <b>{a.userName ?? 'System'}</b> {a.message}
+            </span>
+            <span class="activity-line2">
+              <Icon name={a.type === 'photo' ? 'photo' : a.type === 'defect' ? 'defect' : a.type === 'task_moved' ? 'gantt' : 'check'} size={11} />
+              {timeAgo(a.ts)}
+            </span>
           </span>
         </div>
       {/each}
@@ -119,4 +166,14 @@
     background: var(--red-soft); color: var(--red);
     display: flex; align-items: center; justify-content: center;
   }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    color: #fff; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-weight: 700; font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+  .activity-line1 :global(b) { font-weight: 700; color: var(--ink); }
+  .activity-line2 { display: inline-flex; align-items: center; gap: 5px; }
+  .activity-line2 :global(svg) { color: var(--muted); }
 </style>

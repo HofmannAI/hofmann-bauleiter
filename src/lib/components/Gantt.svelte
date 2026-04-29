@@ -74,6 +74,23 @@
     return Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
   }
 
+  function weekends(): { left: number; width: number }[] {
+    if (zoom === 'month') return []; // too dense to render
+    const out: { left: number; width: number }[] = [];
+    const start = parseDate(range.start);
+    const end = parseDate(range.end);
+    const cur = new Date(start);
+    while (cur <= end) {
+      const dow = cur.getDay();
+      if (dow === 0 || dow === 6) {
+        const left = daysBetween(range.start, fmtDate(cur)) * dayWidth();
+        out.push({ left, width: dayWidth() });
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    return out;
+  }
+
   function months(): { label: string; left: number; width: number }[] {
     const out: { label: string; left: number; width: number }[] = [];
     const start = parseDate(range.start);
@@ -175,6 +192,9 @@
           <div class="gantt-axis-month" style={`left:${m.left}px;width:${m.width}px`}>{m.label}</div>
         {/each}
       </div>
+      {#each weekends() as w}
+        <div class="gantt-weekend" style={`left:${w.left}px;width:${w.width}px`}></div>
+      {/each}
       {#if todayPos() !== null}
         <div class="gantt-today-line" style={`left:${todayPos()}px`}>
           <span class="gantt-today-pulse"></span>
@@ -194,8 +214,13 @@
                 style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
                 onclick={() => { if (!dragging) onSelect?.(t.id); }}
                 onmousedown={(e) => onBarMouseDown(e, t)}
-                title={`${t.name} · ${t.startDate} → ${t.endDate}`}
-              >{t.name}</button>
+              >
+                <span class="gantt-bar-label">{t.name}</span>
+                <span class="gantt-bar-tooltip" role="tooltip">
+                  <span class="tooltip-name">{t.name}</span>
+                  <span class="tooltip-meta">{t.startDate} → {t.endDate}</span>
+                </span>
+              </button>
             {/if}
           </div>
         {/each}
@@ -299,6 +324,18 @@
     color: var(--ink); padding: 0 8px;
     white-space: nowrap; overflow: hidden;
   }
+  .gantt-weekend {
+    position: absolute; top: 60px; bottom: 0;
+    background: repeating-linear-gradient(
+      135deg,
+      rgba(15, 15, 16, 0.018) 0,
+      rgba(15, 15, 16, 0.018) 4px,
+      rgba(15, 15, 16, 0.04) 4px,
+      rgba(15, 15, 16, 0.04) 8px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
   .gantt-today-line {
     position: absolute; top: 30px; bottom: 0; width: 2px;
     background: var(--red); z-index: 8; pointer-events: none;
@@ -344,6 +381,27 @@
   .gantt-bar.critical { box-shadow: 0 0 0 2px var(--red), 0 1px 2px rgba(0,0,0,.1); }
   .gantt-bar.dragging { opacity: .7; cursor: grabbing; z-index: 9; }
   .gantt-bar { cursor: grab; }
+  .gantt-bar-label { display: block; }
+  .gantt-bar-tooltip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    background: var(--glass-dark);
+    -webkit-backdrop-filter: var(--blur-std);
+    backdrop-filter: var(--blur-std);
+    color: #fff;
+    padding: 6px 10px; border-radius: 8px;
+    box-shadow: var(--shadow-2);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--d-fast) var(--ease-out-expo),
+                transform var(--d-fast) var(--ease-out-expo);
+    z-index: 30;
+    white-space: nowrap;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .gantt-bar-tooltip .tooltip-name { font-family: var(--display); font-weight: 700; font-size: 12px; }
+  .gantt-bar-tooltip .tooltip-meta { font-family: var(--mono); font-size: 10px; opacity: 0.8; }
+  .gantt-bar:hover .gantt-bar-tooltip { opacity: 1; transform: translateX(-50%) scale(1); }
   .gantt-bar.summary {
     height: 8px; top: 12px; border-radius: 2px;
     background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
