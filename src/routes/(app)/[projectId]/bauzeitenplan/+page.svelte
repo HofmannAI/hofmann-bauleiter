@@ -6,6 +6,7 @@
   import { page } from '$app/state';
   import { criticalPath, type EngineTask, type EngineDep } from '$lib/gantt/engine';
   import { toast } from '$lib/components/Toast.svelte';
+  import { confirm } from '$lib/components/ConfirmDialog.svelte';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -169,7 +170,7 @@
 
   async function deleteDep() {
     if (!depPopover) return;
-    if (!confirm('Abhängigkeit löschen?')) return;
+    if (!(await confirm({ title: 'Abhängigkeit löschen?', confirmLabel: 'Löschen', danger: true }))) return;
     const fd = new FormData();
     fd.append('depId', depPopover.id);
     const res = await fetch('?/deleteDep', { method: 'POST', body: fd });

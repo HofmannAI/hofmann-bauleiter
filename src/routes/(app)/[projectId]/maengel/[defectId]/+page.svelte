@@ -4,6 +4,7 @@
   import VoiceInput from '$lib/components/VoiceInput.svelte';
   import { uploadDefectPhoto, getSignedUrl } from '$lib/storage/photos';
   import { toast } from '$lib/components/Toast.svelte';
+  import { confirm } from '$lib/components/ConfirmDialog.svelte';
   import { invalidateAll } from '$app/navigation';
   import { fmtDateDe, timeAgo } from '$lib/util/time';
   import { haptic } from '$lib/motion';
@@ -80,7 +81,7 @@
   }
 
   async function delPhoto(photoId: string) {
-    if (!confirm('Foto löschen?')) return;
+    if (!(await confirm({ title: 'Foto löschen?', confirmLabel: 'Löschen', danger: true }))) return;
     await postForm('deletePhoto', { photoId });
     await invalidateAll();
   }

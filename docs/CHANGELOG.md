@@ -7,6 +7,14 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(ux/confirm-dialog): `ConfirmDialog.svelte` ersetzt das native
+  `window.confirm()` durch einen Sheet-basierten Dialog mit imperativer
+  `await confirm({title, description?, confirmLabel?, danger?})`-API.
+  Mobile-friendly (44px+ Touch-Targets), haptic-feedback bei Bestätigung,
+  ESC + Drag-to-close. Eingebaut in 6 destruktiven Aktionen
+  (Foto-Löschen × 2, Termin-Löschen, Kontakt-Löschen, Musterdetail-Löschen,
+  Dependency-Löschen). Fallback auf `window.confirm` wenn Host nicht
+  gemounted ist (z.B. SSR/Tests). (PR #12)
 - feat(bauzeit/deps): Drag&Drop-Dependencies wie in MS-Project. Hover-
   Handles auf jeder Bar (Start + Ende), Drag von einem Handle zu einer
   anderen Bar erzeugt Abhängigkeit (Pred-Handle × Succ-Handle bestimmt
