@@ -155,6 +155,7 @@ export const tasks = pgTable('tasks', {
   perApartment: boolean('per_apartment').default(false).notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
   notes: text('notes'),
+  progressPct: integer('progress_pct').default(0).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });

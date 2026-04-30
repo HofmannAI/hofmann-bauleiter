@@ -59,6 +59,30 @@ export const actions: Actions = {
     return { ok: true };
   },
 
+  setProgress: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const parsed = z.object({ pct: z.coerce.number().int().min(0).max(100) }).safeParse(fd);
+    if (!parsed.success) return fail(400, { error: 'Ungültiger Wert.' });
+
+    const [row] = await db
+      .update(tasks)
+      .set({ progressPct: parsed.data.pct, updatedAt: new Date() })
+      .where(and(eq(tasks.id, params.taskId), eq(tasks.projectId, params.projectId)))
+      .returning({ name: tasks.name });
+    if (!row) return fail(404);
+
+    await db.insert(activity).values({
+      projectId: params.projectId,
+      userId: locals.user.id,
+      type: 'task_edit',
+      message: `Termin "${row.name}" auf ${parsed.data.pct}% gesetzt`,
+      refTable: 'tasks',
+      refId: params.taskId
+    });
+    return { ok: true };
+  },
+
   setApartment: async ({ request, params, locals }) => {
     if (!locals.user || !db) return fail(401);
     const fd = Object.fromEntries(await request.formData());

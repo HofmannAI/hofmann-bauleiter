@@ -11,6 +11,7 @@
     color: string | null;
     depth: number;
     sortOrder: number;
+    progressPct?: number;
   };
 
   type Baseline = { taskId: string; plannedStart: string; plannedEnd: string };
@@ -451,10 +452,16 @@
                 onpointercancel={onBarPointerCancel}
                 data-task-id={t.id}
               >
+                {#if (t.progressPct ?? 0) > 0}
+                  <span class="gantt-bar-progress" style={`width:${Math.min(100, t.progressPct ?? 0)}%`}></span>
+                {/if}
                 <span class="gantt-bar-label">{t.name}</span>
                 <span class="gantt-bar-tooltip" role="tooltip">
                   <span class="tooltip-name">{t.name}</span>
                   <span class="tooltip-meta">{t.startDate} → {t.endDate}</span>
+                  {#if (t.progressPct ?? 0) > 0}
+                    <span class="tooltip-meta">Fortschritt: {t.progressPct}%</span>
+                  {/if}
                   {#if criticalPathIds.has(t.id)}
                     <span class="tooltip-crit">Kritisch — Verzögerung wirkt 1:1 auf Übergabe</span>
                   {/if}
@@ -684,6 +691,12 @@
     min-width: 8px; border: none;
   }
   .gantt-bar:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0, 0, 0, .18); z-index: 6; }
+  .gantt-bar-progress {
+    position: absolute; left: 0; bottom: 0; top: 0;
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 4px 0 0 4px;
+    pointer-events: none;
+  }
   .gantt-bar.critical {
     box-shadow: 0 0 0 2px var(--red), 0 1px 2px rgba(0,0,0,.1);
     animation: critPulse 2.4s ease-in-out infinite;
