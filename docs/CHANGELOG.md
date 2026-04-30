@@ -7,6 +7,16 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(search/cmdk): Volltextsuche über Mängel/Kontakte/Termine pro
+  Projekt. Cmd+K zeigt nach 2+ Zeichen Live-Treffer (debounced 220ms).
+  Backend: pg_trgm GIN-Indexe (Migration 0008) + Drizzle-Endpoint
+  `/api/search?projectId&q=`. Trigram-Similarity ranked top 5 pro Kind,
+  RLS-respektiert (project-membership-Check vor Query). Klick navigiert
+  zu Mangel-Detail / Bauzeit-Editor / Kontakte-Liste.
+  **Migration 0008_search_trigram.sql benötigt** — der User muss sie
+  manuell im Supabase-SQL-Editor laufen lassen vor Merge. Idempotent
+  (`CREATE EXTENSION IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`),
+  zero-downtime. (PR #13)
 - feat(bauzeit/deps): Drag&Drop-Dependencies wie in MS-Project. Hover-
   Handles auf jeder Bar (Start + Ende), Drag von einem Handle zu einer
   anderen Bar erzeugt Abhängigkeit (Pred-Handle × Succ-Handle bestimmt
