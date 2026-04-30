@@ -3,6 +3,7 @@
   import { uploadMusterdetailImage } from '$lib/storage/photos';
   import { invalidateAll } from '$app/navigation';
   import { toast } from '$lib/components/Toast.svelte';
+  import { confirm } from '$lib/components/ConfirmDialog.svelte';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -32,7 +33,7 @@
   }
 
   async function del(id: string) {
-    if (!confirm('Wirklich löschen?')) return;
+    if (!(await confirm({ title: 'Bild wirklich löschen?', confirmLabel: 'Löschen', danger: true }))) return;
     const fd = new FormData();
     fd.append('id', id);
     await fetch('?/delete', { method: 'POST', body: fd });
