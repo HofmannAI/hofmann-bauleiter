@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import { fmtDateDe } from '$lib/util/time';
   import type { AufgabeRow } from './+page.server';
 
@@ -81,10 +82,35 @@
   </div>
 
   {#if visible.length === 0}
-    <div class="empty">
-      <div class="empty-emoji">·</div>
-      <div class="empty-text">Alles im Plan.</div>
-    </div>
+    {#if filter === 'ueberfaellig'}
+      <EmptyState
+        variant="success"
+        icon="check"
+        title="Nichts überfällig."
+        description="Alle Termine und Mängel laufen im Zeitplan."
+      />
+    {:else if filter === 'heute'}
+      <EmptyState
+        variant="success"
+        icon="check"
+        title="Heute frei."
+        description="Keine Aufgaben für heute fällig."
+      />
+    {:else if filter === 'woche'}
+      <EmptyState
+        variant="success"
+        icon="calendar"
+        title="Diese Woche entspannt."
+        description="Keine Aufgaben in den nächsten 7 Tagen fällig."
+      />
+    {:else}
+      <EmptyState
+        variant="success"
+        icon="check"
+        title="Alles im Plan."
+        description="Sobald Termine oder Mängel mit Deadline anstehen, tauchen sie hier auf."
+      />
+    {/if}
   {:else}
     {#each ['ueberfaellig', 'woche', 'kommend', 'spaeter'] as group}
       {#if grouped[group].length > 0}

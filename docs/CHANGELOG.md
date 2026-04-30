@@ -4,7 +4,17 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 
 ---
 
-## [unreleased] — 2026-04-30 (post-rc2)
+## [unreleased] — post-rc2
+
+### Added
+- feat(ux/empty-states): `EmptyState.svelte`-Komponente ersetzt das alte
+  „·"-Emoji + grauer Text. Drei Varianten (default/success/info), optionaler
+  CTA-Slot, kompakter Modus für Inline-Verwendung. Eingebaut in:
+  - **Aufgaben**: kontextspezifische Texte pro Filter
+    („Nichts überfällig" / „Heute frei" / „Diese Woche entspannt" / „Alles im Plan")
+  - **Mängel**: Onboarding-CTA „Ersten Mangel anlegen" wenn noch nichts da ist,
+    sonst „Keine Treffer im Filter" mit Reset-Hint
+  Sehr kleines Diff (3 Files), klare visuelle Aufwertung. (PR #9)
 
 ### Fixed
 - `GET /<projectId>/checklisten` warf 500 mit

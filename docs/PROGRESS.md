@@ -1,8 +1,15 @@
 # PROGRESS
 
-**Hotfix post-rc2** (2026-04-30): `/checklisten` 500er behoben — falsche
-FROM-clause in 2 Aggregat-Queries (`listChecklistsWithProgress`).
-PR-Body: siehe `claude/fix-checklisten-from-clause`.
+**post-rc2 Session** (heute):
+- PR #5 (gemerged): /checklisten FROM-clause-Fix
+- PR #6 (offen, CI-Re-Run nötig): /checklisten/[id] empty-progress IN()-Fix
+- PR #7 (offen, **Migration 0007**): Plan-Crop für Mängel
+- PR #8 (offen, KEINE Migration): Gantt-Drag&Drop-Dependencies
+- PR #9 (offen): Design-Politur — EmptyState-Komponente, kontextspezifische
+  Empty-States in Aufgaben + Mängel
+
+Als Nächstes: PR #10 (Musterdetails-Modul), PR #11 (QR-Freimeldung),
+PR #12 (Portfolio-Dashboard).
 
 **BUILD COMPLETE v1.0.0-rc2** — Migration-Fix, Premium-UX, DocMa-Features, Deploy-Ready.
 
