@@ -63,6 +63,7 @@
             status: d.status,
             deadline: d.deadline,
             photoStoragePaths: photos.map((p) => p.storagePath),
+            planCropPath: d.planCropPath ?? null,
             page: d.page,
             xPct: d.xPct != null ? Number(d.xPct) : null,
             yPct: d.yPct != null ? Number(d.yPct) : null

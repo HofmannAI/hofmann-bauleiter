@@ -4,9 +4,18 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 
 ---
 
-## [unreleased] — 2026-04-30 (post-rc2)
+## [unreleased] — post-rc2
+
+### Added
+- feat(maengel/plan-crop): Beim Pin-Setzen wird ein 400×300px-JPEG-Crop
+  um den Pin generiert (rotes Markierungs-Symbol mittig), in
+  `defect-crops/<projectId>/<draftId>.jpg` hochgeladen und als
+  `defects.plan_crop_path` referenziert. PDF-Mängelreport zeigt den
+  Crop oberhalb der Fotos. Migration 0007 nötig. Existierende Mängel
+  ohne Crop bleiben funktional (NULL-Handling). (PR #7)
 
 ### Fixed
+- fix(checklisten/detail): empty-progress 500er. (PR #6, separat)
 - `GET /<projectId>/checklisten` warf 500 mit
   `PostgresError: missing FROM-clause entry for table "checklists"`.
   In `listChecklistsWithProgress` referenzierten zwei Aggregat-Queries

@@ -96,6 +96,21 @@
   async function createPin() {
     if (!pinDraft || !title.trim()) return;
     creating = true;
+
+    // Plan-Crop client-seitig generieren (best-effort, blockiert nicht)
+    let planCropPath: string | null = null;
+    try {
+      const { cropPlanAroundPin } = await import('$lib/util/crop');
+      const { uploadPlanCrop } = await import('$lib/storage/photos');
+      const blob = await cropPlanAroundPin(canvasEl, pinDraft.xPct, pinDraft.yPct);
+      const draftId = crypto.randomUUID();
+      const { path } = await uploadPlanCrop(parent.project.id, draftId, blob);
+      planCropPath = path;
+    } catch (err) {
+      // Nicht blockierend — Mangel wird auch ohne Crop angelegt
+      console.warn('[plan-crop] failed:', err);
+    }
+
     const fd = new FormData();
     fd.append('title', title);
     fd.append('gewerkId', gewerkId);
@@ -104,6 +119,7 @@
     fd.append('xPct', pinDraft.xPct.toFixed(2));
     fd.append('yPct', pinDraft.yPct.toFixed(2));
     fd.append('priority', '2');
+    if (planCropPath) fd.append('planCropPath', planCropPath);
     if (pinDraftPhotos.length > 0) {
       fd.append('photos', JSON.stringify(
         pinDraftPhotos.map((p) => ({ storagePath: p.storagePath, width: p.width, height: p.height }))
