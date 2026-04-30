@@ -1,5 +1,9 @@
 # PROGRESS
 
+**Hotfix post-rc2** (2026-04-30): `/checklisten` 500er behoben — falsche
+FROM-clause in 2 Aggregat-Queries (`listChecklistsWithProgress`).
+PR-Body: siehe `claude/fix-checklisten-from-clause`.
+
 **BUILD COMPLETE v1.0.0-rc2** — Migration-Fix, Premium-UX, DocMa-Features, Deploy-Ready.
 
 Vorgänger: `v1.0.0-rc1` (alle 4 Phasen aus `MASTER_SPEC.md` umgesetzt).
