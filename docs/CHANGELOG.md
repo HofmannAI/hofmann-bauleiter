@@ -7,6 +7,7 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(bauzeit/deps): Drag&Drop-Dependencies wie in MS-Project. (PR #8)
 - feat(ux/empty-states): `EmptyState.svelte`-Komponente ersetzt das alte
   „·"-Emoji + grauer Text. Drei Varianten (default/success/info), optionaler
   CTA-Slot, kompakter Modus für Inline-Verwendung. Eingebaut in:
@@ -17,14 +18,17 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   Sehr kleines Diff (3 Files), klare visuelle Aufwertung. (PR #9)
 
 ### Fixed
-- `GET /<projectId>/checklisten` warf 500 mit
+- fix(checklisten/detail): `GET /<projectId>/checklisten/<id>` warf 500 mit
+  `PostgresError: syntax error at or near ')'` für jede Liste ohne
+  `checklist_progress`-Einträge (z.B. Rohbau direkt nach Seed). In
+  `loadChecklistDetail` baute `sql\`progress_id IN (${sql.join(progress.map(...), ...)})\``
+  bei leerem `progress` ein nacktes `IN ()`. Fix: `inArray(...)` mit
+  Length-Guard, drizzle ≥ 0.36 produziert daraus einen falsy Ausdruck.
+  Regression-Test in `tests/unit/checklist-queries.test.ts`. (PR #6)
+- fix(checklisten/list): `GET /<projectId>/checklisten` warf 500 mit
   `PostgresError: missing FROM-clause entry for table "checklists"`.
-  In `listChecklistsWithProgress` referenzierten zwei Aggregat-Queries
-  (doneCount, photoCount) `checklists.id` im WHERE, ohne die Tabelle in
-  FROM zu joinen. Postgres validiert Spalten beim PARSE — Query schlug
-  schon vor Ausführung fehl. Fix: `eq(checklistSections.checklistId, cl.id)`
-  (checklist_sections ist via innerJoin schon im FROM, hat den Link auf
-  die Checkliste). Minimal-invasiv, eine Spalte pro Stelle.
+  Zwei Aggregat-Queries referenzierten `checklists.id` im WHERE ohne
+  FROM-Join. Fix: `eq(checklistSections.checklistId, cl.id)`. (PR #5)
 
 ---
 

@@ -2,14 +2,19 @@
 
 **post-rc2 Session** (heute):
 - PR #5 (gemerged): /checklisten FROM-clause-Fix
-- PR #6 (offen, CI-Re-Run nötig): /checklisten/[id] empty-progress IN()-Fix
+- PR #6 (gemerged): /checklisten/[id] empty-progress IN()-Fix
 - PR #7 (offen, **Migration 0007**): Plan-Crop für Mängel
-- PR #8 (offen, KEINE Migration): Gantt-Drag&Drop-Dependencies
-- PR #9 (offen): Design-Politur — EmptyState-Komponente, kontextspezifische
+- PR #8 (gemerged, KEINE Migration): Gantt-Drag&Drop-Dependencies
+- PR #9 (gemerged): Design-Politur — EmptyState-Komponente, kontextspezifische
   Empty-States in Aufgaben + Mängel
+- PR #11 (gemerged): CI pnpm version conflict fix
 
-Als Nächstes: PR #10 (Musterdetails-Modul), PR #11 (QR-Freimeldung),
-PR #12 (Portfolio-Dashboard).
+**Hotfix post-rc2 #2**: `/checklisten/<id>` 500er behoben — leeres
+`progress[]` produzierte `IN ()`-Syntax-Fehler in `loadChecklistDetail`.
+Fix: `inArray()` mit Length-Guard. Regression-Test eingebaut. (PR #6)
+
+**Hotfix post-rc2 #1**: `/checklisten` 500er behoben — falsche FROM-clause
+in 2 Aggregat-Queries (`listChecklistsWithProgress`). (PR #5)
 
 **BUILD COMPLETE v1.0.0-rc2** — Migration-Fix, Premium-UX, DocMa-Features, Deploy-Ready.
 
