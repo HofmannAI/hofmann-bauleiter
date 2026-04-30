@@ -7,7 +7,17 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
-- feat(bauzeit/deps): Drag&Drop-Dependencies wie in MS-Project. (PR #8)
+- feat(bauzeit/deps): Drag&Drop-Dependencies wie in MS-Project. Hover-
+  Handles auf jeder Bar (Start + Ende), Drag von einem Handle zu einer
+  anderen Bar erzeugt Abhängigkeit (Pred-Handle × Succ-Handle bestimmt
+  Typ: FS/SS/FF/SF). Mobile-Fallback: right-click oder long-press auf
+  Handle aktiviert Connector-Mode, dann Tap auf Ziel-Bar. Pfeile als
+  rechtwinklige SVG-Polylinien zwischen Bars (mit `<marker>`-Pfeil).
+  Click auf Pfeil öffnet Edit-Dialog (Typ + Lag in AT + Löschen).
+  Server actions: createDep/updateDep/deleteDep mit Zod-Validation,
+  RLS-Check via project-membership der Tasks. Idempotent (Duplikat
+  wird zu Update). Keine Migration nötig — `task_dependencies` existiert
+  schon. (PR #8)
 - feat(ux/empty-states): `EmptyState.svelte`-Komponente ersetzt das alte
   „·"-Emoji + grauer Text. Drei Varianten (default/success/info), optionaler
   CTA-Slot, kompakter Modus für Inline-Verwendung. Eingebaut in:

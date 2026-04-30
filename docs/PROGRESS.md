@@ -5,6 +5,7 @@
 - PR #6 (gemerged): /checklisten/[id] empty-progress IN()-Fix
 - PR #7 (offen, **Migration 0007**): Plan-Crop für Mängel
 - PR #8 (gemerged, KEINE Migration): Gantt-Drag&Drop-Dependencies
+  (MS-Project-Niveau, FS/SS/FF/SF, Mobile-Connector-Mode, Edit-Popover)
 - PR #9 (gemerged): Design-Politur — EmptyState-Komponente, kontextspezifische
   Empty-States in Aufgaben + Mängel
 - PR #11 (gemerged): CI pnpm version conflict fix
