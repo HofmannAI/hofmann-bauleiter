@@ -132,3 +132,52 @@ mit allen offenen Mängeln/Aufgaben. → Cron via Vercel Cron-Jobs oder
 Supabase Edge-Functions.
 
 Aufwand ~1 Tag. Phase 5+.
+
+## OQ-015 — Musterdetails-Modul Tab-Position
+
+Master-Prompt fragt explizit: eigener Tab „Musterdetails" oder Untermenü
+unter „Übersicht"? Aktuell hat der Tabbar 6 Tabs (Übersicht, Checklisten,
+Bauzeit, Aufgaben, Mängel, Aktivität) plus Topbar-Menü-Items für
+Kontakte/Musterdetails/Gewerk-Checklisten.
+
+Vorschlag: **Untermenü unter Übersicht** statt 7. Tab — die Musterdetails
+sind ein Vor-Ort-Workflow, nicht etwas was Bauleiter alle 30s im Tabbar
+tappen will. Das hält Mobile sauber.
+
+Wenn anders gewünscht: kurz Bescheid geben, ich baue um in PR #10.
+
+## OQ-016 — QR-Code-Freimeldung: HMAC-Secret-Strategie
+
+Public-Route `/m/<id>?t=<token>` braucht einen Server-Secret zum HMAC-
+signieren der Tokens. Optionen:
+
+1. **Neue env-var `RESOLUTION_HMAC_SECRET`** (32+ Zeichen random) —
+   einfach, aber muss in Vercel + lokalem .env hinterlegt werden, plus
+   bei Rotation re-deploy nötig (alle alten Tokens werden invalid).
+2. **Supabase signed-URL für eine 'token'-Spalte** — Supabase erzeugt
+   und verifiziert für uns. Limit: max 1 Jahr Expiry, sehr lang hashed.
+3. **Eigene Random-Tokens in `defects.resolution_token`** speichern
+   (kein HMAC, nur Compare). Simpler, aber DB-Round-Trip pro Request
+   — bei vielen Pings auf den Public-Link spürbar.
+
+Empfehlung: Option 1. Aufwand ~1h für Migration + Endpunkt + Form.
+Voraussetzung: User legt Secret an + Vercel-env-var.
+
+Hat heute Stop-Condition getriggert (externe Credential), deshalb
+PR #11 nicht angefangen.
+
+## OQ-017 — Portfolio-Dashboard: Rolle „GF" ja/nein?
+
+Master-Prompt fragt: rolle `profiles.role` neue Spalte für GF? Oder
+„alle Mitglieder von >2 Projekten sehen Portfolio"?
+
+Pragmatisch:
+- `profiles.role` existiert schon mit Enum `'admin' | 'bauleiter'`
+- **`role = 'admin'`-Profile sehen alle Projekte im Portfolio**, andere
+  sehen nur ihre Memberships
+- Default-Heuristik bei ambig: Laurenz ist Admin, Rest Bauleiter
+- Über CLI/SQL kann das später angepasst werden
+
+Alternative: separater `role = 'gf'` als drittes Enum. Aber Admin reicht.
+
+Bestätigung gewünscht bevor PR #12 angefangen wird.
