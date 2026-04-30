@@ -18,6 +18,14 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   RLS-Check via project-membership der Tasks. Idempotent (Duplikat
   wird zu Update). Keine Migration nötig — `task_dependencies` existiert
   schon. (PR #8)
+- feat(ux/empty-states): `EmptyState.svelte`-Komponente ersetzt das alte
+  „·"-Emoji + grauer Text. Drei Varianten (default/success/info), optionaler
+  CTA-Slot, kompakter Modus für Inline-Verwendung. Eingebaut in:
+  - **Aufgaben**: kontextspezifische Texte pro Filter
+    („Nichts überfällig" / „Heute frei" / „Diese Woche entspannt" / „Alles im Plan")
+  - **Mängel**: Onboarding-CTA „Ersten Mangel anlegen" wenn noch nichts da ist,
+    sonst „Keine Treffer im Filter" mit Reset-Hint
+  Sehr kleines Diff (3 Files), klare visuelle Aufwertung. (PR #9)
 
 ### Fixed
 - fix(checklisten/detail): `GET /<projectId>/checklisten/<id>` warf 500 mit

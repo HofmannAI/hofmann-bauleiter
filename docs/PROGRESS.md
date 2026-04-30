@@ -6,6 +6,8 @@
 - PR #7 (offen, **Migration 0007**): Plan-Crop für Mängel
 - PR #8 (gemerged, KEINE Migration): Gantt-Drag&Drop-Dependencies
   (MS-Project-Niveau, FS/SS/FF/SF, Mobile-Connector-Mode, Edit-Popover)
+- PR #9 (gemerged): Design-Politur — EmptyState-Komponente, kontextspezifische
+  Empty-States in Aufgaben + Mängel
 - PR #11 (gemerged): CI pnpm version conflict fix
 
 **Hotfix post-rc2 #2**: `/checklisten/<id>` 500er behoben — leeres
@@ -14,9 +16,6 @@ Fix: `inArray()` mit Length-Guard. Regression-Test eingebaut. (PR #6)
 
 **Hotfix post-rc2 #1**: `/checklisten` 500er behoben — falsche FROM-clause
 in 2 Aggregat-Queries (`listChecklistsWithProgress`). (PR #5)
-
-Als Nächstes geplant: PR #7 (Plan-Crop für Mängel — enthält Migration),
-PR #9 (Design-Politur).
 
 **BUILD COMPLETE v1.0.0-rc2** — Migration-Fix, Premium-UX, DocMa-Features, Deploy-Ready.
 
