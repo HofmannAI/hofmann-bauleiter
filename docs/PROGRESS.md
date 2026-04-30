@@ -1,8 +1,15 @@
 # PROGRESS
 
-**Hotfix post-rc2** (2026-04-30): `/checklisten` 500er behoben — falsche
-FROM-clause in 2 Aggregat-Queries (`listChecklistsWithProgress`).
-PR-Body: siehe `claude/fix-checklisten-from-clause`.
+**Hotfix post-rc2 #2** (heute): `/checklisten/<id>` 500er behoben — leeres
+`progress[]` produzierte `IN ()`-Syntax-Fehler in `loadChecklistDetail`.
+Fix: `inArray()` mit Length-Guard. Regression-Test eingebaut. (PR #6)
+
+**Hotfix post-rc2 #1**: `/checklisten` 500er behoben — falsche FROM-clause
+in 2 Aggregat-Queries (`listChecklistsWithProgress`). (PR #5)
+
+Als Nächstes geplant: PR #7 (Plan-Crop für Mängel — enthält Migration),
+PR #8 (Gantt-Drag&Drop-Dependencies — MS-Project-Niveau), PR #9
+(Design-Politur).
 
 **BUILD COMPLETE v1.0.0-rc2** — Migration-Fix, Premium-UX, DocMa-Features, Deploy-Ready.
 

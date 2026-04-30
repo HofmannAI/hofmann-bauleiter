@@ -8,7 +8,7 @@ import {
   houses,
   apartments
 } from './schema';
-import { eq, asc, and, sql } from 'drizzle-orm';
+import { eq, asc, and, sql, inArray } from 'drizzle-orm';
 
 export type ScopeInstance = {
   key: string;
@@ -163,10 +163,12 @@ export async function loadChecklistDetail(projectId: string, checklistId: string
       )
     );
 
-  const photos = await db
-    .select()
-    .from(checklistPhotos)
-    .where(sql`progress_id IN (${sql.join(progress.map((p) => sql`${p.id}`), sql`, `)})`);
+  const photos = progress.length > 0
+    ? await db
+        .select()
+        .from(checklistPhotos)
+        .where(inArray(checklistPhotos.progressId, progress.map((p) => p.id)))
+    : [];
 
   const progressMap = new Map<string, { id: string; done: boolean; doneDate: string | null; notes: string | null; photoIds: string[] }>();
   for (const p of progress) {
