@@ -1,6 +1,14 @@
 # PROGRESS
 
-**Hotfix post-rc2 #2** (heute): `/checklisten/<id>` 500er behoben — leeres
+**post-rc2 Session** (heute):
+- PR #5 (gemerged): /checklisten FROM-clause-Fix
+- PR #6 (gemerged): /checklisten/[id] empty-progress IN()-Fix
+- PR #7 (offen, **Migration 0007**): Plan-Crop für Mängel
+- PR #8 (gemerged, KEINE Migration): Gantt-Drag&Drop-Dependencies
+  (MS-Project-Niveau, FS/SS/FF/SF, Mobile-Connector-Mode, Edit-Popover)
+- PR #11 (gemerged): CI pnpm version conflict fix
+
+**Hotfix post-rc2 #2**: `/checklisten/<id>` 500er behoben — leeres
 `progress[]` produzierte `IN ()`-Syntax-Fehler in `loadChecklistDetail`.
 Fix: `inArray()` mit Length-Guard. Regression-Test eingebaut. (PR #6)
 
@@ -8,8 +16,7 @@ Fix: `inArray()` mit Length-Guard. Regression-Test eingebaut. (PR #6)
 in 2 Aggregat-Queries (`listChecklistsWithProgress`). (PR #5)
 
 Als Nächstes geplant: PR #7 (Plan-Crop für Mängel — enthält Migration),
-PR #8 (Gantt-Drag&Drop-Dependencies — MS-Project-Niveau), PR #9
-(Design-Politur).
+PR #9 (Design-Politur).
 
 **BUILD COMPLETE v1.0.0-rc2** — Migration-Fix, Premium-UX, DocMa-Features, Deploy-Ready.
 
