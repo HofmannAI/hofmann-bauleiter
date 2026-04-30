@@ -103,7 +103,7 @@ export async function listChecklistsWithProgress(projectId: string): Promise<Che
       .where(
         and(
           eq(checklistProgress.projectId, projectId),
-          eq(checklists.id, cl.id),
+          eq(checklistSections.checklistId, cl.id),
           eq(checklistProgress.done, true)
         )
       );
@@ -114,7 +114,7 @@ export async function listChecklistsWithProgress(projectId: string): Promise<Che
       .innerJoin(checklistProgress, eq(checklistProgress.id, checklistPhotos.progressId))
       .innerJoin(checklistItems, eq(checklistItems.id, checklistProgress.itemId))
       .innerJoin(checklistSections, eq(checklistSections.id, checklistItems.sectionId))
-      .where(and(eq(checklistProgress.projectId, projectId), eq(checklists.id, cl.id)));
+      .where(and(eq(checklistProgress.projectId, projectId), eq(checklistSections.checklistId, cl.id)));
 
     result.push({
       id: cl.id,

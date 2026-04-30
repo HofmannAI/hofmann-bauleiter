@@ -4,6 +4,20 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 
 ---
 
+## [unreleased] — 2026-04-30 (post-rc2)
+
+### Fixed
+- `GET /<projectId>/checklisten` warf 500 mit
+  `PostgresError: missing FROM-clause entry for table "checklists"`.
+  In `listChecklistsWithProgress` referenzierten zwei Aggregat-Queries
+  (doneCount, photoCount) `checklists.id` im WHERE, ohne die Tabelle in
+  FROM zu joinen. Postgres validiert Spalten beim PARSE — Query schlug
+  schon vor Ausführung fehl. Fix: `eq(checklistSections.checklistId, cl.id)`
+  (checklist_sections ist via innerJoin schon im FROM, hat den Link auf
+  die Checkliste). Minimal-invasiv, eine Spalte pro Stelle.
+
+---
+
 ## [1.0.0-rc2] — 2026-04-30
 
 ### Migrations (Phase A nachgereicht + neu)
