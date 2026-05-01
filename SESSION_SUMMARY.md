@@ -17,12 +17,12 @@ einigen Punkten darüber hinaus.
 | **#18** | claude/feat-defects-batch-report | offen | **0011** |
 | **#19** | claude/feat-defects-strukturbaum | offen | **0013** |
 | **#20** | claude/feat-defects-templates | offen | **0014** |
-| **#21** | claude/feat-defects-statistics | self-merging | — |
-| **#22** | claude/feat-defects-advanced-filter | self-merging | — |
+| **#21** | claude/feat-defects-statistics | **gemerged** ✓ | — |
+| **#22** | claude/feat-defects-advanced-filter | **gemerged** ✓ | — |
 
-**3 PRs ohne Migration** sind self-mergeable und werden in dieser
-Session live geschaltet. **4 PRs mit Migration** warten auf manuelle
-SQL-Ausführung durch Laurenz.
+**3 PRs ohne Migration** sind in dieser Session self-merge live
+geschaltet. **4 PRs mit Migration** warten auf manuelle SQL-Ausführung
+durch Laurenz.
 
 > Anmerkung: Migration **0012 ist absichtlich frei gelassen** und
 > reserviert für PR „QR-Freimeldung" (siehe OPEN_QUESTIONS OQ-021).
@@ -51,7 +51,7 @@ Größte Erweiterung. Fügt hinzu:
 - Spalten `defects.due_date` + `defects.rechtsgrundlage`
 
 → Schaltet das Herzstück frei: VOB-konformer Mängelrüge-Workflow
-  mit Frist-Tracking, PDF-Generator (lib/pdf/maengelruege.ts), und
+  mit Frist-Tracking, PDF-Generator (`lib/pdf/maengelruege.ts`), und
   zwei Vorgangs-Timelines pro Mangel.
 
 ### 0011_defect_layouts.sql (PR #18)
@@ -154,8 +154,8 @@ Sheet) und der UX-Gewinn ist mäßig.
 2. Nach jedem Migration-Run den zugehörigen PR via GitHub-UI
    mergen (Merge-Button, **nicht** Squash).
 
-3. **PRs #16, #21, #22** sind ohne Migration und sollten heute
-   Nacht durch self-merge bereits live sein.
+3. **PRs #16, #21, #22** sind ohne Migration und sind in dieser
+   Session bereits live geschaltet (self-merge).
 
 4. **Räume seeden** (optional aber empfohlen für PR #19):
    ```sql
@@ -215,7 +215,7 @@ Reference, Gantt a11y-Hinweise). Kein einziger neu eingeführt.
 (Festgehalten in DECISIONS.md, hier zusammengefasst:)
 
 - **PDF browser-side, nicht server-side**: Mängelrüge-Generator
-  (lib/pdf/maengelruege.ts) nutzt pdf-lib im Browser — gleiche
+  (`lib/pdf/maengelruege.ts`) nutzt pdf-lib im Browser — gleiche
   Library wie defectReport.ts (PR #7). Server-Action `ruegeAnzeigen`
   bekommt nur die Metadaten (Frist, Rechtsgrundlage) und legt den
   Vorgang an. Vorteil: kein CPU-Server-Load, einfacheres Caching.
@@ -252,8 +252,8 @@ Reference, Gantt a11y-Hinweise). Kein einziger neu eingeführt.
    1–2 spezielle Layouts. Bei mehr als 5 verschiedenen Layouts
    sollte man `@react-pdf/renderer` o.ä. evaluieren.
 
-3. **migrate-merge-Konflikte beim Parallel-Branchen** sind
-   vorhersagbar wenn alle PRs `docs/CHANGELOG.md` und
+3. **Merge-Konflikte beim parallelen Branchen** sind vorhersagbar
+   wenn alle PRs `docs/CHANGELOG.md` und
    `src/routes/(app)/[projectId]/maengel/+page.svelte` anfassen.
    Lösung: Während Solo-Session pro PR sequentiell Merge → conflict-
    free statt parallel.
