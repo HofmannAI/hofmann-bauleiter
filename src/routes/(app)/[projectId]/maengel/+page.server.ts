@@ -2,18 +2,24 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { gewerke, defectPhotos, defectHistory } from '$lib/db/schema';
+import { gewerke, defectPhotos, defectHistory, defectTemplates } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
-import { asc } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params }) => {
-  const [defects, plans, contacts, gewerkeRows] = await Promise.all([
+  const [defects, plans, contacts, gewerkeRows, templates] = await Promise.all([
     listDefects(params.projectId),
     listPlans(params.projectId),
     listContactsForProject(params.projectId),
-    db ? db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)) : Promise.resolve([])
+    db ? db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)) : Promise.resolve([]),
+    db
+      ? db
+          .select()
+          .from(defectTemplates)
+          .orderBy(desc(defectTemplates.useCount), asc(defectTemplates.name))
+      : Promise.resolve([])
   ]);
-  return { defects, plans, contacts, gewerke: gewerkeRows };
+  return { defects, plans, contacts, gewerke: gewerkeRows, templates };
 };
 
 const photoEntry = z.object({
@@ -79,6 +85,18 @@ export const actions: Actions = {
     }
 
     redirect(303, `/${params.projectId}/maengel/${row.id}`);
+  },
+
+  applyTemplate: async ({ request, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const id = String(fd.id ?? '');
+    if (!id) return fail(400);
+    await db
+      .update(defectTemplates)
+      .set({ useCount: sql`${defectTemplates.useCount} + 1` })
+      .where(eq(defectTemplates.id, id));
+    return { ok: true };
   },
 
   bulkExtract: async ({ request, params, locals }) => {

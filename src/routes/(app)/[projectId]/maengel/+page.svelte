@@ -44,6 +44,36 @@
   let sendBauleiter = $state('');
   let sending = $state(false);
 
+  // Create-Sheet bound state (so templates can prefill)
+  let createSelectedTemplateId = $state<string>('');
+  let createTitle = $state('');
+  let createGewerkId = $state('');
+  let createDeadline = $state('');
+  let createPriority = $state<string>('2');
+  let createDescription = $state('');
+  let createTemplateHinweis = $state<string | null>(null);
+
+  function applyCreateTemplate(id: string) {
+    if (!id) {
+      createSelectedTemplateId = '';
+      createTemplateHinweis = null;
+      return;
+    }
+    const t = parent.templates.find((x) => x.id === id);
+    if (!t) return;
+    createSelectedTemplateId = id;
+    if (!createTitle) createTitle = t.name;
+    if (!createDescription) createDescription = t.beschreibung;
+    if (t.gewerkId && !createGewerkId) createGewerkId = t.gewerkId;
+    if (t.defaultPriority) createPriority = String(t.defaultPriority);
+    if (t.defaultFristTage && !createDeadline) {
+      const d = new Date();
+      d.setDate(d.getDate() + t.defaultFristTage);
+      createDeadline = d.toISOString().slice(0, 10);
+    }
+    createTemplateHinweis = t.fotoHinweis ?? null;
+  }
+
   async function downloadAndSend() {
     if (!sendGewerkId) return;
     sending = true;
@@ -205,27 +235,56 @@
       </div>
       <button class="sheet-close" onclick={() => (showCreate = false)} aria-label="Schließen"><Icon name="close" /></button>
     </div>
-    <form method="POST" action="?/create" use:enhance class="sheet-body">
+    <form method="POST" action="?/create" use:enhance={() => async ({ update }) => {
+      if (createSelectedTemplateId) {
+        const fd = new FormData();
+        fd.append('id', createSelectedTemplateId);
+        await fetch('?/applyTemplate', { method: 'POST', body: fd });
+      }
+      await update();
+    }} class="sheet-body">
       <DraftPhotoStrip projectId={parent.project.id} bind:photos={draftPhotos} />
       <input type="hidden" name="photos" value={draftPhotosJson} />
+      {#if parent.templates.length > 0}
+        <div class="field">
+          <label class="field-label" for="tpl">Mangel-Template</label>
+          <select
+            id="tpl"
+            class="field-input"
+            bind:value={createSelectedTemplateId}
+            onchange={(e) => {
+              const id = (e.currentTarget as HTMLSelectElement).value;
+              applyCreateTemplate(id);
+            }}
+          >
+            <option value="">— frei —</option>
+            {#each parent.templates as t (t.id)}
+              <option value={t.id}>{t.name}{t.useCount > 0 ? ` (${t.useCount}×)` : ''}</option>
+            {/each}
+          </select>
+          {#if createTemplateHinweis}
+            <span class="field-hint">{createTemplateHinweis}</span>
+          {/if}
+        </div>
+      {/if}
       <div class="field">
         <label class="field-label" for="t">Titel</label>
-        <input id="t" name="title" class="field-input" required maxlength="160" autofocus />
+        <input id="t" name="title" class="field-input" bind:value={createTitle} required maxlength="160" />
       </div>
       <div class="field">
         <label class="field-label" for="g">Gewerk</label>
-        <select id="g" name="gewerkId" class="field-input">
+        <select id="g" name="gewerkId" class="field-input" bind:value={createGewerkId}>
           <option value="">— wählen —</option>
           {#each parent.gewerke as g}<option value={g.id}>{g.name}</option>{/each}
         </select>
       </div>
       <div class="field">
         <label class="field-label" for="dl">Deadline</label>
-        <input id="dl" name="deadline" type="date" class="field-input" />
+        <input id="dl" name="deadline" type="date" class="field-input" bind:value={createDeadline} />
       </div>
       <div class="field">
         <label class="field-label" for="pr">Priorität</label>
-        <select id="pr" name="priority" class="field-input">
+        <select id="pr" name="priority" class="field-input" bind:value={createPriority}>
           <option value="2">Normal</option>
           <option value="1">Hoch</option>
           <option value="3">Niedrig</option>
@@ -233,7 +292,7 @@
       </div>
       <div class="field">
         <label class="field-label" for="d">Beschreibung</label>
-        <textarea id="d" name="description" class="field-input" rows="4"></textarea>
+        <textarea id="d" name="description" class="field-input" rows="4" bind:value={createDescription}></textarea>
       </div>
       <button class="btn btn-primary btn-block" type="submit">Anlegen</button>
     </form>

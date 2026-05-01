@@ -7,6 +7,18 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(maengel/templates): Mangel-Vorlagen für 1-Klick-Erfassung.
+  Im Mangel-Anlegen-Sheet ist eine neue Combobox „Mangel-Template",
+  Auswahl füllt Title/Beschreibung/Gewerk/Frist/Priorität vor.
+  `useCount` wird beim Submit hochgezählt — häufig verwendete
+  Templates erscheinen oben in der Liste.
+  **Migration 0014_mangel_templates.sql benötigt** — fügt
+  `defect_templates`-Tabelle mit RLS hinzu und seedet 30 Standard-
+  Vorlagen aus dem Hofmann-Portfolio (Maler/Fliesenleger/Elektro/
+  Sanitär/Trockenbau/Parkett/Türen/Fenster/Rohbau/Außen).
+  Idempotent (Name-basierter NOT EXISTS-Guard pro Template).
+  Verwendet existierende Gewerk-IDs aus dem Seed (Migration 0000),
+  setzt gewerk_id NULL falls Gewerk fehlt. (PR #21)
 - feat(bauzeit/progress): Pro-Termin Fortschritts-Slider (0–100%) im
   Task-Editor, debounced auto-save (350ms). Im Gantt rendert ein
   dunkler Overlay-Streifen am linken Rand der Bar die Fortschritts-

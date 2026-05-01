@@ -338,6 +338,22 @@ export const textbausteine = pgTable('textbausteine', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+/* ----- Defect-Templates (1-Klick-Erfassung) ----- */
+
+export const defectTemplates = pgTable('defect_templates', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  orgId: uuid('org_id'),
+  name: text('name').notNull(),
+  beschreibung: text('beschreibung').notNull(),
+  gewerkId: uuid('gewerk_id').references(() => gewerke.id, { onDelete: 'set null' }),
+  defaultBauteil: text('default_bauteil'),
+  defaultFristTage: integer('default_frist_tage'),
+  defaultPriority: integer('default_priority'),
+  fotoHinweis: text('foto_hinweis'),
+  useCount: integer('use_count').default(0).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 /* ----- Activity feed ----- */
 
 export const activity = pgTable('activity', {
