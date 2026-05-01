@@ -29,8 +29,59 @@
   });
 
   type Status = 'all' | 'open' | 'sent' | 'acknowledged' | 'resolved';
+  type FristFilter = 'all' | 'overdue' | 'week' | 'month';
   let statusFilter = $state<Status>('all');
   let gewerkFilter = $state<string>('all');
+  let fristFilter = $state<FristFilter>('all');
+  let searchText = $state('');
+
+  // Hydrate from URL once on mount
+  onMount(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const s = sp.get('status'); if (s) statusFilter = s as Status;
+    const g = sp.get('gewerk'); if (g) gewerkFilter = g;
+    const f = sp.get('frist'); if (f) fristFilter = f as FristFilter;
+    const q = sp.get('q'); if (q) searchText = q;
+  });
+
+  function syncFilterUrl() {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    if (statusFilter !== 'all') sp.set('status', statusFilter); else sp.delete('status');
+    if (gewerkFilter !== 'all') sp.set('gewerk', gewerkFilter); else sp.delete('gewerk');
+    if (fristFilter !== 'all') sp.set('frist', fristFilter); else sp.delete('frist');
+    if (searchText.trim()) sp.set('q', searchText.trim()); else sp.delete('q');
+    const qs = sp.toString();
+    history.replaceState({}, '', qs ? `?${qs}` : window.location.pathname);
+  }
+  $effect(() => { void statusFilter; void gewerkFilter; void fristFilter; void searchText; syncFilterUrl(); });
+
+  function fristMatches(d: { deadline: string | null; status: string }): boolean {
+    if (fristFilter === 'all') return true;
+    if (!d.deadline) return false;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const dl = new Date(d.deadline + 'T00:00:00');
+    if (fristFilter === 'overdue') return dl < today && !['resolved', 'accepted', 'rejected'].includes(d.status);
+    if (fristFilter === 'week') {
+      const wkEnd = new Date(today); wkEnd.setDate(wkEnd.getDate() + 7);
+      return dl >= today && dl <= wkEnd;
+    }
+    if (fristFilter === 'month') {
+      const mEnd = new Date(today); mEnd.setDate(mEnd.getDate() + 30);
+      return dl >= today && dl <= mEnd;
+    }
+    return true;
+  }
+
+  function searchMatches(d: { title: string; shortId: string | null }): boolean {
+    if (!searchText.trim()) return true;
+    const q = searchText.toLowerCase().trim();
+    return (
+      d.title.toLowerCase().includes(q) ||
+      (d.shortId ?? '').toLowerCase().includes(q)
+    );
+  }
 
   let draftPhotos = $state<DraftPhoto[]>([]);
   let draftPhotosJson = $derived(
@@ -48,6 +99,8 @@
         if (statusFilter === 'resolved' && !['resolved', 'accepted'].includes(d.status)) return false;
       }
       if (gewerkFilter !== 'all' && d.gewerkId !== gewerkFilter) return false;
+      if (!fristMatches(d)) return false;
+      if (!searchMatches(d)) return false;
       return true;
     })
   );
@@ -159,6 +212,28 @@
     {#each parent.gewerke as g (g.id)}
       <button class="filter-pill" class:active={gewerkFilter === g.id} onclick={() => (gewerkFilter = g.id)}>{g.name}</button>
     {/each}
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-pill" class:active={fristFilter === 'all'} onclick={() => (fristFilter = 'all')}>Frist: alle</button>
+    <button class="filter-pill filter-pill-red" class:active={fristFilter === 'overdue'} onclick={() => (fristFilter = 'overdue')}>Überfällig</button>
+    <button class="filter-pill" class:active={fristFilter === 'week'} onclick={() => (fristFilter = 'week')}>Diese Woche</button>
+    <button class="filter-pill" class:active={fristFilter === 'month'} onclick={() => (fristFilter = 'month')}>Dieser Monat</button>
+    <span class="search-spacer"></span>
+    <div class="search-wrap">
+      <Icon name="list" size={12} />
+      <input
+        class="search-input"
+        type="search"
+        placeholder="Suche (Titel oder M-001)…"
+        bind:value={searchText}
+      />
+      {#if searchText}
+        <button class="search-clear" type="button" onclick={() => (searchText = '')} aria-label="Suche löschen">
+          <Icon name="close" size={11} />
+        </button>
+      {/if}
+    </div>
   </div>
 
   {#if visible.length === 0}
@@ -348,6 +423,13 @@
 
 <style>
   .maengel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-pill-red.active { background: var(--red-soft); color: var(--red); border-color: rgba(227, 6, 19, 0.3); }
+  .search-spacer { flex: 1; min-width: 8px; }
+  .search-wrap { display: inline-flex; align-items: center; gap: 6px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 4px 10px; min-width: 220px; }
+  .search-wrap:focus-within { border-color: var(--red); }
+  .search-input { border: none; background: transparent; outline: none; font: inherit; flex: 1; min-width: 100px; }
+  .search-clear { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 4px; display: inline-flex; align-items: center; }
+  .search-clear:hover { color: var(--red); }
   .maengel-actions { display: flex; gap: 6px; flex-wrap: wrap; }
   .defect-list { display: flex; flex-direction: column; gap: 6px; }
   .defect-card { display: flex; gap: 10px; align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; text-decoration: none; color: inherit; transition: all .12s; }
