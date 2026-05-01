@@ -12,14 +12,14 @@ export const load: PageServerLoad = async ({ params }) => {
     listPlans(params.projectId),
     listContactsForProject(params.projectId),
     db ? db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)) : Promise.resolve([]),
-db
+    vorgaengeByProject(params.projectId),
+    db
       ? db
           .select()
           .from(defectLayouts)
           .where(sql`${defectLayouts.projectId} IS NULL OR ${defectLayouts.projectId} = ${params.projectId}`)
           .orderBy(asc(defectLayouts.sortOrder), asc(defectLayouts.code))
-      : Promise.resolve([]),
-    vorgaengeByProject(params.projectId)
+      : Promise.resolve([])
   ]);
   // Reduce Map → array of {defectId, anStatus, agStatus, anTermin} for serialization
   const vorgaenge = Array.from(vorgaengeMap.entries()).map(([defectId, v]) => ({
