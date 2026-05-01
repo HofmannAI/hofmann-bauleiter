@@ -2,14 +2,14 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { gewerke, defectPhotos, defectHistory, defects as defectsTable, defectLayouts } from '$lib/db/schema';
+import { gewerke, defectPhotos, defectHistory, defects as defectsTable, defectLayouts, defectTemplates } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
 import { loadStructureTree } from '$lib/db/structureQueries';
 import { vorgaengeByProject } from '$lib/db/vorgangQueries';
-import { asc, sql, and, eq } from 'drizzle-orm';
+import { asc, desc, sql, and, eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params }) => {
-  const [defects, plans, contacts, gewerkeRows, vorgaengeMap, layouts, structure] = await Promise.all([
+  const [defects, plans, contacts, gewerkeRows, vorgaengeMap, layouts, structure, templates] = await Promise.all([
     listDefects(params.projectId),
     listPlans(params.projectId),
     listContactsForProject(params.projectId),
@@ -22,7 +22,13 @@ export const load: PageServerLoad = async ({ params }) => {
           .where(sql`${defectLayouts.projectId} IS NULL OR ${defectLayouts.projectId} = ${params.projectId}`)
           .orderBy(asc(defectLayouts.sortOrder), asc(defectLayouts.code))
       : Promise.resolve([]),
-    loadStructureTree(params.projectId)
+    loadStructureTree(params.projectId),
+    db
+      ? db
+          .select()
+          .from(defectTemplates)
+          .orderBy(desc(defectTemplates.useCount), asc(defectTemplates.name))
+      : Promise.resolve([])
   ]);
   // Reduce Map → array of {defectId, anStatus, agStatus, anTermin} for serialization
   const vorgaenge = Array.from(vorgaengeMap.entries()).map(([defectId, v]) => ({
@@ -31,7 +37,7 @@ export const load: PageServerLoad = async ({ params }) => {
     anTermin: v.AN?.termin ?? null,
     agStatus: v.AG?.status ?? null
   }));
-  return { defects, plans, contacts, gewerke: gewerkeRows, layouts, vorgaenge, structure };
+  return { defects, plans, contacts, gewerke: gewerkeRows, layouts, vorgaenge, structure, templates };
 };
 
 const photoEntry = z.object({
@@ -133,6 +139,18 @@ export const actions: Actions = {
       isGlobal: false,
       createdBy: locals.user.id
     });
+    return { ok: true };
+  },
+
+  applyTemplate: async ({ request, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const id = String(fd.id ?? '');
+    if (!id) return fail(400);
+    await db
+      .update(defectTemplates)
+      .set({ useCount: sql`${defectTemplates.useCount} + 1` })
+      .where(eq(defectTemplates.id, id));
     return { ok: true };
   },
 
