@@ -4,16 +4,25 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
 import { gewerke, defectPhotos, defectHistory } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
+import { vorgaengeByProject } from '$lib/db/vorgangQueries';
 import { asc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params }) => {
-  const [defects, plans, contacts, gewerkeRows] = await Promise.all([
+  const [defects, plans, contacts, gewerkeRows, vorgaengeMap] = await Promise.all([
     listDefects(params.projectId),
     listPlans(params.projectId),
     listContactsForProject(params.projectId),
-    db ? db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)) : Promise.resolve([])
+    db ? db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)) : Promise.resolve([]),
+    vorgaengeByProject(params.projectId)
   ]);
-  return { defects, plans, contacts, gewerke: gewerkeRows };
+  // Reduce Map → array of {defectId, anStatus, agStatus, anTermin} for serialization
+  const vorgaenge = Array.from(vorgaengeMap.entries()).map(([defectId, v]) => ({
+    defectId,
+    anStatus: v.AN?.status ?? null,
+    anTermin: v.AN?.termin ?? null,
+    agStatus: v.AG?.status ?? null
+  }));
+  return { defects, plans, contacts, gewerke: gewerkeRows, vorgaenge };
 };
 
 const photoEntry = z.object({

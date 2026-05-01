@@ -264,7 +264,66 @@ export const defects = pgTable('defects', {
   resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   resolvedBy: uuid('resolved_by').references(() => profiles.id),
   followupDate: date('followup_date'),
+  dueDate: date('due_date'),
+  rechtsgrundlage: text('rechtsgrundlage'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+export const defectVorgaenge = pgTable('defect_vorgaenge', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  defectId: uuid('defect_id').notNull().references(() => defects.id, { onDelete: 'cascade' }),
+  partei: text('partei', { enum: ['AN', 'AG'] }).notNull(),
+  status: text('status', {
+    enum: [
+      'erfasst',
+      'angezeigt',
+      'nachfrist',
+      'klaerung',
+      'freigemeldet_NU',
+      'abgelehnt_NU',
+      'kontrolle_AG',
+      'erledigt',
+      'ersatzvornahme',
+      'notiz'
+    ]
+  }).notNull(),
+  beschreibung: text('beschreibung'),
+  termin: date('termin'),
+  terminAntwort: date('termin_antwort'),
+  documentId: text('document_id'),
+  documentUrl: text('document_url'),
+  createdBy: uuid('created_by').references(() => profiles.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+export const briefVorlagen = pgTable('brief_vorlagen', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  typ: text('typ').notNull(),
+  rechtsgrundlage: text('rechtsgrundlage'),
+  vorlageText: text('vorlage_text').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+export const firmaSettings = pgTable('firma_settings', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  orgId: uuid('org_id'),
+  name: text('name').notNull(),
+  strasse: text('strasse').notNull(),
+  plzOrt: text('plz_ort').notNull(),
+  telefon: text('telefon'),
+  email: text('email'),
+  web: text('web'),
+  geschaeftsfuehrer: text('geschaeftsfuehrer'),
+  ustId: text('ust_id'),
+  bank: text('bank'),
+  iban: text('iban'),
+  bic: text('bic'),
+  logoPath: text('logo_path'),
+  unterzeichner1: text('unterzeichner1'),
+  unterzeichner2: text('unterzeichner2'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });
 
