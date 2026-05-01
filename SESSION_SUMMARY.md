@@ -18,10 +18,10 @@ einigen Punkten darüber hinaus.
 | **#19** | claude/feat-defects-strukturbaum | offen | **0013** |
 | **#20** | claude/feat-defects-templates | offen | **0014** |
 | **#21** | claude/feat-defects-statistics | **gemerged** ✓ | — |
-| **#22** | claude/feat-defects-advanced-filter | self-merging | — |
+| **#22** | claude/feat-defects-advanced-filter | **gemerged** ✓ | — |
 
-**3 PRs ohne Migration** sind self-mergeable (gemerged in dieser
-Session). **4 PRs mit Migration** warten auf manuelle SQL-Ausführung
+**3 PRs ohne Migration** sind in dieser Session self-merge live
+geschaltet. **4 PRs mit Migration** warten auf manuelle SQL-Ausführung
 durch Laurenz.
 
 > Anmerkung: Migration **0012 ist absichtlich frei gelassen** und
@@ -154,8 +154,8 @@ Sheet) und der UX-Gewinn ist mäßig.
 2. Nach jedem Migration-Run den zugehörigen PR via GitHub-UI
    mergen (Merge-Button, **nicht** Squash).
 
-3. **PRs #16, #21, #22** sind ohne Migration und sollten bereits
-   live sein (self-merge in dieser Session).
+3. **PRs #16, #21, #22** sind ohne Migration und sind in dieser
+   Session bereits live geschaltet (self-merge).
 
 4. **Räume seeden** (optional aber empfohlen für PR #19):
    ```sql

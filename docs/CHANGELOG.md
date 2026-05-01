@@ -7,6 +7,13 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(maengel/filter): Erweiterte Filter in der Mängel-Liste:
+  Frist-Pills (Überfällig / Diese Woche / Dieser Monat) + Such-
+  Eingabefeld (filtert client-side über Title und Short-ID).
+  Alle Filter (status/gewerk/frist/q) persistieren in URL-Query-
+  Params, sodass Reload den Zustand wiederherstellt und
+  Bookmarks/Share-Links den gewünschten Layout-Schnitt zeigen.
+  Keine Migration nötig. (PR #22)
 - feat(maengel/statistik): Statistik-Dashboard pro Projekt unter
   `/[projectId]/maengel/statistik`. KPI-Cards (Gesamt, Offen,
   Überfällig, Diese Woche behoben, Ø Bearbeitungszeit), Bar-Charts
