@@ -2,6 +2,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import Icon from '$lib/components/Icon.svelte';
   import { toast } from '$lib/components/Toast.svelte';
+  import { confirm } from '$lib/components/ConfirmDialog.svelte';
   import { uploadTaskPhoto, getSignedUrl } from '$lib/storage/photos';
   import { haptic } from '$lib/motion';
 
@@ -55,7 +56,7 @@
   }
 
   async function delTaskPhoto(photoId: string) {
-    if (!confirm('Foto löschen?')) return;
+    if (!(await confirm({ title: 'Foto löschen?', confirmLabel: 'Löschen', danger: true }))) return;
     const fd = new FormData();
     fd.append('photoId', photoId);
     await fetch('?/deletePhoto', { method: 'POST', body: fd });
@@ -81,7 +82,7 @@
   }
 
   async function del() {
-    if (!confirm('Termin wirklich löschen?')) return;
+    if (!(await confirm({ title: 'Termin wirklich löschen?', description: 'Alle zugehörigen Daten gehen verloren.', confirmLabel: 'Löschen', danger: true }))) return;
     const ok = await postForm('delete', {});
     if (ok) {
       toast('Termin gelöscht.');

@@ -31,6 +31,7 @@ export async function listDefects(projectId: string) {
       page: defects.page,
       xPct: defects.xPct,
       yPct: defects.yPct,
+      planCropPath: defects.planCropPath,
       createdAt: defects.createdAt
     })
     .from(defects)
@@ -88,6 +89,7 @@ export type CreateDefectInput = {
   page?: number | null;
   xPct?: number | null;
   yPct?: number | null;
+  planCropPath?: string | null;
   deadline?: string | null;
   priority?: number;
   createdBy: string;
@@ -110,6 +112,7 @@ export async function createDefect(input: CreateDefectInput) {
       page: input.page ?? null,
       xPct: input.xPct != null ? input.xPct.toString() : null,
       yPct: input.yPct != null ? input.yPct.toString() : null,
+      planCropPath: input.planCropPath ?? null,
       deadline: input.deadline ?? null,
       priority: input.priority ?? 2,
       status: 'open',

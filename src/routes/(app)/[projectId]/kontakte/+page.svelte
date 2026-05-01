@@ -2,6 +2,7 @@
   import Icon from '$lib/components/Icon.svelte';
   import { invalidateAll } from '$app/navigation';
   import { toast } from '$lib/components/Toast.svelte';
+  import { confirm } from '$lib/components/ConfirmDialog.svelte';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -63,7 +64,7 @@
 
   async function del() {
     if (!editing?.id) return;
-    if (!confirm('Kontakt löschen?')) return;
+    if (!(await confirm({ title: 'Kontakt löschen?', confirmLabel: 'Löschen', danger: true }))) return;
     const fd = new FormData();
     fd.append('id', editing.id);
     const res = await fetch('?/delete', { method: 'POST', body: fd });

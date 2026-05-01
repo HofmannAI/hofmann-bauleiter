@@ -17,6 +17,20 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   manuell im Supabase-SQL-Editor laufen lassen vor Merge. Idempotent
   (`CREATE EXTENSION IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`),
   zero-downtime. (PR #13)
+- feat(maengel/plan-crop): Beim Pin-Setzen wird ein 400×300px-JPEG-Crop
+  um den Pin generiert (rotes Markierungs-Symbol mittig), in
+  `defect-crops/<projectId>/<draftId>.jpg` hochgeladen und als
+  `defects.plan_crop_path` referenziert. PDF-Mängelreport zeigt den
+  Crop oberhalb der Fotos. Migration 0007 nötig. Existierende Mängel
+  ohne Crop bleiben funktional (NULL-Handling). (PR #7)
+- feat(ux/confirm-dialog): `ConfirmDialog.svelte` ersetzt das native
+  `window.confirm()` durch einen Sheet-basierten Dialog mit imperativer
+  `await confirm({title, description?, confirmLabel?, danger?})`-API.
+  Mobile-friendly (44px+ Touch-Targets), haptic-feedback bei Bestätigung,
+  ESC + Drag-to-close. Eingebaut in 6 destruktiven Aktionen
+  (Foto-Löschen × 2, Termin-Löschen, Kontakt-Löschen, Musterdetail-Löschen,
+  Dependency-Löschen). Fallback auf `window.confirm` wenn Host nicht
+  gemounted ist (z.B. SSR/Tests). (PR #12)
 - feat(bauzeit/deps): Drag&Drop-Dependencies wie in MS-Project. Hover-
   Handles auf jeder Bar (Start + Ende), Drag von einem Handle zu einer
   anderen Bar erzeugt Abhängigkeit (Pred-Handle × Succ-Handle bestimmt
@@ -36,7 +50,6 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   - **Mängel**: Onboarding-CTA „Ersten Mangel anlegen" wenn noch nichts da ist,
     sonst „Keine Treffer im Filter" mit Reset-Hint
   Sehr kleines Diff (3 Files), klare visuelle Aufwertung. (PR #9)
-
 ### Fixed
 - fix(checklisten/detail): `GET /<projectId>/checklisten/<id>` warf 500 mit
   `PostgresError: syntax error at or near ')'` für jede Liste ohne

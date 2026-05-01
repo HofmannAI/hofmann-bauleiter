@@ -25,6 +25,9 @@ export type ReportDefect = {
   deadline: string | null;
   apartmentLabel?: string | null;
   photoUrls: string[];
+  /** Pre-rendered Plan-Crop (400×300) als signed-URL — wenn vorhanden,
+   * landet er oben über den Fotos im Report. */
+  planCropUrl?: string | null;
   planSignedUrl?: string | null;
   page?: number | null;
   xPct?: number | null;
@@ -156,6 +159,31 @@ export async function generateDefectReport(input: ReportInput): Promise<Blob> {
       cursor -= 6;
     }
 
+    // Plan-Crop (400×300, mit rotem Pin-Marker), wenn vorhanden — oberhalb der Fotos
+    if (d.planCropUrl) {
+      const bytes = await fetchImageBytes(d.planCropUrl);
+      if (bytes) {
+        let img: PDFImage | null = null;
+        try { img = await pdf.embedJpg(bytes); } catch (_e) {
+          try { img = await pdf.embedPng(bytes); } catch (_e2) { img = null; }
+        }
+        if (img) {
+          const cropW = 320;
+          const cropH = 240;
+          cursor -= cropH;
+          page.drawText('Plan-Ausschnitt', {
+            x: MARGIN, y: cursor + cropH + 4, size: 9, font: helv, color: MUTED
+          });
+          page.drawImage(img, { x: MARGIN, y: cursor, width: cropW, height: cropH });
+          page.drawRectangle({
+            x: MARGIN, y: cursor, width: cropW, height: cropH,
+            borderColor: rgb(0.7, 0.7, 0.7), borderWidth: 0.5
+          });
+          cursor -= 12;
+        }
+      }
+    }
+
     // Up to 2 photos side-by-side
     const photos = d.photoUrls.slice(0, 2);
     if (photos.length > 0) {
@@ -230,6 +258,7 @@ export async function downloadGewerkReport(args: {
     deadline: string | null;
     apartmentLabel?: string | null;
     photoStoragePaths: string[];
+    planCropPath?: string | null;
     planStoragePath?: string | null;
     page?: number | null;
     xPct?: number | null;
@@ -245,6 +274,8 @@ export async function downloadGewerkReport(args: {
     }
     let planSignedUrl: string | null = null;
     if (d.planStoragePath) planSignedUrl = await getSignedUrl('plans', d.planStoragePath, 600);
+    let planCropUrl: string | null = null;
+    if (d.planCropPath) planCropUrl = await getSignedUrl('defect-crops', d.planCropPath, 600);
     reportDefects.push({
       shortId: d.shortId,
       title: d.title,
@@ -253,6 +284,7 @@ export async function downloadGewerkReport(args: {
       deadline: d.deadline,
       apartmentLabel: d.apartmentLabel,
       photoUrls,
+      planCropUrl,
       planSignedUrl,
       page: d.page,
       xPct: d.xPct,
