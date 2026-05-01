@@ -11,6 +11,18 @@
   let query = $state('');
   let activeIdx = $state(0);
   let inputEl: HTMLInputElement | null = $state(null);
+  let searchHits = $state<SearchHit[]>([]);
+  let searching = $state(false);
+  let searchSeq = 0;
+
+  type SearchHit = {
+    kind: 'defect' | 'contact' | 'task';
+    id: string;
+    title: string;
+    subtitle: string | null;
+    href: string;
+    score: number;
+  };
 
   type Cmd = {
     id: string;
@@ -51,18 +63,67 @@
     return out;
   });
 
-  let filtered = $derived.by<Cmd[]>(() => {
+  let filteredCmds = $derived.by<Cmd[]>(() => {
     if (!query.trim()) return commands;
     const q = query.toLowerCase();
     return commands.filter((c) => c.label.toLowerCase().includes(q));
   });
 
+  type Item = { kind: 'cmd'; cmd: Cmd } | { kind: 'hit'; hit: SearchHit };
+  let items = $derived.by<Item[]>(() => {
+    const out: Item[] = filteredCmds.map((cmd) => ({ kind: 'cmd' as const, cmd }));
+    for (const hit of searchHits) out.push({ kind: 'hit', hit });
+    return out;
+  });
+
+  // Debounced fuzzy search via /api/search (trigram, project-scoped).
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    const q = query.trim();
+    const pid = projectId();
+    if (debounceTimer) clearTimeout(debounceTimer);
+    if (!pid || q.length < 2) {
+      searchHits = [];
+      searching = false;
+      return;
+    }
+    searching = true;
+    const seq = ++searchSeq;
+    debounceTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?projectId=${pid}&q=${encodeURIComponent(q)}`);
+        if (!res.ok) {
+          if (seq === searchSeq) searchHits = [];
+          return;
+        }
+        const data = (await res.json()) as { hits: SearchHit[] };
+        if (seq === searchSeq) searchHits = data.hits ?? [];
+      } catch {
+        if (seq === searchSeq) searchHits = [];
+      } finally {
+        if (seq === searchSeq) searching = false;
+      }
+    }, 220);
+  });
+
   function handleSelect(idx: number) {
-    const c = filtered[idx];
-    if (!c) return;
+    const it = items[idx];
+    if (!it) return;
     open = false;
     query = '';
-    setTimeout(() => c.action(), 30);
+    if (it.kind === 'cmd') setTimeout(() => it.cmd.action(), 30);
+    else setTimeout(() => goto(it.hit.href), 30);
+  }
+
+  function hitIcon(kind: SearchHit['kind']): IconName {
+    if (kind === 'defect') return 'defect';
+    if (kind === 'contact') return 'phone';
+    return 'gantt';
+  }
+  function hitSection(kind: SearchHit['kind']): string {
+    if (kind === 'defect') return 'Mangel';
+    if (kind === 'contact') return 'Kontakt';
+    return 'Termin';
   }
 
   let chord = '';
@@ -89,7 +150,7 @@
 
     if (open) {
       if (e.key === 'Escape') { open = false; return; }
-      if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(filtered.length - 1, activeIdx + 1); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(items.length - 1, activeIdx + 1); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(0, activeIdx - 1); return; }
       if (e.key === 'Enter') { e.preventDefault(); handleSelect(activeIdx); return; }
     }
@@ -138,7 +199,7 @@
 
   // Reset active index when filter changes
   $effect(() => {
-    void filtered;
+    void items;
     activeIdx = 0;
   });
 </script>
@@ -159,23 +220,39 @@
       <span class="cmdk-hint">ESC</span>
     </div>
     <ul class="cmdk-list" role="listbox">
-      {#each filtered as c, i (c.id)}
+      {#each items as it, i (it.kind === 'cmd' ? `c:${it.cmd.id}` : `h:${it.hit.kind}:${it.hit.id}`)}
         <li>
-          <button
-            class="cmdk-item"
-            class:active={i === activeIdx}
-            onclick={() => handleSelect(i)}
-            onmouseenter={() => (activeIdx = i)}
-          >
-            <Icon name={c.icon} size={14} />
-            <span class="cmdk-label">{c.label}</span>
-            {#if c.section}<span class="cmdk-section">{c.section}</span>{/if}
-            {#if c.shortcut}<span class="cmdk-shortcut">{c.shortcut}</span>{/if}
-          </button>
+          {#if it.kind === 'cmd'}
+            <button
+              class="cmdk-item"
+              class:active={i === activeIdx}
+              onclick={() => handleSelect(i)}
+              onmouseenter={() => (activeIdx = i)}
+            >
+              <Icon name={it.cmd.icon} size={14} />
+              <span class="cmdk-label">{it.cmd.label}</span>
+              {#if it.cmd.section}<span class="cmdk-section">{it.cmd.section}</span>{/if}
+              {#if it.cmd.shortcut}<span class="cmdk-shortcut">{it.cmd.shortcut}</span>{/if}
+            </button>
+          {:else}
+            <button
+              class="cmdk-item"
+              class:active={i === activeIdx}
+              onclick={() => handleSelect(i)}
+              onmouseenter={() => (activeIdx = i)}
+            >
+              <Icon name={hitIcon(it.hit.kind)} size={14} />
+              <span class="cmdk-label">
+                <span>{it.hit.title}</span>
+                {#if it.hit.subtitle}<span class="cmdk-sub">{it.hit.subtitle}</span>{/if}
+              </span>
+              <span class="cmdk-section">{hitSection(it.hit.kind)}</span>
+            </button>
+          {/if}
         </li>
       {/each}
-      {#if filtered.length === 0}
-        <li class="cmdk-empty">Keine Treffer.</li>
+      {#if items.length === 0}
+        <li class="cmdk-empty">{searching ? 'Suche…' : 'Keine Treffer.'}</li>
       {/if}
     </ul>
   </div>
@@ -215,7 +292,8 @@
   }
   .cmdk-item.active, .cmdk-item:hover { background: var(--paper-tint); }
   .cmdk-item.active { background: var(--red-soft); color: var(--red); }
-  .cmdk-label { flex: 1; }
+  .cmdk-label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .cmdk-sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cmdk-section { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
   .cmdk-shortcut { font-family: var(--mono); font-size: 10px; color: var(--muted); border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px; }
   .cmdk-empty { padding: 16px; text-align: center; color: var(--muted); font-size: 13px; }
