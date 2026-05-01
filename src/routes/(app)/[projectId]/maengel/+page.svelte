@@ -2,6 +2,7 @@
   import Icon from '$lib/components/Icon.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import DraftPhotoStrip, { type DraftPhoto } from '$lib/components/DraftPhotoStrip.svelte';
+  import StructureTree, { type StructureSelection } from '$lib/components/StructureTree.svelte';
   import { fmtDateDe } from '$lib/util/time';
   import { invalidateAll } from '$app/navigation';
   import { toast } from '$lib/components/Toast.svelte';
@@ -14,6 +15,42 @@
   type Status = 'all' | 'open' | 'sent' | 'acknowledged' | 'resolved';
   let statusFilter = $state<Status>('all');
   let gewerkFilter = $state<string>('all');
+  let strukturSelection = $state<StructureSelection>({ kind: 'project', houseId: null, apartmentId: null, roomId: null });
+
+  function aptIdsByHouse(houseId: string): Set<string> {
+    const out = new Set<string>();
+    const h = parent.structure.find((x) => x.id === houseId);
+    if (!h) return out;
+    for (const a of h.apartments) out.add(a.id);
+    return out;
+  }
+
+  function defectMatchesStruktur(d: { roomId: string | null; apartmentId: string | null }): boolean {
+    if (strukturSelection.kind === 'project') return true;
+    if (strukturSelection.kind === 'room') return d.roomId === strukturSelection.roomId;
+    if (strukturSelection.kind === 'apartment') return d.apartmentId === strukturSelection.apartmentId;
+    if (strukturSelection.kind === 'house' && strukturSelection.houseId) {
+      const apts = aptIdsByHouse(strukturSelection.houseId);
+      return d.apartmentId != null && apts.has(d.apartmentId);
+    }
+    return true;
+  }
+
+  let strukturCounts = $derived.by(() => {
+    const houses = new Map<string, number>();
+    const aptCounts = new Map<string, number>();
+    const roomCounts = new Map<string, number>();
+    for (const d of parent.defects) {
+      if (d.apartmentId) aptCounts.set(d.apartmentId, (aptCounts.get(d.apartmentId) ?? 0) + 1);
+      if (d.roomId) roomCounts.set(d.roomId, (roomCounts.get(d.roomId) ?? 0) + 1);
+    }
+    for (const h of parent.structure) {
+      let n = 0;
+      for (const a of h.apartments) n += aptCounts.get(a.id) ?? 0;
+      if (n > 0) houses.set(h.id, n);
+    }
+    return { houses, apartments: aptCounts, rooms: roomCounts, total: parent.defects.length };
+  });
 
   let draftPhotos = $state<DraftPhoto[]>([]);
   let draftPhotosJson = $derived(
@@ -31,6 +68,7 @@
         if (statusFilter === 'resolved' && !['resolved', 'accepted'].includes(d.status)) return false;
       }
       if (gewerkFilter !== 'all' && d.gewerkId !== gewerkFilter) return false;
+      if (!defectMatchesStruktur(d)) return false;
       return true;
     })
   );
@@ -107,7 +145,16 @@
   };
 </script>
 
-<div class="page">
+<div class="page maengel-layout">
+  {#if parent.structure.length > 0}
+    <StructureTree
+      tree={parent.structure}
+      selection={strukturSelection}
+      counts={strukturCounts}
+      onSelect={(s) => (strukturSelection = s)}
+    />
+  {/if}
+  <div class="maengel-main">
   <div class="maengel-header">
     <h2 class="section-title" style="margin:0">Mängel <span class="count">{visible.length}</span></h2>
     <div class="maengel-actions">
@@ -192,6 +239,7 @@
       {/if}
     {/each}
   {/if}
+  </div>
 </div>
 
 {#if showCreate}
@@ -320,6 +368,9 @@
 {/if}
 
 <style>
+  .maengel-layout { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+  @media (min-width: 980px) { .maengel-layout { grid-template-columns: 240px 1fr; } }
+  .maengel-main { min-width: 0; }
   .maengel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .maengel-actions { display: flex; gap: 6px; flex-wrap: wrap; }
   .defect-list { display: flex; flex-direction: column; gap: 6px; }

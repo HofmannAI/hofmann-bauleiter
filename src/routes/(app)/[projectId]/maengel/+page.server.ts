@@ -4,16 +4,18 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
 import { gewerke, defectPhotos, defectHistory } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
+import { loadStructureTree } from '$lib/db/structureQueries';
 import { asc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params }) => {
-  const [defects, plans, contacts, gewerkeRows] = await Promise.all([
+  const [defects, plans, contacts, gewerkeRows, structure] = await Promise.all([
     listDefects(params.projectId),
     listPlans(params.projectId),
     listContactsForProject(params.projectId),
-    db ? db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)) : Promise.resolve([])
+    db ? db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)) : Promise.resolve([]),
+    loadStructureTree(params.projectId)
   ]);
-  return { defects, plans, contacts, gewerke: gewerkeRows };
+  return { defects, plans, contacts, gewerke: gewerkeRows, structure };
 };
 
 const photoEntry = z.object({

@@ -76,6 +76,16 @@ export const apartments = pgTable('apartments', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+export const rooms = pgTable('rooms', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  apartmentId: uuid('apartment_id').notNull().references(() => apartments.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  raumnummer: text('raumnummer'),
+  flaecheQm: numeric('flaeche_qm'),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 /* ----- Gewerke catalog ----- */
 
 export const gewerke = pgTable('gewerke', {
@@ -264,6 +274,9 @@ export const defects = pgTable('defects', {
   resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   resolvedBy: uuid('resolved_by').references(() => profiles.id),
   followupDate: date('followup_date'),
+  roomId: uuid('room_id').references(() => rooms.id, { onDelete: 'set null' }),
+  bauteil: text('bauteil'),
+  bauteilqualitaet: text('bauteilqualitaet'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });

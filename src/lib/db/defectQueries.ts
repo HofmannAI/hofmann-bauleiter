@@ -32,6 +32,9 @@ export async function listDefects(projectId: string) {
       xPct: defects.xPct,
       yPct: defects.yPct,
       planCropPath: defects.planCropPath,
+      roomId: defects.roomId,
+      bauteil: defects.bauteil,
+      bauteilqualitaet: defects.bauteilqualitaet,
       createdAt: defects.createdAt
     })
     .from(defects)
