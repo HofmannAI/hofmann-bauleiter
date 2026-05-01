@@ -132,3 +132,68 @@ mit allen offenen Mängeln/Aufgaben. → Cron via Vercel Cron-Jobs oder
 Supabase Edge-Functions.
 
 Aufwand ~1 Tag. Phase 5+.
+
+## OQ-021 — QR-Freimeldung Public-Web-Link (Migration 0012 reserviert)
+
+In Runde 3 vorgesehen als PR „QR-Freimeldung". Wurde übersprungen
+weil Voraussetzungen fehlten:
+
+1. **`RESOLUTION_HMAC_SECRET`** ENV-Variable für signierte Tokens.
+   Setzen mit `openssl rand -hex 32`. Vercel Settings → Environment
+   Variables (Production + Preview).
+2. **Rate-Limiter-Infrastruktur**: Upstash Redis oder eigene
+   `rate_limit`-Tabelle in Supabase. Pragmatischer Ansatz für
+   den Anfang: in-memory rate limit pro Server-Instanz mit
+   Hinweis dass das pro Vercel-Edge-Region zurückgesetzt wird.
+3. **`PUBLIC_APP_URL`** ENV-Variable für QR-Code-Generierung
+   (Default `https://hofmann-bauleiter.vercel.app`).
+
+Migration-Nummer **0012** ist explizit freigelassen für diesen Zweck.
+Postgres akzeptiert Lücken in der Migrations-Numerierung problemlos.
+
+Spec siehe Master-Prompt Runde 3, PR #19. Kurz:
+- Public-Route `/m/{token}` ohne Login
+- Token-Format: `base64url(payload).base64url(hmac_sha256(payload))`,
+  Payload `{contact_id, project_id, exp}`, Default-Expiry 90 Tage
+- Liste aller offenen Mängel pro contact × project
+- Status wählen (freigemeldet / abgelehnt / klärung) + optional Foto
+- Submit erzeugt Vorgang AN, wird im Bauleiter-UI sichtbar
+
+Aufwand ~1 Tag, in Phase 5+.
+
+## OQ-022 — Mangel-Detail Tab-Layout
+
+In Runde 3 vorgesehen als PR „Mangel-Detail UX-Politur". Übersprungen.
+PR #17 (VOB-Vorgänge) hat zwei Vorgangs-Timelines unterhalb der Liste
+eingebaut → wichtigster Use-Case abgedeckt.
+
+Vollständiger Tab-Layout-Refactor (Beschreibung / Fotos / Vorgänge AN /
+Vorgänge AG / Anhänge / Verlauf) wäre risky:
+- große Diff über die zentrale Detail-Seite
+- hoher Regression-Risk auf inline-edit, Foto-Annotation, neuer
+  Mängelrüge-Sheet
+- begrenzter UX-Gewinn (Page ist heute schon scroll-bar)
+
+Wenn das in Phase 5+ angegangen wird: vorher Screenshots der heutigen
+Seite anfertigen, alle existierenden Funktionen als Test-Plan
+auflisten, dann inkrementell Tab-für-Tab portieren.
+
+## OQ-023 — Räume-Editor (Strukturbaum)
+
+PR #19 fügt `rooms`-Tabelle hinzu, aber kein UI zum Anlegen/Editieren.
+Heute nur per SQL Editor (siehe SESSION_SUMMARY für Snippet).
+
+Phase 5+ Empfehlung: Settings-Tab pro Apartment mit Räume-Liste +
+Inline-Edit, plus Bulk-Insert „Standard-Räume für alle Apartments
+übernehmen".
+
+## OQ-024 — Briefkopf-Settings-Editor
+
+PR #17 fügt `firma_settings`-Tabelle mit Default Hofmann hinzu.
+Editor unter `/[projectId]/einstellungen` oder global unter
+`/admin/firma` fehlt.
+
+Felder: name, strasse, plz_ort, telefon, email, web, geschäftsführer,
+ust_id, bank/iban/bic, logo (storage upload), unterzeichner1/2.
+
+Aufwand: 1 Tab + Form + Server-Action. ~3h.
