@@ -13,7 +13,14 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   Alle Filter (status/gewerk/frist/q) persistieren in URL-Query-
   Params, sodass Reload den Zustand wiederherstellt und
   Bookmarks/Share-Links den gewünschten Layout-Schnitt zeigen.
-  Keine Migration nötig. (PR #24)
+  Keine Migration nötig. (PR #22)
+- feat(maengel/plancrop-universal): Plan-Ausschnitt sichtbar in der
+  Mängel-Liste (60×45 Thumbnail neben Stripe) und im Mangel-Detail
+  (200×150 prominenter Header-Block, klickbar → Plan-Viewer auf Pin-
+  Position via `?page=&defect=`-Query-Params). Lazy-Load via signed
+  URL nach Mount, Skeleton-Shimmer während Load, graceful degradation
+  wenn `plan_crop_path` NULL ist (kein Layout-Bruch). Keine Migration
+  nötig — `defects.plan_crop_path` existiert seit 0007. (PR #16)
 - feat(bauzeit/progress): Pro-Termin Fortschritts-Slider (0–100%) im
   Task-Editor, debounced auto-save (350ms). Im Gantt rendert ein
   dunkler Overlay-Streifen am linken Rand der Bar die Fortschritts-
