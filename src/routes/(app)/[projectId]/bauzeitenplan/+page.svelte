@@ -1,11 +1,12 @@
 <script lang="ts">
-  import Gantt from '$lib/components/Gantt.svelte';
+  import Gantt, { type Dependency } from '$lib/components/Gantt.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import { enhance } from '$app/forms';
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/state';
   import { criticalPath, type EngineTask, type EngineDep } from '$lib/gantt/engine';
   import { toast } from '$lib/components/Toast.svelte';
+  import { confirm } from '$lib/components/ConfirmDialog.svelte';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -126,6 +127,59 @@
 
   type DiffRow = { id: string; name: string; num: string | null; oldStart: string; oldEnd: string; newStart: string; newEnd: string };
   let pendingMove = $state<null | { taskId: string; newStart: string; newEnd: string; diff: DiffRow[] }>(null);
+
+  /* ===== Dependency-CRUD (PR #8) ===== */
+  let depPopover = $state<Dependency | null>(null);
+
+  async function createDep(predId: string, succId: string, predHandle: 'start' | 'end', succHandle: 'start' | 'end') {
+    // Map handle-pair to type: pred=end + succ=start = FS, pred=start + succ=start = SS,
+    // pred=end + succ=end = FF, pred=start + succ=end = SF
+    let type: 'FS' | 'SS' | 'FF' | 'SF';
+    if (predHandle === 'end' && succHandle === 'start') type = 'FS';
+    else if (predHandle === 'start' && succHandle === 'start') type = 'SS';
+    else if (predHandle === 'end' && succHandle === 'end') type = 'FF';
+    else type = 'SF';
+
+    const fd = new FormData();
+    fd.append('predecessorId', predId);
+    fd.append('successorId', succId);
+    fd.append('type', type);
+    fd.append('lagDays', '0');
+    const res = await fetch('?/createDep', { method: 'POST', body: fd });
+    if (res.ok) {
+      toast(`Abhängigkeit angelegt (${type}).`);
+      await invalidateAll();
+    } else {
+      toast('Anlage fehlgeschlagen.');
+    }
+  }
+
+  async function saveDepEdit(type: Dependency['type'], lagDays: number) {
+    if (!depPopover) return;
+    const fd = new FormData();
+    fd.append('depId', depPopover.id);
+    fd.append('type', type);
+    fd.append('lagDays', String(lagDays));
+    const res = await fetch('?/updateDep', { method: 'POST', body: fd });
+    if (res.ok) {
+      toast('Abhängigkeit aktualisiert.');
+      depPopover = null;
+      await invalidateAll();
+    }
+  }
+
+  async function deleteDep() {
+    if (!depPopover) return;
+    if (!(await confirm({ title: 'Abhängigkeit löschen?', confirmLabel: 'Löschen', danger: true }))) return;
+    const fd = new FormData();
+    fd.append('depId', depPopover.id);
+    const res = await fetch('?/deleteDep', { method: 'POST', body: fd });
+    if (res.ok) {
+      toast('Gelöscht.');
+      depPopover = null;
+      await invalidateAll();
+    }
+  }
 
   async function previewMove(taskId: string, newStart: string, newEnd: string) {
     const fd = new FormData();
@@ -285,9 +339,12 @@
     </div>
     <Gantt
       tasks={visibleTasks}
+      dependencies={parent.deps as Dependency[]}
       criticalPathIds={cpIds}
       onSelect={(id) => (selected = id)}
       onMove={previewMove}
+      onDepCreate={createDep}
+      onDepClick={(id) => (depPopover = parent.deps.find((d) => d.id === id) ?? null)}
       baseline={activeBaseline}
       lookaheadWeeks={lookahead}
     />
@@ -362,6 +419,39 @@
     </div>
     <div class="sheet-foot">
       <button class="btn btn-ghost btn-block" onclick={() => (selected = null)}>Schließen</button>
+    </div>
+  </div>
+{/if}
+
+{#if depPopover}
+  <button class="scrim open" onclick={() => (depPopover = null)} aria-label="Schließen"></button>
+  <div class="dialog open" role="dialog" aria-label="Abhängigkeit bearbeiten" style="display:flex">
+    <div class="dialog-panel">
+      <h3 class="dialog-title">Abhängigkeit bearbeiten</h3>
+      <p class="dialog-text">
+        {depPopover.type} · Lag {depPopover.lagDays}d
+      </p>
+      <div class="field">
+        <label class="field-label" for="dep-type">Typ</label>
+        <select id="dep-type" class="field-input" bind:value={depPopover.type}>
+          <option value="FS">FS — Finish-to-Start (Standard)</option>
+          <option value="SS">SS — Start-to-Start</option>
+          <option value="FF">FF — Finish-to-Finish</option>
+          <option value="SF">SF — Start-to-Finish</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="dep-lag">Lag in Arbeitstagen (negativ = Lead)</label>
+        <input id="dep-lag" type="number" class="field-input" bind:value={depPopover.lagDays} min="-365" max="365" />
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-danger" onclick={deleteDep}>
+          <Icon name="delete" size={14} /> Löschen
+        </button>
+        <span style="flex:1"></span>
+        <button class="btn btn-ghost" onclick={() => (depPopover = null)}>Abbrechen</button>
+        <button class="btn btn-primary" onclick={() => saveDepEdit(depPopover!.type, depPopover!.lagDays)}>Speichern</button>
+      </div>
     </div>
   </div>
 {/if}

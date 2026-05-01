@@ -2,8 +2,8 @@ import { redirect, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks, taskBaselines, gewerke, houses, apartments, activity } from '$lib/db/schema';
-import { eq, and, asc, desc } from 'drizzle-orm';
+import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity } from '$lib/db/schema';
+import { eq, and, asc, desc, or } from 'drizzle-orm';
 import { loadGaisbachSample } from '$lib/db/projectQueries';
 import { getProjectTasksAndDeps, applyTaskUpdates } from '$lib/db/taskQueries';
 import { propagate, type EngineTask, type EngineDep } from '$lib/gantt/engine';
@@ -194,5 +194,110 @@ export const actions: Actions = {
       .from(taskBaselines)
       .where(and(eq(taskBaselines.projectId, params.projectId), eq(taskBaselines.snapshotLabel, label)));
     return { ok: true, baseline: rows };
+  },
+
+  /* ===== Dependency-Endpoints (PR #8) ===== */
+
+  createDep: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const schema = z.object({
+      predecessorId: z.string().uuid(),
+      successorId: z.string().uuid(),
+      type: z.enum(['FS', 'SS', 'FF', 'SF']).default('FS'),
+      lagDays: z.coerce.number().int().min(-365).max(365).default(0)
+    });
+    const parsed = schema.safeParse(fd);
+    if (!parsed.success) return fail(400, { error: 'Ungültige Eingabe.' });
+    if (parsed.data.predecessorId === parsed.data.successorId) {
+      return fail(400, { error: 'Pred und Succ sind identisch.' });
+    }
+
+    // Beide Tasks müssen ins selbe Projekt gehören (RLS schützt zusätzlich)
+    const taskCheck = await db
+      .select({ id: tasks.id, projectId: tasks.projectId })
+      .from(tasks)
+      .where(or(eq(tasks.id, parsed.data.predecessorId), eq(tasks.id, parsed.data.successorId)));
+    if (taskCheck.length !== 2) return fail(404, { error: 'Termine nicht gefunden.' });
+    if (!taskCheck.every((t) => t.projectId === params.projectId)) {
+      return fail(403, { error: 'Termine außerhalb des Projekts.' });
+    }
+
+    // Idempotent: bei Duplikat updaten statt failen
+    const existing = await db
+      .select()
+      .from(taskDependencies)
+      .where(
+        and(
+          eq(taskDependencies.predecessorId, parsed.data.predecessorId),
+          eq(taskDependencies.successorId, parsed.data.successorId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(taskDependencies)
+        .set({ type: parsed.data.type, lagDays: parsed.data.lagDays })
+        .where(eq(taskDependencies.id, existing[0].id));
+      return { ok: true, depId: existing[0].id, updated: true };
+    }
+
+    const [row] = await db
+      .insert(taskDependencies)
+      .values({
+        predecessorId: parsed.data.predecessorId,
+        successorId: parsed.data.successorId,
+        type: parsed.data.type,
+        lagDays: parsed.data.lagDays
+      })
+      .returning();
+
+    await db.insert(activity).values({
+      projectId: params.projectId,
+      userId: locals.user.id,
+      type: 'dep_created',
+      message: `Abhängigkeit angelegt: ${parsed.data.type}${parsed.data.lagDays ? ' Lag ' + parsed.data.lagDays + 'd' : ''}`,
+      refTable: 'task_dependencies',
+      refId: row.id
+    });
+    return { ok: true, depId: row.id };
+  },
+
+  updateDep: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const schema = z.object({
+      depId: z.string().uuid(),
+      type: z.enum(['FS', 'SS', 'FF', 'SF']),
+      lagDays: z.coerce.number().int().min(-365).max(365)
+    });
+    const parsed = schema.safeParse(fd);
+    if (!parsed.success) return fail(400);
+
+    // RLS schützt: nur deps deren tasks im Projekt sind sind sichtbar
+    const dep = await db
+      .select({ predecessorId: taskDependencies.predecessorId })
+      .from(taskDependencies)
+      .where(eq(taskDependencies.id, parsed.data.depId))
+      .limit(1);
+    if (dep.length === 0) return fail(404);
+
+    await db
+      .update(taskDependencies)
+      .set({ type: parsed.data.type, lagDays: parsed.data.lagDays })
+      .where(eq(taskDependencies.id, parsed.data.depId));
+    return { ok: true };
+  },
+
+  deleteDep: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const schema = z.object({ depId: z.string().uuid() });
+    const parsed = schema.safeParse(fd);
+    if (!parsed.success) return fail(400);
+
+    await db.delete(taskDependencies).where(eq(taskDependencies.id, parsed.data.depId));
+    return { ok: true };
   }
 };

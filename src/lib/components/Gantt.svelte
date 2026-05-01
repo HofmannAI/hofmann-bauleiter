@@ -14,15 +14,36 @@
   };
 
   type Baseline = { taskId: string; plannedStart: string; plannedEnd: string };
+  export type Dependency = {
+    id: string;
+    predecessorId: string;
+    successorId: string;
+    type: 'FS' | 'SS' | 'FF' | 'SF';
+    lagDays: number;
+  };
+  type DepHandle = 'start' | 'end';
   type Props = {
     tasks: GTask[];
     onSelect?: (taskId: string) => void;
     onMove?: (taskId: string, newStart: string, newEnd: string) => void;
+    onDepCreate?: (predecessorId: string, successorId: string, predHandle: DepHandle, succHandle: DepHandle) => void;
+    onDepClick?: (depId: string) => void;
     criticalPathIds?: Set<string>;
     baseline?: Baseline[];
+    dependencies?: Dependency[];
     lookaheadWeeks?: 0 | 3 | 4 | 6;
   };
-  let { tasks, onSelect, onMove, criticalPathIds = new Set<string>(), baseline = [], lookaheadWeeks = 0 }: Props = $props();
+  let {
+    tasks,
+    onSelect,
+    onMove,
+    onDepCreate,
+    onDepClick,
+    criticalPathIds = new Set<string>(),
+    baseline = [],
+    dependencies = [],
+    lookaheadWeeks = 0
+  }: Props = $props();
 
   let baselineMap = $derived.by(() => {
     const m = new Map<string, { plannedStart: string; plannedEnd: string }>();
@@ -229,6 +250,121 @@
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     dragging = null;
   }
+
+  /* ===== Dependency Drag&Drop (Connector-Handles auf Bars) =====
+   *
+   * Hover über eine Bar zeigt zwei Handles (Start + End). Drag von einem
+   * Handle auf eine andere Bar (oder deren Handle) erzeugt eine Dependency.
+   *
+   * Mobile: kein Hover-State — stattdessen Long-Press auf einer Bar
+   * aktiviert den "Connector-Mode" (depMode = id), und der nächste Tap
+   * auf eine andere Bar erzeugt die Dependency.
+   */
+  let depDrag = $state<null | {
+    predecessorId: string;
+    predHandle: DepHandle;
+    pointerId: number;
+    cursorX: number; // relative zur timeline
+    cursorY: number;
+    startX: number;
+    startY: number;
+  }>(null);
+  let depMode = $state<{ id: string; handle: DepHandle } | null>(null); // Touch-Mode
+
+  function onHandlePointerDown(e: PointerEvent, taskId: string, handle: DepHandle) {
+    e.stopPropagation();
+    if (!onDepCreate) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const wrap = (e.currentTarget as HTMLElement).closest('.gantt-timeline');
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    depDrag = {
+      predecessorId: taskId,
+      predHandle: handle,
+      pointerId: e.pointerId,
+      cursorX: e.clientX - rect.left,
+      cursorY: e.clientY - rect.top,
+      startX: e.clientX - rect.left,
+      startY: e.clientY - rect.top
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function onHandlePointerMove(e: PointerEvent) {
+    if (!depDrag || depDrag.pointerId !== e.pointerId) return;
+    const wrap = (e.currentTarget as HTMLElement).closest('.gantt-timeline');
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    depDrag = { ...depDrag, cursorX: e.clientX - rect.left, cursorY: e.clientY - rect.top };
+  }
+  function onHandlePointerUp(e: PointerEvent) {
+    if (!depDrag || depDrag.pointerId !== e.pointerId) return;
+    // Find target bar at the cursor position
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const targetBar = target?.closest('[data-task-id]') as HTMLElement | null;
+    const targetTaskId = targetBar?.dataset.taskId;
+    const targetHandleAttr = targetBar?.dataset.handle as DepHandle | undefined;
+    if (targetTaskId && targetTaskId !== depDrag.predecessorId) {
+      // Default: target's start (FS-style)
+      const succHandle: DepHandle = targetHandleAttr ?? 'start';
+      onDepCreate?.(depDrag.predecessorId, targetTaskId, depDrag.predHandle, succHandle);
+    }
+    depDrag = null;
+  }
+
+  function activateDepMode(taskId: string, handle: DepHandle) {
+    depMode = { id: taskId, handle };
+  }
+  function applyDepMode(targetTaskId: string) {
+    if (!depMode || !onDepCreate) return;
+    if (targetTaskId === depMode.id) {
+      depMode = null;
+      return;
+    }
+    onDepCreate(depMode.id, targetTaskId, depMode.handle, 'start');
+    depMode = null;
+  }
+
+  /* Layout-Lookup: y-Position einer Task in der visible-Liste = row-index * 32 + 16 (Mitte) */
+  let visibleIndex = $derived.by(() => {
+    const m = new Map<string, number>();
+    visible.forEach((t, i) => m.set(t.id, i));
+    return m;
+  });
+
+  function barEdges(taskId: string): { x1: number; x2: number; y: number } | null {
+    const t = tasks.find((x) => x.id === taskId);
+    const idx = visibleIndex.get(taskId);
+    if (!t || idx === undefined) return null;
+    const x1 = offsetPx(t.startDate);
+    const x2 = x1 + Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
+    const y = idx * 32 + 16; // Mitte der Bar
+    return { x1, x2, y };
+  }
+
+  /** Pfad-Generator: rechteckige Polylinie zwischen zwei Punkten,
+   * ähnlich MS-Project: vom predecessor-Edge nach rechts/links,
+   * dann vertikal, dann zur successor-Bar. */
+  function depPath(d: Dependency): string | null {
+    const pred = barEdges(d.predecessorId);
+    const succ = barEdges(d.successorId);
+    if (!pred || !succ) return null;
+    const fromX = d.type === 'SS' || d.type === 'SF' ? pred.x1 : pred.x2;
+    const toX = d.type === 'FF' || d.type === 'SF' ? succ.x2 : succ.x1;
+    const fromDir = d.type === 'SS' || d.type === 'SF' ? -1 : 1;
+    const toDir = d.type === 'FF' || d.type === 'SF' ? 1 : -1;
+    // Fahre 8px in fromDir, dann vertikal, dann 8px gegen toDir
+    const stub = 10;
+    const elbow1 = fromX + fromDir * stub;
+    const elbow2 = toX + toDir * stub;
+    return `M ${fromX} ${pred.y} L ${elbow1} ${pred.y} L ${elbow1} ${succ.y} L ${elbow2} ${succ.y} L ${toX} ${succ.y}`;
+  }
+
+  function depTipPos(d: Dependency): { x: number; y: number } | null {
+    const succ = barEdges(d.successorId);
+    if (!succ) return null;
+    const tipDir = d.type === 'FF' || d.type === 'SF' ? 1 : -1;
+    return { x: succ.x1 + (tipDir < 0 ? 0 : succ.x2 - succ.x1), y: succ.y };
+  }
 </script>
 
 <div class="gantt-toolbar">
@@ -303,12 +439,17 @@
                 class:dimmed={criticalPathIds.size > 0 && !criticalPathIds.has(t.id)}
                 class:dragging={dragging?.id === t.id && dragging.armed}
                 class:armed-touch={dragging?.id === t.id && dragging.armed && dragging.pointerType !== 'mouse'}
+                class:dep-mode-target={depMode && depMode.id !== t.id}
                 style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
-                onclick={() => { if (!dragging || !dragging.moved) onSelect?.(t.id); }}
+                onclick={() => {
+                  if (depMode) { applyDepMode(t.id); return; }
+                  if (!dragging || !dragging.moved) onSelect?.(t.id);
+                }}
                 onpointerdown={(e) => onBarPointerDown(e, t)}
                 onpointermove={onBarPointerMove}
                 onpointerup={onBarPointerUp}
                 onpointercancel={onBarPointerCancel}
+                data-task-id={t.id}
               >
                 <span class="gantt-bar-label">{t.name}</span>
                 <span class="gantt-bar-tooltip" role="tooltip">
@@ -318,14 +459,81 @@
                     <span class="tooltip-crit">Kritisch — Verzögerung wirkt 1:1 auf Übergabe</span>
                   {/if}
                 </span>
+                {#if onDepCreate}
+                  <span
+                    class="gantt-dep-handle gantt-dep-handle-start"
+                    role="button"
+                    aria-label="Dependency vom Anfang ziehen"
+                    data-task-id={t.id}
+                    data-handle="start"
+                    onpointerdown={(e) => onHandlePointerDown(e, t.id, 'start')}
+                    onpointermove={onHandlePointerMove}
+                    onpointerup={onHandlePointerUp}
+                    oncontextmenu={(e) => { e.preventDefault(); activateDepMode(t.id, 'start'); }}
+                  ></span>
+                  <span
+                    class="gantt-dep-handle gantt-dep-handle-end"
+                    role="button"
+                    aria-label="Dependency vom Ende ziehen"
+                    data-task-id={t.id}
+                    data-handle="end"
+                    onpointerdown={(e) => onHandlePointerDown(e, t.id, 'end')}
+                    onpointermove={onHandlePointerMove}
+                    onpointerup={onHandlePointerUp}
+                    oncontextmenu={(e) => { e.preventDefault(); activateDepMode(t.id, 'end'); }}
+                  ></span>
+                {/if}
               </button>
             {/if}
           </div>
         {/each}
       </div>
+
+      {#if dependencies.length > 0 || depDrag}
+        <svg class="gantt-deps" width="100%" height="100%" preserveAspectRatio="none">
+          <defs>
+            <marker id="gantt-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(15,15,16,0.55)"></path>
+            </marker>
+            <marker id="gantt-arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--red)"></path>
+            </marker>
+          </defs>
+          {#each dependencies as d (d.id)}
+            {@const path = depPath(d)}
+            {#if path}
+              <path
+                class="gantt-dep-arrow"
+                d={path}
+                marker-end="url(#gantt-arrow)"
+                onclick={() => onDepClick?.(d.id)}
+                role="button"
+                aria-label={`Dependency ${d.type}${d.lagDays ? ' Lag ' + d.lagDays : ''}`}
+              ></path>
+            {/if}
+          {/each}
+          {#if depDrag}
+            <line
+              class="gantt-dep-drag"
+              x1={depDrag.startX}
+              y1={depDrag.startY}
+              x2={depDrag.cursorX}
+              y2={depDrag.cursorY}
+              marker-end="url(#gantt-arrow-active)"
+            ></line>
+          {/if}
+        </svg>
+      {/if}
     </div>
   </div>
 </div>
+
+{#if depMode}
+  <div class="dep-mode-banner" role="status">
+    <span>Tippe auf eine Bar zum Verbinden</span>
+    <button class="btn btn-ghost btn-sm" onclick={() => (depMode = null)}>Abbrechen</button>
+  </div>
+{/if}
 
 <style>
   .gantt-toolbar {
@@ -488,7 +696,66 @@
   @media (prefers-reduced-motion: reduce) { .gantt-bar.critical { animation: none; } }
   .gantt-bar.dragging { opacity: .7; cursor: grabbing; z-index: 9; }
   .gantt-bar.armed-touch { box-shadow: 0 0 0 3px var(--red), 0 4px 14px rgba(227, 6, 19, 0.35); }
-  .gantt-bar { touch-action: pan-y; }
+  .gantt-bar.dep-mode-target { box-shadow: 0 0 0 2px var(--red); animation: depPulse 1.4s ease-in-out infinite; }
+  @keyframes depPulse {
+    0%   { box-shadow: 0 0 0 2px var(--red); }
+    50%  { box-shadow: 0 0 0 5px rgba(227, 6, 19, 0.35); }
+    100% { box-shadow: 0 0 0 2px var(--red); }
+  }
+  @media (prefers-reduced-motion: reduce) { .gantt-bar.dep-mode-target { animation: none; } }
+  .gantt-bar { touch-action: pan-y; position: relative; }
+  .gantt-dep-handle {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid var(--ink-2);
+    border-radius: 50%;
+    cursor: crosshair;
+    opacity: 0;
+    transition: opacity var(--d-fast, 180ms) ease;
+    z-index: 11;
+  }
+  .gantt-bar:hover .gantt-dep-handle, .gantt-dep-handle:focus-visible { opacity: 1; }
+  .gantt-dep-handle:hover { background: var(--red); border-color: var(--red); }
+  .gantt-dep-handle-start { left: -8px; }
+  .gantt-dep-handle-end { right: -8px; }
+  @media (hover: none) {
+    /* Touch: Handles immer schwach sichtbar — Long-press wäre verwirrend */
+    .gantt-dep-handle { opacity: 0.55; }
+  }
+  .gantt-deps {
+    position: absolute; left: 0; top: 60px; right: 0; bottom: 0;
+    pointer-events: none; z-index: 5;
+  }
+  .gantt-dep-arrow {
+    fill: none;
+    stroke: rgba(15, 15, 16, 0.55);
+    stroke-width: 1.4;
+    pointer-events: stroke;
+    cursor: pointer;
+    transition: stroke var(--d-fast, 180ms) ease, stroke-width var(--d-fast, 180ms) ease;
+  }
+  .gantt-dep-arrow:hover {
+    stroke: var(--red);
+    stroke-width: 2.2;
+  }
+  .gantt-dep-drag {
+    stroke: var(--red);
+    stroke-width: 2;
+    stroke-dasharray: 4 3;
+    pointer-events: none;
+  }
+  .dep-mode-banner {
+    position: fixed; bottom: calc(80px + env(safe-area-inset-bottom)); left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink); color: #fff;
+    padding: 10px 16px; border-radius: 999px;
+    box-shadow: var(--shadow-2);
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 600;
+    z-index: 60;
+  }
+  .dep-mode-banner .btn { color: #fff; }
   .gantt-baseline {
     position: absolute; top: 22px; height: 4px;
     background: transparent;

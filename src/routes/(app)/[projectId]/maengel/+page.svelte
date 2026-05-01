@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import DraftPhotoStrip, { type DraftPhoto } from '$lib/components/DraftPhotoStrip.svelte';
   import { fmtDateDe } from '$lib/util/time';
   import { invalidateAll } from '$app/navigation';
@@ -141,10 +142,27 @@
   </div>
 
   {#if visible.length === 0}
-    <div class="empty">
-      <div class="empty-emoji">·</div>
-      <div class="empty-text">Keine Mängel in diesem Filter.</div>
-    </div>
+    {#if parent.defects.length === 0}
+      <EmptyState
+        variant="info"
+        icon="defect"
+        title="Noch keine Mängel."
+        description="Lege den ersten Mangel an oder importiere mehrere Zeilen aus einem Protokoll-Text."
+      >
+        {#snippet cta()}
+          <button class="btn btn-primary btn-sm" onclick={() => (showCreate = true)}>
+            <Icon name="plus" size={14} /> Ersten Mangel anlegen
+          </button>
+        {/snippet}
+      </EmptyState>
+    {:else}
+      <EmptyState
+        variant="default"
+        icon="list"
+        title="Keine Treffer im Filter."
+        description="Setze die Filter zurück, um alle {parent.defects.length} Mängel zu sehen."
+      />
+    {/if}
   {:else}
     {#each [['open','Offen'],['reopened','Wiedereröffnet'],['sent','Gesendet'],['acknowledged','Bestätigt'],['resolved','Erledigt'],['accepted','Akzeptiert'],['rejected','Abgelehnt']] as [grpStatus, grpLabel]}
       {@const grp = visible.filter((d) => d.status === grpStatus)}
