@@ -131,6 +131,9 @@
       <a class="btn btn-ghost btn-sm" href={`/${parent.project.id}/maengel/plaene`}>
         <Icon name="file" size={14} /> Pläne
       </a>
+      <a class="btn btn-ghost btn-sm" href={`/${parent.project.id}/maengel/statistik`}>
+        <Icon name="activity" size={14} /> Statistik
+      </a>
       <button class="btn btn-ghost btn-sm" onclick={() => (showBulk = true)}>
         <Icon name="list" size={14} /> Aus Protokoll
       </button>
