@@ -338,6 +338,23 @@ export const textbausteine = pgTable('textbausteine', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+/* ----- Defect-Layouts (Filter-Presets) ----- */
+
+export const defectLayouts = pgTable('defect_layouts', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  code: text('code').notNull(),
+  name: text('name').notNull(),
+  beschreibung: text('beschreibung'),
+  filterJson: jsonb('filter_json').notNull().default({}),
+  sortJson: jsonb('sort_json'),
+  groupBy: text('group_by'),
+  isGlobal: boolean('is_global').default(false).notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdBy: uuid('created_by').references(() => profiles.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 /* ----- Activity feed ----- */
 
 export const activity = pgTable('activity', {
