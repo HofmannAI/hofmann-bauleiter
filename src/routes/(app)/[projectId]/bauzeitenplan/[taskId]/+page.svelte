@@ -12,6 +12,7 @@
   let name = $state(data.task.name);
   let notes = $state(data.task.notes ?? '');
   let color = $state(data.task.color ?? '#3B6CC4');
+  let progressPct = $state(data.task.progressPct ?? 0);
   let uploadingPhoto = $state(false);
   let photoUrls = $state<Record<string, string>>({});
   let lightbox = $state<string | null>(null);
@@ -75,6 +76,16 @@
     toast(ok ? 'Gespeichert.' : 'Fehler beim Speichern.');
   }
 
+  let progressSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  async function commitProgress() {
+    const ok = await postForm('setProgress', { pct: String(progressPct) });
+    if (!ok) toast('Fortschritt konnte nicht gespeichert werden.');
+  }
+  function onProgressInput() {
+    if (progressSaveTimer) clearTimeout(progressSaveTimer);
+    progressSaveTimer = setTimeout(commitProgress, 350);
+  }
+
   async function toggleApt(apartmentId: string, done: boolean) {
     await postForm('setApartment', { apartmentId, done: String(done) });
     toast(done ? 'Wohnung erledigt.' : 'Zurückgesetzt.');
@@ -114,6 +125,25 @@
       <span><b>Dauer:</b> {parent.task.durationAt ?? '-'} AT</span>
       {#if parent.gewerk}<span><b>Gewerk:</b> {parent.gewerk.name}</span>{/if}
     </div>
+  </div>
+
+  <div class="field">
+    <div class="field-label-row">
+      <label class="field-label" for="task-progress">Fortschritt</label>
+      <span class="progress-value">{progressPct}%</span>
+    </div>
+    <input
+      id="task-progress"
+      type="range"
+      min="0"
+      max="100"
+      step="5"
+      bind:value={progressPct}
+      oninput={onProgressInput}
+      onchange={commitProgress}
+      class="progress-slider"
+      style={`--p:${progressPct}%; --c:${color}`}
+    />
   </div>
 
   <div class="field">
@@ -241,4 +271,9 @@
   .task-photo-add span { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
   .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(0, 0, 0, .95); display: flex; align-items: center; justify-content: center; padding: 0; border: none; cursor: zoom-out; }
   .lightbox img { max-width: 96vw; max-height: 92vh; object-fit: contain; }
+  .field-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .progress-value { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .progress-slider { width: 100%; height: 6px; appearance: none; background: linear-gradient(to right, var(--c, var(--blue)) 0 var(--p), var(--grey-soft) var(--p) 100%); border-radius: 999px; outline: none; cursor: pointer; }
+  .progress-slider::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--paper); border: 2px solid var(--c, var(--blue)); cursor: grab; box-shadow: var(--shadow-1); }
+  .progress-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--paper); border: 2px solid var(--c, var(--blue)); cursor: grab; }
 </style>

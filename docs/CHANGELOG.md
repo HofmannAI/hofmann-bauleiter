@@ -7,6 +7,15 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(bauzeit/progress): Pro-Termin Fortschritts-Slider (0–100%) im
+  Task-Editor, debounced auto-save (350ms). Im Gantt rendert ein
+  dunkler Overlay-Streifen am linken Rand der Bar die Fortschritts-
+  Anteile (% der Bar-Breite). Tooltip zeigt den Wert. Activity-Log-
+  Eintrag bei jeder Änderung.
+  **Migration 0009_task_progress_pct.sql benötigt** — fügt
+  `tasks.progress_pct integer DEFAULT 0` mit CHECK 0..100 hinzu.
+  Idempotent (`ADD COLUMN IF NOT EXISTS`, `DO $$ … duplicate_object`).
+  Bestehende Termine bleiben bei 0% (zero downtime). (PR #14)
 - feat(search/cmdk): Volltextsuche über Mängel/Kontakte/Termine pro
   Projekt. Cmd+K zeigt nach 2+ Zeichen Live-Treffer (debounced 220ms).
   Backend: pg_trgm GIN-Indexe (Migration 0008) + Drizzle-Endpoint
