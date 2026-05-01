@@ -27,6 +27,26 @@
   let mailtoOpen = $state(false);
   let annotating = $state<{ photoId: string; url: string } | null>(null);
   let lightbox = $state<string | null>(null);
+  let planCropUrl = $state<string | null>(null);
+
+  $effect(() => {
+    const path = parent.defect.planCropPath;
+    if (!path) { planCropUrl = null; return; }
+    (async () => {
+      planCropUrl = await getSignedUrl('defect-crops', path, 600);
+    })();
+  });
+
+  let planLink = $derived.by(() => {
+    const planId = parent.defect.planId;
+    if (!planId) return null;
+    const base = `/${parent.project.id}/maengel/plaene/${planId}`;
+    const params = new URLSearchParams();
+    if (parent.defect.page) params.set('page', String(parent.defect.page));
+    if (parent.defect.id) params.set('defect', parent.defect.id);
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  });
 
   async function loadPhotoUrls() {
     const out: Record<string, string> = {};
@@ -146,6 +166,29 @@
     <input class="defect-title-input" bind:value={title} onblur={save} />
     <span class="status-pill status-{status}">{status}</span>
   </div>
+
+  {#if parent.defect.planCropPath}
+    <a class="plan-crop-section" href={planLink ?? '#'} aria-label="Plan-Ausschnitt im Plan-Viewer öffnen">
+      <span class="plan-crop-img">
+        {#if planCropUrl}
+          <img src={planCropUrl} alt="Plan-Ausschnitt mit Pin-Markierung" />
+        {:else}
+          <span class="plan-crop-skeleton" aria-hidden="true"></span>
+        {/if}
+      </span>
+      <span class="plan-crop-meta">
+        <span class="plan-crop-eyebrow">Plan-Ausschnitt</span>
+        <span class="plan-crop-hint">
+          {#if parent.plan}
+            Seite {parent.defect.page ?? 1} · {parent.plan.name}
+          {:else}
+            Klick öffnet Plan-Viewer
+          {/if}
+        </span>
+        <span class="plan-crop-cta"><Icon name="file" size={11} /> Im Plan ansehen</span>
+      </span>
+    </a>
+  {/if}
 
   <div class="status-actions">
     {#each (['acknowledged','resolved','accepted','rejected','reopened'] as const) as s}
@@ -300,6 +343,20 @@
   .back-link:hover { color: var(--ink); }
   .defect-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
   .defect-num-tag { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--ink); background: var(--paper-tint); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); }
+  .plan-crop-section { display: flex; gap: 14px; align-items: center; padding: 10px; margin-bottom: 14px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); text-decoration: none; color: inherit; transition: all .12s; }
+  .plan-crop-section:hover { border-color: var(--line-strong); transform: translateX(2px); box-shadow: var(--shadow-1); }
+  .plan-crop-img { width: 200px; height: 150px; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--grey-soft); border: 1px solid var(--line); display: block; position: relative; }
+  .plan-crop-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .plan-crop-skeleton { position: absolute; inset: 0; background: linear-gradient(90deg, var(--paper-tint) 0%, var(--grey-soft) 50%, var(--paper-tint) 100%); background-size: 200% 100%; animation: defect-detail-shimmer 1.4s linear infinite; }
+  @keyframes defect-detail-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .plan-crop-skeleton { animation: none; } }
+  .plan-crop-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .plan-crop-eyebrow { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .plan-crop-hint { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .plan-crop-cta { font-family: var(--mono); font-size: 11px; color: var(--red); display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; }
+  @media (max-width: 640px) {
+    .plan-crop-img { width: 120px; height: 90px; }
+  }
   .defect-title-input { flex: 1; min-width: 200px; font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1.1; letter-spacing: -.015em; border: none; padding: 4px 0; background: transparent; }
   .defect-title-input:focus { border-bottom: 2px solid var(--red); outline: none; }
   .status-pill { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
