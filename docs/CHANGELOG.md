@@ -7,6 +7,22 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(maengel/layouts-bulk): Vorgefertigte Filter-Layouts und Bulk-
+  Aktionen in der Mängel-Liste. Layout-Bar mit 10 globalen Default-
+  Layouts (A000 Offene Mängel · A100 Abgeschlossene · F010 Neu erfasst ·
+  F020 Erfassung unvollständig · F035 Innerhalb Frist · F040 1. Frist
+  abgelaufen · F060 Nachfrist abgelaufen · F070 Klärungsbedarf ·
+  F080 Freigemeldet · F100 Beseitigt). Klick auf Layout filtert
+  + gruppiert die Liste sofort. Browser-side `matchDefectFilter()`
+  gegen die `filter_json`-DSL (statusIn/anStatusIn/dueDateBefore/
+  missingFields/…). Gruppieren-Dropdown (Gewerk / AN-Status / Frist).
+  Mehrfachauswahl per Checkbox + Bulk-Action-Bar oben (Sammelbericht
+  PDF aller Selektionen, Bulk-Status setzen). Reuse vom existierenden
+  `downloadGewerkReport`-Generator (PR #7) — kein neuer PDF-Code.
+  **Migration 0011_defect_layouts.sql benötigt** — fügt
+  `defect_layouts` mit RLS hinzu, seedet 10 globale Default-Layouts.
+  Idempotent (`CREATE TABLE IF NOT EXISTS`, `WHERE NOT EXISTS`-Guard
+  am Seed). (PR #18)
 - feat(maengel/vob-ruege): VOB-konformer Mängelrüge-Workflow mit
   Vorgangs-Historie pro Mangel (AN- und AG-Spur), Frist-Tracking,
   Brief-Vorlagen und PDF-Generator. Mangel-Detail zeigt zwei

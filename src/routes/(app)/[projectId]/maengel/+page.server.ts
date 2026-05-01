@@ -2,18 +2,24 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { gewerke, defectPhotos, defectHistory } from '$lib/db/schema';
+import { gewerke, defectPhotos, defectHistory, defects as defectsTable, defectLayouts } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
 import { vorgaengeByProject } from '$lib/db/vorgangQueries';
-import { asc } from 'drizzle-orm';
-
+import { asc, sql, and, eq } from 'drizzle-orm';
 export const load: PageServerLoad = async ({ params }) => {
-  const [defects, plans, contacts, gewerkeRows, vorgaengeMap] = await Promise.all([
+  const [defects, plans, contacts, gewerkeRows, vorgaengeMap, layouts] = await Promise.all([
     listDefects(params.projectId),
     listPlans(params.projectId),
     listContactsForProject(params.projectId),
     db ? db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)) : Promise.resolve([]),
-    vorgaengeByProject(params.projectId)
+    vorgaengeByProject(params.projectId),
+    db
+      ? db
+          .select()
+          .from(defectLayouts)
+          .where(sql`${defectLayouts.projectId} IS NULL OR ${defectLayouts.projectId} = ${params.projectId}`)
+          .orderBy(asc(defectLayouts.sortOrder), asc(defectLayouts.code))
+      : Promise.resolve([])
   ]);
   // Reduce Map → array of {defectId, anStatus, agStatus, anTermin} for serialization
   const vorgaenge = Array.from(vorgaengeMap.entries()).map(([defectId, v]) => ({
@@ -22,7 +28,7 @@ export const load: PageServerLoad = async ({ params }) => {
     anTermin: v.AN?.termin ?? null,
     agStatus: v.AG?.status ?? null
   }));
-  return { defects, plans, contacts, gewerke: gewerkeRows, vorgaenge };
+  return { defects, plans, contacts, gewerke: gewerkeRows, layouts, vorgaenge };
 };
 
 const photoEntry = z.object({
@@ -88,6 +94,43 @@ export const actions: Actions = {
     }
 
     redirect(303, `/${params.projectId}/maengel/${row.id}`);
+  },
+
+  bulkSetStatus: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const ids = String(fd.ids ?? '').split(',').filter(Boolean);
+    const status = String(fd.status ?? '') as 'open' | 'sent' | 'acknowledged' | 'resolved' | 'accepted' | 'rejected' | 'reopened';
+    const valid = ['open', 'sent', 'acknowledged', 'resolved', 'accepted', 'rejected', 'reopened'];
+    if (!valid.includes(status) || ids.length === 0) return fail(400);
+    for (const id of ids) {
+      await db.update(defectsTable)
+        .set({ status, updatedAt: new Date() })
+        .where(and(eq(defectsTable.id, id), eq(defectsTable.projectId, params.projectId)));
+    }
+    return { ok: true, count: ids.length };
+  },
+
+  saveLayout: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const code = String(fd.code ?? '').slice(0, 16);
+    const name = String(fd.name ?? '').slice(0, 100);
+    const filterJson = String(fd.filterJson ?? '{}');
+    const groupBy = (String(fd.groupBy ?? '') || null) as string | null;
+    if (!code || !name) return fail(400, { error: 'Code + Name nötig.' });
+    let parsed: unknown;
+    try { parsed = JSON.parse(filterJson); } catch { return fail(400, { error: 'Filter-JSON ungültig.' }); }
+    await db.insert(defectLayouts).values({
+      projectId: params.projectId,
+      code,
+      name,
+      filterJson: parsed as never,
+      groupBy,
+      isGlobal: false,
+      createdBy: locals.user.id
+    });
+    return { ok: true };
   },
 
   bulkExtract: async ({ request, params, locals }) => {
