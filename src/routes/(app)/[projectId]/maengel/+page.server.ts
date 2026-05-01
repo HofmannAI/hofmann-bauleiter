@@ -4,10 +4,12 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
 import { gewerke, defectPhotos, defectHistory, defects as defectsTable, defectLayouts } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
+import { loadStructureTree } from '$lib/db/structureQueries';
 import { vorgaengeByProject } from '$lib/db/vorgangQueries';
 import { asc, sql, and, eq } from 'drizzle-orm';
+
 export const load: PageServerLoad = async ({ params }) => {
-  const [defects, plans, contacts, gewerkeRows, vorgaengeMap, layouts] = await Promise.all([
+  const [defects, plans, contacts, gewerkeRows, vorgaengeMap, layouts, structure] = await Promise.all([
     listDefects(params.projectId),
     listPlans(params.projectId),
     listContactsForProject(params.projectId),
@@ -19,7 +21,8 @@ export const load: PageServerLoad = async ({ params }) => {
           .from(defectLayouts)
           .where(sql`${defectLayouts.projectId} IS NULL OR ${defectLayouts.projectId} = ${params.projectId}`)
           .orderBy(asc(defectLayouts.sortOrder), asc(defectLayouts.code))
-      : Promise.resolve([])
+      : Promise.resolve([]),
+    loadStructureTree(params.projectId)
   ]);
   // Reduce Map → array of {defectId, anStatus, agStatus, anTermin} for serialization
   const vorgaenge = Array.from(vorgaengeMap.entries()).map(([defectId, v]) => ({
@@ -28,7 +31,7 @@ export const load: PageServerLoad = async ({ params }) => {
     anTermin: v.AN?.termin ?? null,
     agStatus: v.AG?.status ?? null
   }));
-  return { defects, plans, contacts, gewerke: gewerkeRows, layouts, vorgaenge };
+  return { defects, plans, contacts, gewerke: gewerkeRows, layouts, vorgaenge, structure };
 };
 
 const photoEntry = z.object({

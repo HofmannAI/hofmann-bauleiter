@@ -2,6 +2,7 @@
   import Icon from '$lib/components/Icon.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import DraftPhotoStrip, { type DraftPhoto } from '$lib/components/DraftPhotoStrip.svelte';
+  import StructureTree, { type StructureSelection } from '$lib/components/StructureTree.svelte';
   import { confirm } from '$lib/components/ConfirmDialog.svelte';
   import { fmtDateDe } from '$lib/util/time';
   import { invalidateAll } from '$app/navigation';
@@ -34,7 +35,8 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   type FristFilter = 'all' | 'overdue' | 'week' | 'month';
   let statusFilter = $state<Status>('all');
   let gewerkFilter = $state<string>('all');
-let activeLayoutId = $state<string | null>(null);
+  let strukturSelection = $state<StructureSelection>({ kind: 'project', houseId: null, apartmentId: null, roomId: null });
+  let activeLayoutId = $state<string | null>(null);
   let groupBy = $state<GroupKey | null>(null);
   let selected = $state<Set<string>>(new Set());
 
@@ -49,6 +51,25 @@ let activeLayoutId = $state<string | null>(null);
   });
 
   let activeLayout = $derived(parent.layouts.find((l) => l.id === activeLayoutId) ?? null);
+
+  function aptIdsByHouse(houseId: string): Set<string> {
+    const out = new Set<string>();
+    const h = parent.structure.find((x) => x.id === houseId);
+    if (!h) return out;
+    for (const a of h.apartments) out.add(a.id);
+    return out;
+  }
+
+  function defectMatchesStruktur(d: { roomId: string | null; apartmentId: string | null }): boolean {
+    if (strukturSelection.kind === 'project') return true;
+    if (strukturSelection.kind === 'room') return d.roomId === strukturSelection.roomId;
+    if (strukturSelection.kind === 'apartment') return d.apartmentId === strukturSelection.apartmentId;
+    if (strukturSelection.kind === 'house' && strukturSelection.houseId) {
+      const apts = aptIdsByHouse(strukturSelection.houseId);
+      return d.apartmentId != null && apts.has(d.apartmentId);
+    }
+    return true;
+  }
 
   function applyLayout(id: string | null) {
     activeLayoutId = id;
@@ -166,6 +187,22 @@ let activeLayoutId = $state<string | null>(null);
     );
   }
 
+  let strukturCounts = $derived.by(() => {
+    const houses = new Map<string, number>();
+    const aptCounts = new Map<string, number>();
+    const roomCounts = new Map<string, number>();
+    for (const d of parent.defects) {
+      if (d.apartmentId) aptCounts.set(d.apartmentId, (aptCounts.get(d.apartmentId) ?? 0) + 1);
+      if (d.roomId) roomCounts.set(d.roomId, (roomCounts.get(d.roomId) ?? 0) + 1);
+    }
+    for (const h of parent.structure) {
+      let n = 0;
+      for (const a of h.apartments) n += aptCounts.get(a.id) ?? 0;
+      if (n > 0) houses.set(h.id, n);
+    }
+    return { houses, apartments: aptCounts, rooms: roomCounts, total: parent.defects.length };
+  });
+
   let draftPhotos = $state<DraftPhoto[]>([]);
   let draftPhotosJson = $derived(
     JSON.stringify(
@@ -186,9 +223,9 @@ let activeLayoutId = $state<string | null>(null);
         }
         if (gewerkFilter !== 'all' && d.gewerkId !== gewerkFilter) return false;
       }
-if (gewerkFilter !== 'all' && d.gewerkId !== gewerkFilter) return false;
       if (!fristMatches(d)) return false;
       if (!searchMatches(d)) return false;
+      if (!defectMatchesStruktur(d)) return false;
       return true;
     })
   );
@@ -267,7 +304,16 @@ if (gewerkFilter !== 'all' && d.gewerkId !== gewerkFilter) return false;
   };
 </script>
 
-<div class="page">
+<div class="page maengel-layout">
+  {#if parent.structure.length > 0}
+    <StructureTree
+      tree={parent.structure}
+      selection={strukturSelection}
+      counts={strukturCounts}
+      onSelect={(s) => (strukturSelection = s)}
+    />
+  {/if}
+  <div class="maengel-main">
   <div class="maengel-header">
     <h2 class="section-title" style="margin:0">Mängel <span class="count">{visible.length}</span></h2>
     <div class="maengel-actions">
@@ -462,6 +508,7 @@ if (gewerkFilter !== 'all' && d.gewerkId !== gewerkFilter) return false;
       {/if}
     {/each}
   {/if}
+  </div>
 </div>
 
 {#if showCreate}
@@ -590,6 +637,9 @@ if (gewerkFilter !== 'all' && d.gewerkId !== gewerkFilter) return false;
 {/if}
 
 <style>
+  .maengel-layout { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+  @media (min-width: 980px) { .maengel-layout { grid-template-columns: 240px 1fr; } }
+  .maengel-main { min-width: 0; }
   .maengel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 .layout-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 0; margin-bottom: 12px; border-top: 1px dashed var(--line); border-bottom: 1px dashed var(--line); }
   .layout-eyebrow { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-right: 4px; }

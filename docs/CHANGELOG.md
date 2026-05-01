@@ -7,6 +7,17 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(maengel/strukturbaum): Hierarchischer Strukturbaum-Filter
+  (Projekt → Haus → Wohnung → Raum) als Sidebar im Mängel-Tab.
+  Aufklappbar pro Knoten, zeigt pro Knoten die Anzahl Mängel als
+  Badge. Klick filtert die Mängel-Liste auf den ausgewählten Scope.
+  Neue Räume-Tabelle (`rooms`) mit Cascade an Apartments + RLS.
+  Defects ergänzt um `room_id`, `bauteil`, `bauteilqualitaet`.
+  Auf Mobile (<980px) als horizontaler Block oberhalb der Liste,
+  auf Desktop als 240px-Sidebar links.
+  **Migration 0013_struktur_bauteile.sql benötigt** — Migrations-
+  Nummer 0012 ist reserviert für die geplante QR-Freimeldung
+  (siehe OPEN_QUESTIONS OQ-021). Idempotent. (PR #19)
 - feat(maengel/layouts-bulk): Vorgefertigte Filter-Layouts und Bulk-
   Aktionen in der Mängel-Liste. Layout-Bar mit 10 globalen Default-
   Layouts (A000 Offene Mängel · A100 Abgeschlossene · F010 Neu erfasst ·
