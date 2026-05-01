@@ -37,6 +37,7 @@ const pinSchema = z.object({
   xPct: z.coerce.number().min(0).max(100),
   yPct: z.coerce.number().min(0).max(100),
   priority: z.coerce.number().int().min(1).max(3).default(2),
+  planCropPath: z.string().min(3).max(300).optional(),
   photos: z.string().optional()
 });
 
@@ -73,6 +74,7 @@ export const actions: Actions = {
       xPct: parsed.data.xPct,
       yPct: parsed.data.yPct,
       priority: parsed.data.priority,
+      planCropPath: parsed.data.planCropPath ?? null,
       createdBy: locals.user.id
     });
 

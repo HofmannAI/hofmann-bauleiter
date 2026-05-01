@@ -16,6 +16,22 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   `tasks.progress_pct integer DEFAULT 0` mit CHECK 0..100 hinzu.
   Idempotent (`ADD COLUMN IF NOT EXISTS`, `DO $$ … duplicate_object`).
   Bestehende Termine bleiben bei 0% (zero downtime). (PR #14)
+- feat(search/cmdk): Volltextsuche über Mängel/Kontakte/Termine pro
+  Projekt. Cmd+K zeigt nach 2+ Zeichen Live-Treffer (debounced 220ms).
+  Backend: pg_trgm GIN-Indexe (Migration 0008) + Drizzle-Endpoint
+  `/api/search?projectId&q=`. Trigram-Similarity ranked top 5 pro Kind,
+  RLS-respektiert (project-membership-Check vor Query). Klick navigiert
+  zu Mangel-Detail / Bauzeit-Editor / Kontakte-Liste.
+  **Migration 0008_search_trigram.sql benötigt** — der User muss sie
+  manuell im Supabase-SQL-Editor laufen lassen vor Merge. Idempotent
+  (`CREATE EXTENSION IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`),
+  zero-downtime. (PR #13)
+- feat(maengel/plan-crop): Beim Pin-Setzen wird ein 400×300px-JPEG-Crop
+  um den Pin generiert (rotes Markierungs-Symbol mittig), in
+  `defect-crops/<projectId>/<draftId>.jpg` hochgeladen und als
+  `defects.plan_crop_path` referenziert. PDF-Mängelreport zeigt den
+  Crop oberhalb der Fotos. Migration 0007 nötig. Existierende Mängel
+  ohne Crop bleiben funktional (NULL-Handling). (PR #7)
 - feat(ux/confirm-dialog): `ConfirmDialog.svelte` ersetzt das native
   `window.confirm()` durch einen Sheet-basierten Dialog mit imperativer
   `await confirm({title, description?, confirmLabel?, danger?})`-API.
@@ -43,7 +59,6 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   - **Mängel**: Onboarding-CTA „Ersten Mangel anlegen" wenn noch nichts da ist,
     sonst „Keine Treffer im Filter" mit Reset-Hint
   Sehr kleines Diff (3 Files), klare visuelle Aufwertung. (PR #9)
-
 ### Fixed
 - fix(checklisten/detail): `GET /<projectId>/checklisten/<id>` warf 500 mit
   `PostgresError: syntax error at or near ')'` für jede Liste ohne

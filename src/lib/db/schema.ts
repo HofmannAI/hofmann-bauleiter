@@ -249,6 +249,7 @@ export const defects = pgTable('defects', {
   page: integer('page'),
   xPct: numeric('x_pct'),
   yPct: numeric('y_pct'),
+  planCropPath: text('plan_crop_path'),
   apartmentId: uuid('apartment_id').references(() => apartments.id),
   gewerkId: uuid('gewerk_id').references(() => gewerke.id),
   contactId: uuid('contact_id').references(() => contacts.id),
