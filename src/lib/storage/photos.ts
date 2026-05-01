@@ -86,3 +86,30 @@ export async function getSignedUrl(bucket: string, path: string, expiresIn = 300
   if (error) return null;
   return data.signedUrl;
 }
+
+/**
+ * Upload a 400×300 plan-crop blob (already cropped client-side from the
+ * rendered PDF canvas) to the defect-crops bucket. Pfad-RLS expects
+ * "<projectId>/..." als ersten Segment.
+ *
+ * Wir benutzen "<projectId>/<defectId>.jpg" als Pfad — ein Crop pro Mangel,
+ * Re-Upload via upsert: true überschreibt den alten.
+ *
+ * Falls bei Mangel-Anlage die defectId noch nicht existiert (Pre-Submit
+ * Upload), nutze einen Draft-UUID — der Mangel referenziert dann
+ * "<projectId>/<draftId>.jpg". Server-Action kennt den Pfad.
+ */
+export async function uploadPlanCrop(
+  projectId: string,
+  defectIdOrDraft: string,
+  blob: Blob
+): Promise<{ path: string }> {
+  const sb = getSupabaseBrowser();
+  const path = `${projectId}/${defectIdOrDraft}.jpg`;
+  const { error } = await sb.storage.from('defect-crops').upload(path, blob, {
+    contentType: 'image/jpeg',
+    upsert: true
+  });
+  if (error) throw error;
+  return { path };
+}

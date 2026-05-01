@@ -3,7 +3,8 @@
 **post-rc2 Session** (heute):
 - PR #5 (gemerged): /checklisten FROM-clause-Fix
 - PR #6 (gemerged): /checklisten/[id] empty-progress IN()-Fix
-- PR #7 (offen, **Migration 0007**): Plan-Crop für Mängel
+- PR #7 (offen, **Migration 0007**): Plan-Crop für Mängel — 400×300 JPEG
+  beim Pin-Setzen, im PDF-Bericht oberhalb der Fotos
 - PR #8 (gemerged, KEINE Migration): Gantt-Drag&Drop-Dependencies
   (MS-Project-Niveau, FS/SS/FF/SF, Mobile-Connector-Mode, Edit-Popover)
 - PR #9 (gemerged): Design-Politur — EmptyState-Komponente, kontextspezifische

@@ -7,6 +7,12 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(maengel/plan-crop): Beim Pin-Setzen wird ein 400×300px-JPEG-Crop
+  um den Pin generiert (rotes Markierungs-Symbol mittig), in
+  `defect-crops/<projectId>/<draftId>.jpg` hochgeladen und als
+  `defects.plan_crop_path` referenziert. PDF-Mängelreport zeigt den
+  Crop oberhalb der Fotos. Migration 0007 nötig. Existierende Mängel
+  ohne Crop bleiben funktional (NULL-Handling). (PR #7)
 - feat(ux/confirm-dialog): `ConfirmDialog.svelte` ersetzt das native
   `window.confirm()` durch einen Sheet-basierten Dialog mit imperativer
   `await confirm({title, description?, confirmLabel?, danger?})`-API.
@@ -34,7 +40,6 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   - **Mängel**: Onboarding-CTA „Ersten Mangel anlegen" wenn noch nichts da ist,
     sonst „Keine Treffer im Filter" mit Reset-Hint
   Sehr kleines Diff (3 Files), klare visuelle Aufwertung. (PR #9)
-
 ### Fixed
 - fix(checklisten/detail): `GET /<projectId>/checklisten/<id>` warf 500 mit
   `PostgresError: syntax error at or near ')'` für jede Liste ohne
