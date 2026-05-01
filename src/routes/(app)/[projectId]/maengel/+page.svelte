@@ -7,9 +7,26 @@
   import { toast } from '$lib/components/Toast.svelte';
   import { enhance } from '$app/forms';
   import { onMount } from 'svelte';
+  import { getSignedUrl } from '$lib/storage/photos';
 
   let { data } = $props();
   let parent = $derived(data);
+
+  let cropUrls = $state<Record<string, string>>({});
+
+  $effect(() => {
+    const ids = parent.defects.filter((d) => d.planCropPath && !cropUrls[d.id]).map((d) => d);
+    if (ids.length === 0) return;
+    (async () => {
+      const next = { ...cropUrls };
+      for (const d of ids) {
+        if (!d.planCropPath) continue;
+        const url = await getSignedUrl('defect-crops', d.planCropPath, 600);
+        if (url) next[d.id] = url;
+      }
+      cropUrls = next;
+    })();
+  });
 
   type Status = 'all' | 'open' | 'sent' | 'acknowledged' | 'resolved';
   let statusFilter = $state<Status>('all');
@@ -178,6 +195,13 @@
           {#each grp as d (d.id)}
             <a class="defect-card" class:overdue={d.deadline && new Date(d.deadline + 'T00:00:00') < new Date()} href={`/${parent.project.id}/maengel/${d.id}`}>
               <span class="defect-stripe" style={`background:${d.gewerkColor ?? '#6B6660'}`}></span>
+              {#if d.planCropPath && cropUrls[d.id]}
+                <span class="defect-crop-thumb" aria-label="Plan-Ausschnitt">
+                  <img src={cropUrls[d.id]} alt="Plan-Ausschnitt" loading="lazy" />
+                </span>
+              {:else if d.planCropPath}
+                <span class="defect-crop-thumb defect-crop-skeleton" aria-hidden="true"></span>
+              {/if}
               <span class="defect-body">
                 <span class="defect-line1">
                   <span class="defect-num">{d.shortId ?? '-'}</span>
@@ -329,6 +353,11 @@
   .defect-card { display: flex; gap: 10px; align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; text-decoration: none; color: inherit; transition: all .12s; }
   .defect-card:hover { border-color: var(--line-strong); transform: translateX(2px); }
   .defect-stripe { width: 4px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
+  .defect-crop-thumb { width: 60px; height: 45px; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--grey-soft); border: 1px solid var(--line); display: block; }
+  .defect-crop-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .defect-crop-thumb.defect-crop-skeleton { background: linear-gradient(90deg, var(--paper-tint) 0%, var(--grey-soft) 50%, var(--paper-tint) 100%); background-size: 200% 100%; animation: defect-crop-shimmer 1.4s linear infinite; }
+  @keyframes defect-crop-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .defect-crop-thumb.defect-crop-skeleton { animation: none; } }
   .defect-body { flex: 1; min-width: 0; }
   .defect-line1 { display: flex; align-items: baseline; gap: 8px; }
   .defect-num { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
