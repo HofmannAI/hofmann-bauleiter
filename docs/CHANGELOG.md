@@ -7,6 +7,25 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(maengel/vob-ruege): VOB-konformer Mängelrüge-Workflow mit
+  Vorgangs-Historie pro Mangel (AN- und AG-Spur), Frist-Tracking,
+  Brief-Vorlagen und PDF-Generator. Mangel-Detail zeigt zwei
+  Timelines (Auftragnehmer / Auftraggeber) mit farbigen Status-
+  Badges. Button "Mängelrüge" generiert ein 2-seitiges PDF (Briefkopf
+  aus `firma_settings`, Empfänger-Adresse, Brieftext aus Vorlage,
+  Anlage Mängelliste mit Plan-Crop-Vorschau pro Mangel,
+  Bestätigungs-Block am Schluss). Beim Erstellen wird automatisch
+  ein Vorgang AN „angezeigt" angelegt, `defects.due_date` gesetzt
+  und Status auf 'sent' gewechselt. Vier globale Brief-Vorlagen
+  vorinitialisiert (§4 Abs.7 vor Abnahme, §13 Abs.5 nach Abnahme,
+  Nachfrist mit Ersatzvornahme-Androhung, Freimeldungs-Bestätigung).
+  **Migration 0010_defect_vorgaenge.sql benötigt** — fügt
+  `defect_vorgaenge`-Tabelle, Enum-Types `defect_party` und
+  `defect_vorgang_status`, `brief_vorlagen`, `firma_settings`,
+  zusätzliche Spalten `defects.due_date` + `rechtsgrundlage` hinzu.
+  Idempotent (`DO $$ … duplicate_object`, `IF NOT EXISTS`).
+  Default-Hofmann-Firma + 4 Brief-Vorlagen werden automatisch
+  geseedet, falls noch nicht vorhanden. (PR #17)
 - feat(bauzeit/progress): Pro-Termin Fortschritts-Slider (0–100%) im
   Task-Editor, debounced auto-save (350ms). Im Gantt rendert ein
   dunkler Overlay-Streifen am linken Rand der Bar die Fortschritts-
