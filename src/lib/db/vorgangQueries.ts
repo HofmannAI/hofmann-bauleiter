@@ -88,24 +88,33 @@ export async function getFirmaSettings() {
 
 /**
  * Aggregiert für die Mängel-Liste: ein Map defectId → letzter AN/AG-Status.
- * Eine einzige DB-Query, kein N+1.
+ * Eine einzige DB-Query mit DISTINCT ON — liefert pro (defect_id, partei)
+ * nur den neuesten Vorgang. Nutzt Index dv_defect_partei_idx auf
+ * (defect_id, partei, created_at DESC).
  */
 export async function vorgaengeByProject(projectId: string): Promise<
   Map<string, { AN: VorgangRow | null; AG: VorgangRow | null }>
 > {
   const out = new Map<string, { AN: VorgangRow | null; AG: VorgangRow | null }>();
   if (!db) return out;
-  // Subquery: alle Vorgänge der Mängel im Projekt, neueste zuerst.
-  const rows = await db
-    .select()
-    .from(defectVorgaenge)
-    .innerJoin(defects, eq(defects.id, defectVorgaenge.defectId))
-    .where(eq(defects.projectId, projectId))
-    .orderBy(desc(defectVorgaenge.createdAt));
-  for (const { defect_vorgaenge: v } of rows) {
+  // DISTINCT ON gibt pro Gruppe nur die erste Row zurück → mit
+  // ORDER BY created_at DESC ist das die neueste pro (defect, partei).
+  // Drastisch weniger Daten als "alle Vorgänge des Projekts".
+  const rows = await db.execute<VorgangRow>(sql`
+    SELECT DISTINCT ON (v.defect_id, v.partei)
+      v.id, v.defect_id AS "defectId", v.partei, v.status,
+      v.beschreibung, v.termin, v.termin_antwort AS "terminAntwort",
+      v.document_id AS "documentId", v.document_url AS "documentUrl",
+      v.created_by AS "createdBy", v.created_at AS "createdAt"
+    FROM defect_vorgaenge v
+    INNER JOIN defects d ON d.id = v.defect_id
+    WHERE d.project_id = ${projectId}
+    ORDER BY v.defect_id, v.partei, v.created_at DESC
+  `);
+  for (const v of rows) {
     const cur = out.get(v.defectId) ?? { AN: null, AG: null };
-    if (v.partei === 'AN' && !cur.AN) cur.AN = v;
-    if (v.partei === 'AG' && !cur.AG) cur.AG = v;
+    if (v.partei === 'AN') cur.AN = v;
+    else if (v.partei === 'AG') cur.AG = v;
     out.set(v.defectId, cur);
   }
   return out;
