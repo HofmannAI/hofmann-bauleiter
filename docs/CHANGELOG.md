@@ -6,6 +6,26 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 
 ## [unreleased] — post-rc2
 
+### Fixed
+- 🔥 **HOTFIX** fix(maengel/perf): Mängel-Seite lief in
+  Production in 300s-Timeout. Zwei Bottlenecks behoben — keine
+  Migration, nur Code:
+  1. `loadStructureTree()` zog `apartments` + `rooms` ohne
+     `project_id`-Filter — also Full-Table-Scan über alle Projekte.
+     Bei wachsender Mandanten-Datenmenge wurde das pro Mängel-Tab-
+     Aufruf langsamer und langsamer. Fix: beide Queries via
+     `inArray(houseIds)` bzw. `inArray(aptIds)` auf das aktuelle
+     Projekt eingeschränkt. Plus den redundanten
+     `houseRows.some(...)`-Filter im JS-Layer entfernt.
+  2. `vorgaengeByProject()` zog ALLE Vorgänge des Projekts und
+     sortierte sie in JS — bei Projekten mit hundert+ Vorgängen
+     viel Datenbanktraffic. Fix: `SELECT DISTINCT ON (defect_id,
+     partei) … ORDER BY defect_id, partei, created_at DESC` —
+     liefert pro `(defect, partei)` nur die neueste Row direkt
+     aus dem bereits existierenden Index `dv_defect_partei_idx`
+     (Migration 0010). Drastisch weniger Daten.
+  Keine Migration nötig — der Index aus 0010 wird genutzt. (PR HOTFIX)
+
 ### Added
 - feat(maengel/templates): Mangel-Vorlagen für 1-Klick-Erfassung.
   Im Mangel-Anlegen-Sheet ist eine neue Combobox „Mangel-Template",
