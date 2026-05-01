@@ -32,6 +32,9 @@ export async function listDefects(projectId: string) {
       xPct: defects.xPct,
       yPct: defects.yPct,
       planCropPath: defects.planCropPath,
+      roomId: defects.roomId,
+      bauteil: defects.bauteil,
+      bauteilqualitaet: defects.bauteilqualitaet,
       createdAt: defects.createdAt
     })
     .from(defects)
@@ -149,6 +152,8 @@ export async function updateDefectFields(
     apartmentId: string | null;
     deadline: string | null;
     followupDate: string | null;
+    dueDate: string | null;
+    rechtsgrundlage: string | null;
     priority: number;
     status: 'open' | 'sent' | 'acknowledged' | 'resolved' | 'accepted' | 'rejected' | 'reopened';
   }>

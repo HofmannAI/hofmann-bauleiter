@@ -5,19 +5,31 @@ import { db } from '$lib/db/client';
 import { defectPhotos, defectHistory, gewerke, contacts, textbausteine } from '$lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import { getDefect, updateDefectFields, listContactsForProject } from '$lib/db/defectQueries';
+import { listVorgaenge, addVorgang, listBriefVorlagen, getFirmaSettings } from '$lib/db/vorgangQueries';
 
 export const load: PageServerLoad = async ({ params }) => {
   const detail = await getDefect(params.projectId, params.defectId);
   if (!detail) error(404, 'Mangel nicht gefunden');
-  if (!db) return { ...detail, gewerke: [], contacts: [], textbausteine: [] };
+  if (!db) return { ...detail, gewerke: [], contacts: [], textbausteine: [], vorgaenge: [], briefVorlagen: [], firma: null };
 
-  const [gewerkeRows, contactsRows, textRows] = await Promise.all([
+  const [gewerkeRows, contactsRows, textRows, vorgaenge, briefVorlagen, firma] = await Promise.all([
     db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)),
     listContactsForProject(params.projectId),
-    db.select().from(textbausteine).orderBy(asc(textbausteine.sortOrder))
+    db.select().from(textbausteine).orderBy(asc(textbausteine.sortOrder)),
+    listVorgaenge(params.defectId),
+    listBriefVorlagen(params.projectId),
+    getFirmaSettings()
   ]);
 
-  return { ...detail, gewerke: gewerkeRows, contacts: contactsRows, textbausteine: textRows };
+  return {
+    ...detail,
+    gewerke: gewerkeRows,
+    contacts: contactsRows,
+    textbausteine: textRows,
+    vorgaenge,
+    briefVorlagen,
+    firma
+  };
 };
 
 const fieldsSchema = z.object({
@@ -28,6 +40,8 @@ const fieldsSchema = z.object({
   apartmentId: z.string().uuid().optional().or(z.literal('')),
   deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
   followupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+  rechtsgrundlage: z.string().max(120).optional().or(z.literal('')),
   priority: z.coerce.number().int().min(1).max(3).optional(),
   status: z.enum(['open', 'sent', 'acknowledged', 'resolved', 'accepted', 'rejected', 'reopened']).optional()
 });
@@ -35,6 +49,25 @@ const fieldsSchema = z.object({
 const photoLinkSchema = z.object({
   storagePath: z.string().min(3).max(300),
   caption: z.string().max(200).optional()
+});
+
+const vorgangSchema = z.object({
+  partei: z.enum(['AN', 'AG']),
+  status: z.enum([
+    'erfasst',
+    'angezeigt',
+    'nachfrist',
+    'klaerung',
+    'freigemeldet_NU',
+    'abgelehnt_NU',
+    'kontrolle_AG',
+    'erledigt',
+    'ersatzvornahme',
+    'notiz'
+  ]),
+  beschreibung: z.string().max(2000).optional().or(z.literal('')),
+  termin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+  terminAntwort: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal(''))
 });
 
 export const actions: Actions = {
@@ -95,6 +128,63 @@ export const actions: Actions = {
 
     await db.delete(defectPhotos).where(eq(defectPhotos.id, photoId));
     try { await locals.supabase.storage.from('defect-photos').remove([photo.storagePath]); } catch (_e) { /* ignore */ }
+    return { ok: true };
+  },
+
+  addVorgang: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const parsed = vorgangSchema.safeParse(fd);
+    if (!parsed.success) return fail(400, { error: 'Ungültige Eingabe.' });
+
+    const row = await addVorgang({
+      defectId: params.defectId,
+      partei: parsed.data.partei,
+      status: parsed.data.status,
+      beschreibung: parsed.data.beschreibung || null,
+      termin: parsed.data.termin || null,
+      terminAntwort: parsed.data.terminAntwort || null,
+      createdBy: locals.user.id
+    });
+    return { ok: true, vorgangId: row?.id ?? null };
+  },
+
+  /**
+   * Mängelrüge anzeigen: erzeugt einen Vorgang AN (status='angezeigt'),
+   * setzt due_date und rechtsgrundlage am Mangel, hinterlegt das
+   * Document-Reference falls vorhanden. PDF-Generierung passiert client-seitig
+   * (siehe lib/pdf/maengelruege.ts) — der Server bekommt nur die Metadaten.
+   */
+  ruegeAnzeigen: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const schema = z.object({
+      contactId: z.string().uuid().optional().or(z.literal('')),
+      frist: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      rechtsgrundlage: z.string().max(120),
+      vorlageId: z.string().uuid().optional().or(z.literal('')),
+      documentId: z.string().max(120).optional()
+    });
+    const parsed = schema.safeParse(fd);
+    if (!parsed.success) return fail(400, { error: 'Ungültige Eingabe.' });
+
+    await updateDefectFields(params.projectId, params.defectId, locals.user.id, {
+      contactId: parsed.data.contactId || null,
+      dueDate: parsed.data.frist,
+      rechtsgrundlage: parsed.data.rechtsgrundlage,
+      status: 'sent'
+    });
+
+    await addVorgang({
+      defectId: params.defectId,
+      partei: 'AN',
+      status: 'angezeigt',
+      beschreibung: `Mängelrüge ${parsed.data.rechtsgrundlage} versendet, Frist ${parsed.data.frist}`,
+      termin: parsed.data.frist,
+      documentId: parsed.data.documentId ?? null,
+      createdBy: locals.user.id
+    });
+
     return { ok: true };
   }
 };

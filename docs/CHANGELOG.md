@@ -18,7 +18,76 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   Sanitär/Trockenbau/Parkett/Türen/Fenster/Rohbau/Außen).
   Idempotent (Name-basierter NOT EXISTS-Guard pro Template).
   Verwendet existierende Gewerk-IDs aus dem Seed (Migration 0000),
-  setzt gewerk_id NULL falls Gewerk fehlt. (PR #21)
+  setzt gewerk_id NULL falls Gewerk fehlt. (PR #20)
+- feat(maengel/strukturbaum): Hierarchischer Strukturbaum-Filter
+  (Projekt → Haus → Wohnung → Raum) als Sidebar im Mängel-Tab.
+  Aufklappbar pro Knoten, zeigt pro Knoten die Anzahl Mängel als
+  Badge. Klick filtert die Mängel-Liste auf den ausgewählten Scope.
+  Neue Räume-Tabelle (`rooms`) mit Cascade an Apartments + RLS.
+  Defects ergänzt um `room_id`, `bauteil`, `bauteilqualitaet`.
+  Auf Mobile (<980px) als horizontaler Block oberhalb der Liste,
+  auf Desktop als 240px-Sidebar links.
+  **Migration 0013_struktur_bauteile.sql benötigt** — Migrations-
+  Nummer 0012 ist reserviert für die geplante QR-Freimeldung
+  (siehe OPEN_QUESTIONS OQ-021). Idempotent. (PR #19)
+- feat(maengel/layouts-bulk): Vorgefertigte Filter-Layouts und Bulk-
+  Aktionen in der Mängel-Liste. Layout-Bar mit 10 globalen Default-
+  Layouts (A000 Offene Mängel · A100 Abgeschlossene · F010 Neu erfasst ·
+  F020 Erfassung unvollständig · F035 Innerhalb Frist · F040 1. Frist
+  abgelaufen · F060 Nachfrist abgelaufen · F070 Klärungsbedarf ·
+  F080 Freigemeldet · F100 Beseitigt). Klick auf Layout filtert
+  + gruppiert die Liste sofort. Browser-side `matchDefectFilter()`
+  gegen die `filter_json`-DSL (statusIn/anStatusIn/dueDateBefore/
+  missingFields/…). Gruppieren-Dropdown (Gewerk / AN-Status / Frist).
+  Mehrfachauswahl per Checkbox + Bulk-Action-Bar oben (Sammelbericht
+  PDF aller Selektionen, Bulk-Status setzen). Reuse vom existierenden
+  `downloadGewerkReport`-Generator (PR #7) — kein neuer PDF-Code.
+  **Migration 0011_defect_layouts.sql benötigt** — fügt
+  `defect_layouts` mit RLS hinzu, seedet 10 globale Default-Layouts.
+  Idempotent (`CREATE TABLE IF NOT EXISTS`, `WHERE NOT EXISTS`-Guard
+  am Seed). (PR #18)
+- feat(maengel/vob-ruege): VOB-konformer Mängelrüge-Workflow mit
+  Vorgangs-Historie pro Mangel (AN- und AG-Spur), Frist-Tracking,
+  Brief-Vorlagen und PDF-Generator. Mangel-Detail zeigt zwei
+  Timelines (Auftragnehmer / Auftraggeber) mit farbigen Status-
+  Badges. Button "Mängelrüge" generiert ein 2-seitiges PDF (Briefkopf
+  aus `firma_settings`, Empfänger-Adresse, Brieftext aus Vorlage,
+  Anlage Mängelliste mit Plan-Crop-Vorschau pro Mangel,
+  Bestätigungs-Block am Schluss). Beim Erstellen wird automatisch
+  ein Vorgang AN „angezeigt" angelegt, `defects.due_date` gesetzt
+  und Status auf 'sent' gewechselt. Vier globale Brief-Vorlagen
+  vorinitialisiert (§4 Abs.7 vor Abnahme, §13 Abs.5 nach Abnahme,
+  Nachfrist mit Ersatzvornahme-Androhung, Freimeldungs-Bestätigung).
+  **Migration 0010_defect_vorgaenge.sql benötigt** — fügt
+  `defect_vorgaenge`-Tabelle, Enum-Types `defect_party` und
+  `defect_vorgang_status`, `brief_vorlagen`, `firma_settings`,
+  zusätzliche Spalten `defects.due_date` + `rechtsgrundlage` hinzu.
+  Idempotent (`DO $$ … duplicate_object`, `IF NOT EXISTS`).
+  Default-Hofmann-Firma + 4 Brief-Vorlagen werden automatisch
+  geseedet, falls noch nicht vorhanden. (PR #17)
+- feat(maengel/filter): Erweiterte Filter in der Mängel-Liste:
+  Frist-Pills (Überfällig / Diese Woche / Dieser Monat) + Such-
+  Eingabefeld (filtert client-side über Title und Short-ID).
+  Alle Filter (status/gewerk/frist/q) persistieren in URL-Query-
+  Params, sodass Reload den Zustand wiederherstellt und
+  Bookmarks/Share-Links den gewünschten Layout-Schnitt zeigen.
+  Keine Migration nötig. (PR #22)
+- feat(maengel/statistik): Statistik-Dashboard pro Projekt unter
+  `/[projectId]/maengel/statistik`. KPI-Cards (Gesamt, Offen,
+  Überfällig, Diese Woche behoben, Ø Bearbeitungszeit), Bar-Charts
+  pro Gewerk + pro Nachunternehmer (Top 10), Status-Verteilung,
+  Tages-Histogramm der letzten 30 Tage. Filter: Zeitraum
+  (7/30/90 Tage / Gesamt). Render via reines SVG + CSS — keine
+  externe Chart-Library, kein Bundle-Bloat. Alle Charts laden
+  client-seitig aus dem ohnehin schon im Mängel-Tab geladenen
+  Datensatz (1 zusätzliche Server-Query). Keine Migration nötig. (PR #21)
+- feat(maengel/plancrop-universal): Plan-Ausschnitt sichtbar in der
+  Mängel-Liste (60×45 Thumbnail neben Stripe) und im Mangel-Detail
+  (200×150 prominenter Header-Block, klickbar → Plan-Viewer auf Pin-
+  Position via `?page=&defect=`-Query-Params). Lazy-Load via signed
+  URL nach Mount, Skeleton-Shimmer während Load, graceful degradation
+  wenn `plan_crop_path` NULL ist (kein Layout-Bruch). Keine Migration
+  nötig — `defects.plan_crop_path` existiert seit 0007. (PR #16)
 - feat(bauzeit/progress): Pro-Termin Fortschritts-Slider (0–100%) im
   Task-Editor, debounced auto-save (350ms). Im Gantt rendert ein
   dunkler Overlay-Streifen am linken Rand der Bar die Fortschritts-
