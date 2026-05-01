@@ -14,6 +14,15 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   Params, sodass Reload den Zustand wiederherstellt und
   Bookmarks/Share-Links den gewünschten Layout-Schnitt zeigen.
   Keine Migration nötig. (PR #22)
+- feat(maengel/statistik): Statistik-Dashboard pro Projekt unter
+  `/[projectId]/maengel/statistik`. KPI-Cards (Gesamt, Offen,
+  Überfällig, Diese Woche behoben, Ø Bearbeitungszeit), Bar-Charts
+  pro Gewerk + pro Nachunternehmer (Top 10), Status-Verteilung,
+  Tages-Histogramm der letzten 30 Tage. Filter: Zeitraum
+  (7/30/90 Tage / Gesamt). Render via reines SVG + CSS — keine
+  externe Chart-Library, kein Bundle-Bloat. Alle Charts laden
+  client-seitig aus dem ohnehin schon im Mängel-Tab geladenen
+  Datensatz (1 zusätzliche Server-Query). Keine Migration nötig. (PR #21)
 - feat(maengel/plancrop-universal): Plan-Ausschnitt sichtbar in der
   Mängel-Liste (60×45 Thumbnail neben Stripe) und im Mangel-Detail
   (200×150 prominenter Header-Block, klickbar → Plan-Viewer auf Pin-
