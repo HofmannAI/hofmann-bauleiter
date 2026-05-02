@@ -6,6 +6,14 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 
 ## [unreleased] — post-rc2
 
+### Added
+- feat(verknuepfung): Termin-Mängel-Verknüpfung Phase 1 — jeder Mangel
+  kann einem Bauzeitenplan-Termin zugeordnet werden (defects.task_id FK).
+  Task-Detail zeigt verknüpfte Mängel-Liste (1 Klick statt 6-8).
+  Mangel-Detail zeigt zugehörigen Termin mit Plan-Ende-Datum und
+  Direktlink. Gewerk-basierte Termin-Vorschläge im Dropdown.
+  Migration 0015 (additive, task_id + Index). (PR #TBD)
+
 ### Fixed
 - 🔥 **HOTFIX** fix(maengel/perf): Mängel-Seite lief in
   Production in 300s-Timeout. Zwei Bottlenecks behoben — keine

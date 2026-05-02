@@ -204,6 +204,24 @@
     </div>
   {/if}
 
+  <div class="field">
+    <span class="field-label">Verknüpfte Mängel <span class="count">{parent.linkedDefects?.length ?? 0}</span></span>
+    {#if (parent.linkedDefects?.length ?? 0) > 0}
+      <div class="defect-link-list">
+        {#each parent.linkedDefects as d (d.id)}
+          <a class="defect-link-card" href={`/${parent.project.id}/maengel/${d.id}`}>
+            <span class="defect-link-dot" style={`background:${d.gewerkColor ?? '#9CA3AF'}`}></span>
+            <span class="defect-link-id">{d.shortId}</span>
+            <span class="defect-link-title">{d.title}</span>
+            <span class="defect-link-status status-{d.status}">{d.status}</span>
+          </a>
+        {/each}
+      </div>
+    {:else}
+      <p class="field-hint">Keine Mängel mit diesem Termin verknüpft. Mängel können im Mangel-Detail einem Termin zugeordnet werden.</p>
+    {/if}
+  </div>
+
   {#if isPerApartment && parent.apartments.length > 0}
     <h3 class="section-title">Pro Wohnung <span class="count">{parent.apartments.length}</span></h3>
     <div class="apt-grid">
@@ -276,4 +294,15 @@
   .progress-slider { width: 100%; height: 6px; appearance: none; background: linear-gradient(to right, var(--c, var(--blue)) 0 var(--p), var(--grey-soft) var(--p) 100%); border-radius: 999px; outline: none; cursor: pointer; }
   .progress-slider::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--paper); border: 2px solid var(--c, var(--blue)); cursor: grab; box-shadow: var(--shadow-1); }
   .progress-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--paper); border: 2px solid var(--c, var(--blue)); cursor: grab; }
+  .defect-link-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .defect-link-card { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); text-decoration: none; color: inherit; transition: all .12s; min-height: 44px; }
+  .defect-link-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-1); }
+  .defect-link-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .defect-link-id { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+  .defect-link-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .defect-link-status { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
+  .defect-link-status.status-open, .defect-link-status.status-reopened { background: var(--red-soft); color: var(--red); }
+  .defect-link-status.status-sent, .defect-link-status.status-acknowledged { background: var(--amber-soft); color: var(--amber); }
+  .defect-link-status.status-resolved, .defect-link-status.status-accepted { background: var(--green-soft); color: var(--green); }
+  .defect-link-status.status-rejected { background: var(--grey-soft); color: var(--muted); }
 </style>

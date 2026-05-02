@@ -2,7 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { defectPhotos, defectHistory, gewerke, contacts, textbausteine } from '$lib/db/schema';
+import { defectPhotos, defectHistory, gewerke, contacts, textbausteine, tasks } from '$lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import { getDefect, updateDefectFields, listContactsForProject } from '$lib/db/defectQueries';
 import { listVorgaenge, addVorgang, listBriefVorlagen, getFirmaSettings } from '$lib/db/vorgangQueries';
@@ -10,15 +10,19 @@ import { listVorgaenge, addVorgang, listBriefVorlagen, getFirmaSettings } from '
 export const load: PageServerLoad = async ({ params }) => {
   const detail = await getDefect(params.projectId, params.defectId);
   if (!detail) error(404, 'Mangel nicht gefunden');
-  if (!db) return { ...detail, gewerke: [], contacts: [], textbausteine: [], vorgaenge: [], briefVorlagen: [], firma: null };
+  if (!db) return { ...detail, gewerke: [], contacts: [], textbausteine: [], vorgaenge: [], briefVorlagen: [], firma: null, projectTasks: [] };
 
-  const [gewerkeRows, contactsRows, textRows, vorgaenge, briefVorlagen, firma] = await Promise.all([
+  const [gewerkeRows, contactsRows, textRows, vorgaenge, briefVorlagen, firma, projectTasks] = await Promise.all([
     db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)),
     listContactsForProject(params.projectId),
     db.select().from(textbausteine).orderBy(asc(textbausteine.sortOrder)),
     listVorgaenge(params.defectId),
     listBriefVorlagen(params.projectId),
-    getFirmaSettings()
+    getFirmaSettings(),
+    db.select({ id: tasks.id, name: tasks.name, num: tasks.num, gewerkId: tasks.gewerkId, endDate: tasks.endDate })
+      .from(tasks)
+      .where(eq(tasks.projectId, params.projectId))
+      .orderBy(asc(tasks.sortOrder))
   ]);
 
   return {
@@ -28,7 +32,8 @@ export const load: PageServerLoad = async ({ params }) => {
     textbausteine: textRows,
     vorgaenge,
     briefVorlagen,
-    firma
+    firma,
+    projectTasks
   };
 };
 
@@ -38,6 +43,7 @@ const fieldsSchema = z.object({
   gewerkId: z.string().uuid().optional().or(z.literal('')),
   contactId: z.string().uuid().optional().or(z.literal('')),
   apartmentId: z.string().uuid().optional().or(z.literal('')),
+  taskId: z.string().uuid().optional().or(z.literal('')),
   deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
   followupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
@@ -80,7 +86,7 @@ export const actions: Actions = {
     const fields: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(parsed.data)) {
       if (v === '' || v === undefined) {
-        if (['gewerkId', 'contactId', 'apartmentId', 'deadline', 'followupDate'].includes(k)) {
+        if (['gewerkId', 'contactId', 'apartmentId', 'taskId', 'deadline', 'followupDate'].includes(k)) {
           fields[k] = null;
         }
       } else {

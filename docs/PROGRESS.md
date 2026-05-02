@@ -1,6 +1,11 @@
 # PROGRESS
 
-**post-rc2 Session** (heute):
+**Nacht-Session 2026-05-02** (Autopilot):
+- PR #TBD: Termin-Mängel-Verknüpfung Phase 1 — defects.task_id FK,
+  bidirektionale UI (Task zeigt Mängel, Mangel zeigt Termin),
+  Migration 0015, 6 Unit-Tests
+
+**post-rc2 Session** (davor):
 - PR #5 (gemerged): /checklisten FROM-clause-Fix
 - PR #6 (gemerged): /checklisten/[id] empty-progress IN()-Fix
 - PR #7 (offen, **Migration 0007**): Plan-Crop für Mängel — 400×300 JPEG

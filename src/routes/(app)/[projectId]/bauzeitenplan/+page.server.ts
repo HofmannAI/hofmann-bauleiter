@@ -2,19 +2,27 @@ import { redirect, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity } from '$lib/db/schema';
-import { eq, and, asc, desc, or } from 'drizzle-orm';
+import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity, defects } from '$lib/db/schema';
+import { eq, and, asc, desc, or, sql } from 'drizzle-orm';
 import { loadGaisbachSample } from '$lib/db/projectQueries';
 import { getProjectTasksAndDeps, applyTaskUpdates } from '$lib/db/taskQueries';
 import { propagate, type EngineTask, type EngineDep } from '$lib/gantt/engine';
 
 export const load: PageServerLoad = async ({ params }) => {
   const { tasks: tRows, deps } = await getProjectTasksAndDeps(params.projectId);
-  if (!db) return { tasks: tRows, deps, gewerke: [], houses: [], baselineLabels: [] };
+  if (!db) return { tasks: tRows, deps, gewerke: [], houses: [], baselineLabels: [], taskDefectCounts: [] };
 
-  const [gewerkeRows, houseRows] = await Promise.all([
+  const [gewerkeRows, houseRows, taskDefectCounts] = await Promise.all([
     db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)),
-    db.select().from(houses).where(eq(houses.projectId, params.projectId)).orderBy(asc(houses.sortOrder))
+    db.select().from(houses).where(eq(houses.projectId, params.projectId)).orderBy(asc(houses.sortOrder)),
+    db.select({
+      taskId: defects.taskId,
+      total: sql<number>`count(*)::int`,
+      open: sql<number>`count(*) FILTER (WHERE ${defects.status} NOT IN ('resolved', 'accepted', 'rejected'))::int`
+    })
+      .from(defects)
+      .where(and(eq(defects.projectId, params.projectId), sql`${defects.taskId} IS NOT NULL`))
+      .groupBy(defects.taskId)
   ]);
 
   // Aggregate apartments per house
@@ -39,7 +47,7 @@ export const load: PageServerLoad = async ({ params }) => {
     baselineLabels.push({ label: r.label, snapshotAt: r.snapshotAt });
   }
 
-  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels };
+  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels, taskDefectCounts };
 };
 
 const moveSchema = z.object({

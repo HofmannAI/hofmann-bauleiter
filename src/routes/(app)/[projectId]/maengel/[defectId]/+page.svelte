@@ -147,6 +147,17 @@
   let description = $state(data.defect.description ?? '');
   let gewerkId = $state(data.defect.gewerkId ?? '');
   let contactId = $state(data.defect.contactId ?? '');
+  let taskId = $state(data.defect.taskId ?? '');
+
+  // Filter tasks by same gewerk (if set), but always show all
+  let filteredTasks = $derived.by(() => {
+    const all = parent.projectTasks ?? [];
+    if (!gewerkId) return all;
+    // Show matching gewerk tasks first, then the rest
+    const matching = all.filter((t) => t.gewerkId === gewerkId);
+    const rest = all.filter((t) => t.gewerkId !== gewerkId);
+    return [...matching, ...rest];
+  });
   let deadline = $state(data.defect.deadline ?? '');
   let followupDate = $state(data.defect.followupDate ?? '');
   let priority = $state(String(data.defect.priority ?? 2));
@@ -198,7 +209,7 @@
   }
 
   async function save() {
-    const res = await postForm('saveFields', { title, description, gewerkId, contactId, deadline, followupDate, priority, status });
+    const res = await postForm('saveFields', { title, description, gewerkId, contactId, taskId, deadline, followupDate, priority, status });
     if (res.ok) toast('Gespeichert.');
     else toast('Fehler.');
   }
@@ -403,6 +414,26 @@
         <option value={c.id}>{c.company} ({c.email ?? '—'})</option>
       {/each}
     </select>
+  </div>
+
+  <div class="field">
+    <label class="field-label" for="tid">Verknüpfter Termin</label>
+    <select id="tid" class="field-input" bind:value={taskId} onchange={save}>
+      <option value="">— kein Termin —</option>
+      {#each filteredTasks as t (t.id)}
+        <option value={t.id}>{t.num ? `${t.num} ` : ''}{t.name} (Ende: {t.endDate})</option>
+      {/each}
+    </select>
+    {#if taskId && parent.task}
+      <a class="task-link-card" href={`/${parent.project.id}/bauzeitenplan/${taskId}`}>
+        <span class="task-link-icon">📅</span>
+        <span class="task-link-text">
+          <span class="task-link-name">{parent.task.num ? `${parent.task.num} ` : ''}{parent.task.name}</span>
+          <span class="task-link-date">Plan-Ende: {parent.task.endDate}</span>
+        </span>
+        <span class="task-link-arrow">→</span>
+      </a>
+    {/if}
   </div>
 
   <h3 class="section-title">Fotos <span class="count">{parent.photos.length}</span></h3>
@@ -626,4 +657,11 @@
   .status-sent, .status-acknowledged { background: var(--amber-soft); color: var(--amber); }
   .status-resolved, .status-accepted { background: var(--green-soft); color: var(--green); }
   .status-rejected { background: var(--grey-soft); color: var(--muted); }
+  .task-link-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-top: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); text-decoration: none; color: inherit; transition: all .12s; min-height: 44px; }
+  .task-link-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-1); }
+  .task-link-icon { font-size: 18px; flex-shrink: 0; }
+  .task-link-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .task-link-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-link-date { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .task-link-arrow { font-size: 14px; color: var(--muted); flex-shrink: 0; }
 </style>

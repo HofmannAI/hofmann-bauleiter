@@ -263,6 +263,7 @@ export const defects = pgTable('defects', {
   apartmentId: uuid('apartment_id').references(() => apartments.id),
   gewerkId: uuid('gewerk_id').references(() => gewerke.id),
   contactId: uuid('contact_id').references(() => contacts.id),
+  taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   description: text('description'),
   deadline: date('deadline'),
