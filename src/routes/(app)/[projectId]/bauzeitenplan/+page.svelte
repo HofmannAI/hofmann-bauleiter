@@ -5,6 +5,7 @@
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/state';
   import { criticalPath, calculateFloat, type EngineTask, type EngineDep } from '$lib/gantt/engine';
+  import { fmtDate } from '$lib/gantt/calendar';
   import { toast } from '$lib/components/Toast.svelte';
   import { confirm } from '$lib/components/ConfirmDialog.svelte';
 
@@ -252,6 +253,39 @@
       toast('Übernehmen fehlgeschlagen.');
     }
   }
+
+  /* ===== Inline Task Creation (BP-04) ===== */
+  let showCreate = $state<{ startDate: string } | null>(null);
+  let newTaskName = $state('');
+  let newTaskGewerkId = $state('');
+  let newTaskEndDate = $state('');
+
+  function openCreateSheet(date: string) {
+    showCreate = { startDate: date };
+    newTaskName = '';
+    newTaskGewerkId = '';
+    // Default: 5 working days duration
+    const endDate = new Date(date);
+    endDate.setDate(endDate.getDate() + 6); // roughly 1 week
+    newTaskEndDate = endDate.toISOString().slice(0, 10);
+  }
+
+  async function submitCreateTask() {
+    if (!showCreate || !newTaskName.trim()) return;
+    const fd = new FormData();
+    fd.append('name', newTaskName.trim());
+    fd.append('startDate', showCreate.startDate);
+    fd.append('endDate', newTaskEndDate);
+    fd.append('gewerkId', newTaskGewerkId);
+    const res = await fetch('?/createTask', { method: 'POST', body: fd });
+    if (res.ok) {
+      toast('Termin erstellt.');
+      showCreate = null;
+      await invalidateAll();
+    } else {
+      toast('Fehler beim Erstellen.');
+    }
+  }
 </script>
 
 <div class="gantt-page">
@@ -277,6 +311,9 @@
           Lookahead {wks}W
         </button>
       {/each}
+      <button class="filter-pill" onclick={() => openCreateSheet(fmtDate(new Date()))}>
+        + Termin
+      </button>
       <span class="extras-spacer"></span>
       {#if parent.gewerke.length > 0}
         <details class="filter-dropdown">
@@ -359,6 +396,7 @@
       criticalPathIds={cpIds}
       onSelect={(id) => (selected = id)}
       onMove={previewMove}
+      onCreateAtDate={openCreateSheet}
       onDepCreate={createDep}
       onDepClick={(id) => (depPopover = parent.deps.find((d) => d.id === id) ?? null)}
       baseline={activeBaseline}
@@ -470,6 +508,52 @@
         <button class="btn btn-ghost" onclick={() => (depPopover = null)}>Abbrechen</button>
         <button class="btn btn-primary" onclick={() => saveDepEdit(depPopover!.type, depPopover!.lagDays)}>Speichern</button>
       </div>
+    </div>
+  </div>
+{/if}
+
+{#if showCreate}
+  <button class="scrim open" onclick={() => (showCreate = null)} aria-label="Schließen"></button>
+  <div class="sheet open" role="dialog" aria-label="Termin anlegen">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-head-text">
+        <div class="sheet-eyebrow">Neuer Termin</div>
+        <h3 class="sheet-title">Termin anlegen</h3>
+      </div>
+      <button class="sheet-close" onclick={() => (showCreate = null)} aria-label="Schließen"><Icon name="close" /></button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label class="field-label" for="ct-name">Name</label>
+        <input id="ct-name" type="text" class="field-input" bind:value={newTaskName} placeholder="z.B. Estrich Haus 1" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="ct-gewerk">Gewerk</label>
+        <select id="ct-gewerk" class="field-input" bind:value={newTaskGewerkId}>
+          <option value="">— ohne Gewerk —</option>
+          {#each parent.gewerke as g}
+            <option value={g.id}>{g.name}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label" for="ct-start">Start</label>
+          <input id="ct-start" type="date" class="field-input" value={showCreate.startDate} onchange={(e) => {
+            if (showCreate) showCreate = { ...showCreate, startDate: (e.currentTarget as HTMLInputElement).value };
+          }} />
+        </div>
+        <div class="field">
+          <label class="field-label" for="ct-end">Ende</label>
+          <input id="ct-end" type="date" class="field-input" bind:value={newTaskEndDate} />
+        </div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary btn-block" onclick={submitCreateTask} disabled={!newTaskName.trim()}>
+        <Icon name="check" size={14} /> Termin erstellen
+      </button>
     </div>
   </div>
 {/if}

@@ -29,6 +29,7 @@
     tasks: GTask[];
     onSelect?: (taskId: string) => void;
     onMove?: (taskId: string, newStart: string, newEnd: string) => void;
+    onCreateAtDate?: (date: string) => void;
     onDepCreate?: (predecessorId: string, successorId: string, predHandle: DepHandle, succHandle: DepHandle) => void;
     onDepClick?: (depId: string) => void;
     criticalPathIds?: Set<string>;
@@ -42,6 +43,7 @@
     tasks,
     onSelect,
     onMove,
+    onCreateAtDate,
     onDepCreate,
     onDepClick,
     criticalPathIds = new Set<string>(),
@@ -492,7 +494,19 @@
           <span class="gantt-today-label">Heute</span>
         </div>
       {/if}
-      <div class="gantt-rows">
+      <div class="gantt-rows" ondblclick={(e) => {
+        if (!onCreateAtDate) return;
+        // Only fire if double-click was on empty area (not on a bar)
+        const target = e.target as HTMLElement;
+        if (target.closest('.gantt-bar') || target.closest('.gantt-milestone')) return;
+        const timeline = (e.currentTarget as HTMLElement).closest('.gantt-timeline');
+        if (!timeline) return;
+        const rect = timeline.getBoundingClientRect();
+        const xInTimeline = e.clientX - rect.left + (timeline.parentElement?.scrollLeft ?? 0);
+        const dayIndex = Math.floor(xInTimeline / dayWidth());
+        const clickDate = addDays(range.start, dayIndex);
+        onCreateAtDate(clickDate);
+      }}>
         {#each visible as t (t.id)}
           {@const bl = baselineMap.get(t.id)}
           <div class="gantt-row depth-{t.depth}">
