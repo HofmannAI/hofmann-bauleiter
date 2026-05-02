@@ -16,7 +16,11 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 - feat(verzug-ampel): Gantt-Bars werden rot wenn Termin ueberfaellig
   UND offene Maengel hat, gruen wenn alle erledigt. Tooltip zeigt
   "N offene Maengel / M gesamt" mit Verzug-Warnung. Sofortige
-  visuelle Erkennung statt manuelles Nachschlagen. (PR #TBD)
+  visuelle Erkennung statt manuelles Nachschlagen. (PR #26)
+- feat(kpi): KPI "Wegen Maengeln verlorene Tage pro Gewerk" im
+  Statistik-Dashboard. Bar-Chart zeigt Differenz Plan-Ende vs.
+  tatsaechliches Erledigt-Datum, aggregiert pro Gewerk.
+  Datenbasierte Aussage statt Bauchgefuehl. (PR #TBD)
 
 ### Fixed
 - 🔥 **HOTFIX** fix(maengel/perf): Mängel-Seite lief in

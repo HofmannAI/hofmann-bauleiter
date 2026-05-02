@@ -101,6 +101,35 @@
     return { out, max };
   });
 
+  // KPI: Lost days per Gewerk (Verzug wegen Mängeln)
+  let lostDaysPerGewerk = $derived.by(() => {
+    const gewerkDays = new Map<string | null, number>();
+    for (const row of parent.lostDaysData ?? []) {
+      // If still open defects: count from task endDate to today
+      // If all resolved: count from task endDate to latest resolvedAt
+      const taskEnd = new Date(row.taskEndDate).getTime();
+      let actualEnd: number;
+      if (row.openCount > 0) {
+        actualEnd = Date.now();
+      } else if (row.latestResolvedAt) {
+        actualEnd = new Date(row.latestResolvedAt).getTime();
+      } else {
+        continue;
+      }
+      const diffDays = Math.max(0, Math.round((actualEnd - taskEnd) / (1000 * 60 * 60 * 24)));
+      if (diffDays <= 0) continue;
+      gewerkDays.set(row.gewerkId, (gewerkDays.get(row.gewerkId) ?? 0) + diffDays);
+    }
+    const entries = Array.from(gewerkDays.entries())
+      .map(([id, days]) => {
+        const g = parent.gewerkRows.find((x) => x.id === id);
+        return { id, name: g?.name ?? '— ohne Gewerk —', color: g?.color ?? '#9CA3AF', days };
+      })
+      .sort((a, b) => b.days - a.days);
+    const max = entries[0]?.days ?? 1;
+    return { entries, max };
+  });
+
   const STATUS_LABEL: Record<string, string> = {
     open: 'Offen', sent: 'Gesendet', acknowledged: 'Bestätigt',
     resolved: 'Erledigt', accepted: 'Akzeptiert', rejected: 'Abgelehnt', reopened: 'Wiedereröffnet'
@@ -206,6 +235,26 @@
         </div>
       {/if}
     </div>
+
+    <div class="chart-card chart-card-wide">
+      <h3 class="chart-title">Wegen Mängeln verlorene Tage pro Gewerk</h3>
+      {#if lostDaysPerGewerk.entries.length === 0}
+        <p class="chart-empty">Keine Verzugsdaten. Verknüpfe Mängel mit Terminen im Bauzeitenplan.</p>
+      {:else}
+        <div class="bar-list">
+          {#each lostDaysPerGewerk.entries as e (e.id)}
+            <div class="bar-row">
+              <span class="bar-label">{e.name}</span>
+              <span class="bar-track">
+                <span class="bar-fill bar-fill-red" style={`width:${(e.days / lostDaysPerGewerk.max) * 100}%`}></span>
+              </span>
+              <span class="bar-count">{e.days}<span class="bar-unit">d</span></span>
+            </div>
+          {/each}
+        </div>
+        <p class="chart-hint">Differenz zwischen Plan-Ende des Termins und tatsächlichem Erledigt-Datum aller zugeordneten Mängel. Offene Mängel zählen bis heute.</p>
+      {/if}
+    </div>
   </div>
 </div>
 
@@ -241,4 +290,7 @@
   .status-count { font-family: var(--mono); font-weight: 700; }
   .line-chart { width: 100%; height: 200px; display: block; }
   .line-axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; padding: 0 4px; }
+  .bar-fill-red { background: var(--red, #E30613) !important; }
+  .bar-unit { font-size: 9px; color: var(--muted); margin-left: 1px; }
+  .chart-hint { font-family: var(--mono); font-size: 10px; color: var(--muted); margin: 10px 0 0; line-height: 1.4; }
 </style>
