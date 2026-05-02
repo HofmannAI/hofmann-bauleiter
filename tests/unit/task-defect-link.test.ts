@@ -88,3 +88,108 @@ describe('taskDefectCounts', () => {
     expect(counts.size).toBe(0);
   });
 });
+
+// Mirrors the verzugStatus logic from Gantt.svelte
+type VerzugTask = { id: string; endDate: string };
+type DefectCounts = { total: number; open: number };
+
+function verzugStatus(t: VerzugTask, defectMap: Map<string, DefectCounts>, today: string): 'overdue' | 'clear' | 'none' {
+  const counts = defectMap.get(t.id);
+  if (!counts || counts.total === 0) return 'none';
+  if (t.endDate < today && counts.open > 0) return 'overdue';
+  if (counts.open === 0) return 'clear';
+  return 'none';
+}
+
+describe('verzugStatus (Verzug-Ampel)', () => {
+  const today = '2026-05-02';
+  const defectMap = new Map<string, DefectCounts>([
+    ['t1', { total: 3, open: 2 }],
+    ['t2', { total: 1, open: 0 }],
+    ['t3', { total: 5, open: 3 }]
+  ]);
+
+  it('returns overdue when task past endDate AND open defects', () => {
+    expect(verzugStatus({ id: 't1', endDate: '2026-04-30' }, defectMap, today)).toBe('overdue');
+  });
+
+  it('returns clear when all defects resolved', () => {
+    expect(verzugStatus({ id: 't2', endDate: '2026-04-30' }, defectMap, today)).toBe('clear');
+  });
+
+  it('returns none when task has no defects', () => {
+    expect(verzugStatus({ id: 't99', endDate: '2026-04-30' }, defectMap, today)).toBe('none');
+  });
+
+  it('returns none when task not yet overdue even with open defects', () => {
+    expect(verzugStatus({ id: 't3', endDate: '2026-06-01' }, defectMap, today)).toBe('none');
+  });
+
+  it('returns clear even when task is overdue but all defects closed', () => {
+    expect(verzugStatus({ id: 't2', endDate: '2026-03-01' }, defectMap, today)).toBe('clear');
+  });
+});
+
+// Mirrors the lostDaysPerGewerk logic from statistik page
+type LostDaysRow = { taskId: string; taskEndDate: string; gewerkId: string | null; latestResolvedAt: string | null; openCount: number };
+
+function calcLostDaysPerGewerk(rows: LostDaysRow[], today: Date): Map<string | null, number> {
+  const gewerkDays = new Map<string | null, number>();
+  for (const row of rows) {
+    const taskEnd = new Date(row.taskEndDate).getTime();
+    let actualEnd: number;
+    if (row.openCount > 0) {
+      actualEnd = today.getTime();
+    } else if (row.latestResolvedAt) {
+      actualEnd = new Date(row.latestResolvedAt).getTime();
+    } else {
+      continue;
+    }
+    const diffDays = Math.max(0, Math.round((actualEnd - taskEnd) / (1000 * 60 * 60 * 24)));
+    if (diffDays <= 0) continue;
+    gewerkDays.set(row.gewerkId, (gewerkDays.get(row.gewerkId) ?? 0) + diffDays);
+  }
+  return gewerkDays;
+}
+
+describe('calcLostDaysPerGewerk (KPI)', () => {
+  const today = new Date('2026-05-02');
+
+  it('calculates delay for tasks with resolved defects past endDate', () => {
+    const rows: LostDaysRow[] = [
+      { taskId: 't1', taskEndDate: '2026-04-20', gewerkId: 'g1', latestResolvedAt: '2026-04-25T10:00:00Z', openCount: 0 }
+    ];
+    const result = calcLostDaysPerGewerk(rows, today);
+    expect(result.get('g1')).toBe(5); // Apr 20 -> Apr 25 = 5 days
+  });
+
+  it('uses today for tasks with still-open defects', () => {
+    const rows: LostDaysRow[] = [
+      { taskId: 't1', taskEndDate: '2026-04-30', gewerkId: 'g1', latestResolvedAt: null, openCount: 2 }
+    ];
+    const result = calcLostDaysPerGewerk(rows, today);
+    expect(result.get('g1')).toBe(2); // Apr 30 -> May 2 = 2 days
+  });
+
+  it('ignores tasks where defects resolved before endDate', () => {
+    const rows: LostDaysRow[] = [
+      { taskId: 't1', taskEndDate: '2026-05-10', gewerkId: 'g1', latestResolvedAt: '2026-05-05T10:00:00Z', openCount: 0 }
+    ];
+    const result = calcLostDaysPerGewerk(rows, today);
+    expect(result.has('g1')).toBe(false); // No delay
+  });
+
+  it('aggregates across multiple tasks per gewerk', () => {
+    const rows: LostDaysRow[] = [
+      { taskId: 't1', taskEndDate: '2026-04-20', gewerkId: 'g1', latestResolvedAt: '2026-04-25T00:00:00Z', openCount: 0 },
+      { taskId: 't2', taskEndDate: '2026-04-22', gewerkId: 'g1', latestResolvedAt: '2026-04-29T00:00:00Z', openCount: 0 }
+    ];
+    const result = calcLostDaysPerGewerk(rows, today);
+    expect(result.get('g1')).toBe(12); // 5 + 7
+  });
+
+  it('returns empty map when no delays', () => {
+    const result = calcLostDaysPerGewerk([], today);
+    expect(result.size).toBe(0);
+  });
+});
