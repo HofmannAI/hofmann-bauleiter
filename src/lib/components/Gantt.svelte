@@ -185,12 +185,14 @@
    * Touch braucht Long-Press (Schwelle 350ms) damit Scroll-Geste nicht
    * übernommen wird. Maus startet sofort.
    */
+  type DragMode = 'move' | 'resize-end';
   type DragState = {
     id: string; startDate: string; endDate: string;
     originX: number; previewOffset: number;
     pointerId: number; pointerType: string;
     armed: boolean; // true wenn Long-Press erfüllt (oder Maus)
     moved: boolean; // user bewegt mehr als 4px
+    mode: DragMode;
   };
   let dragging = $state<DragState | null>(null);
   let pressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -198,10 +200,18 @@
   const TOUCH_LONG_PRESS_MS = 350;
   const MOVE_THRESHOLD_PX = 4;
 
+  const RESIZE_EDGE_PX = 8; // hitzone for resize at bar edges
+
   function onBarPointerDown(e: PointerEvent, t: GTask) {
     if (!onMove) return;
     if (isParentMap.has(t.id)) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    // Detect if click is near the right edge of the bar
+    const bar = e.currentTarget as HTMLElement;
+    const barRect = bar.getBoundingClientRect();
+    const distFromRight = barRect.right - e.clientX;
+    const mode: DragMode = (distFromRight <= RESIZE_EDGE_PX && e.pointerType === 'mouse') ? 'resize-end' : 'move';
 
     const initial: DragState = {
       id: t.id,
@@ -212,7 +222,8 @@
       pointerId: e.pointerId,
       pointerType: e.pointerType,
       armed: e.pointerType === 'mouse',
-      moved: false
+      moved: false,
+      mode
     };
     dragging = initial;
 
@@ -258,14 +269,23 @@
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     const wasArmed = dragging.armed;
     const offset = dragging.previewOffset;
+    const mode = dragging.mode;
     const t = { id: dragging.id, startDate: dragging.startDate, endDate: dragging.endDate };
     dragging = null;
     if (!wasArmed || !onMove) return;
     const dxDays = Math.round(offset / dayWidth());
     if (dxDays !== 0) {
-      const newStart = addDays(t.startDate, dxDays);
-      const newEnd = addDays(t.endDate, dxDays);
-      onMove(t.id, newStart, newEnd);
+      if (mode === 'resize-end') {
+        // Only change endDate, keep startDate
+        const newEnd = addDays(t.endDate, dxDays);
+        if (newEnd >= t.startDate) {
+          onMove(t.id, t.startDate, newEnd);
+        }
+      } else {
+        const newStart = addDays(t.startDate, dxDays);
+        const newEnd = addDays(t.endDate, dxDays);
+        onMove(t.id, newStart, newEnd);
+      }
     }
   }
 
@@ -549,7 +569,7 @@
                 class:dep-mode-target={depMode && depMode.id !== t.id}
                 class:verzug-overdue={vs === 'overdue'}
                 class:verzug-clear={vs === 'clear'}
-                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#3B6CC4')}`}
+                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed && dragging.mode === 'move' ? dragging.previewOffset : 0)}px;width:${widthFor(t) + (dragging?.id === t.id && dragging.armed && dragging.mode === 'resize-end' ? dragging.previewOffset : 0)}px;background:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#3B6CC4')}`}
                 onclick={() => {
                   if (depMode) { applyDepMode(t.id); return; }
                   if (!dragging || !dragging.moved) onSelect?.(t.id);
@@ -965,6 +985,12 @@
     text-transform: uppercase;
   }
   .gantt-bar { cursor: grab; }
+  .gantt-bar::after {
+    content: '';
+    position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
+    cursor: ew-resize; z-index: 2;
+  }
+  .gantt-bar.dragging { cursor: grabbing; }
   .gantt-bar-label { display: block; }
   .gantt-bar-tooltip {
     position: absolute; bottom: calc(100% + 6px); left: 50%;
