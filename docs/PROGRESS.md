@@ -1,5 +1,16 @@
 # PROGRESS
 
+**Bauzeit-Pro Tiefen-Nacht 2026-05-03** (Autopilot):
+- PR #30: Bauzeit-Pro Batch — 6 Features + Roadmap
+  - BP-06: Sticky Scroll-Sync
+  - BP-01: Meilensteine (Diamant-Symbol)
+  - BP-02: BW Feiertage (14 Tage, Gauss-Osterformel) + fmtDate-Fix
+  - BP-05: Pufferzeit-Anzeige (Total Float)
+  - BP-03: Balken-Resize per Drag
+  - BP-04: Inline-Termin-Erstellung
+  - 27 neue Tests, 60 total, alle grün
+- Roadmap: 35 Items aus pro-Plan 7 Spec analysiert und priorisiert
+
 **Nacht-Session 2026-05-02** (Autopilot):
 - PR #25: Termin-Mängel-Verknüpfung Phase 1 — defects.task_id FK,
   bidirektionale UI (Task zeigt Mängel, Mangel zeigt Termin),

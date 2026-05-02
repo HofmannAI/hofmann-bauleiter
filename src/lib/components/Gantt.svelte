@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { parseDate, addDays, daysBetween, fmtDate } from '$lib/gantt/calendar';
+  import { parseDate, addDays, daysBetween, fmtDate, isNonWorkday, holidayName } from '$lib/gantt/calendar';
 
   type GTask = {
     id: string;
@@ -29,6 +29,7 @@
     tasks: GTask[];
     onSelect?: (taskId: string) => void;
     onMove?: (taskId: string, newStart: string, newEnd: string) => void;
+    onCreateAtDate?: (date: string) => void;
     onDepCreate?: (predecessorId: string, successorId: string, predHandle: DepHandle, succHandle: DepHandle) => void;
     onDepClick?: (depId: string) => void;
     criticalPathIds?: Set<string>;
@@ -36,18 +37,21 @@
     dependencies?: Dependency[];
     lookaheadWeeks?: 0 | 3 | 4 | 6;
     taskDefectCounts?: TaskDefectCount[];
+    floatMap?: Map<string, number>;
   };
   let {
     tasks,
     onSelect,
     onMove,
+    onCreateAtDate,
     onDepCreate,
     onDepClick,
     criticalPathIds = new Set<string>(),
     baseline = [],
     dependencies = [],
     lookaheadWeeks = 0,
-    taskDefectCounts = []
+    taskDefectCounts = [],
+    floatMap = new Map<string, number>()
   }: Props = $props();
 
   /* ===== Verzug-Ampel: task overdue + open defects = red, all resolved = green ===== */
@@ -135,17 +139,16 @@
     return Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
   }
 
-  function weekends(): { left: number; width: number }[] {
+  function nonWorkdays(): { left: number; width: number; holiday: string | null }[] {
     if (zoom === 'month') return []; // too dense to render
-    const out: { left: number; width: number }[] = [];
+    const out: { left: number; width: number; holiday: string | null }[] = [];
     const start = parseDate(range.start);
     const end = parseDate(range.end);
     const cur = new Date(start);
     while (cur <= end) {
-      const dow = cur.getDay();
-      if (dow === 0 || dow === 6) {
+      if (isNonWorkday(cur)) {
         const left = daysBetween(range.start, fmtDate(cur)) * dayWidth();
-        out.push({ left, width: dayWidth() });
+        out.push({ left, width: dayWidth(), holiday: holidayName(cur) });
       }
       cur.setDate(cur.getDate() + 1);
     }
@@ -184,12 +187,14 @@
    * Touch braucht Long-Press (Schwelle 350ms) damit Scroll-Geste nicht
    * übernommen wird. Maus startet sofort.
    */
+  type DragMode = 'move' | 'resize-end';
   type DragState = {
     id: string; startDate: string; endDate: string;
     originX: number; previewOffset: number;
     pointerId: number; pointerType: string;
     armed: boolean; // true wenn Long-Press erfüllt (oder Maus)
     moved: boolean; // user bewegt mehr als 4px
+    mode: DragMode;
   };
   let dragging = $state<DragState | null>(null);
   let pressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -197,10 +202,18 @@
   const TOUCH_LONG_PRESS_MS = 350;
   const MOVE_THRESHOLD_PX = 4;
 
+  const RESIZE_EDGE_PX = 8; // hitzone for resize at bar edges
+
   function onBarPointerDown(e: PointerEvent, t: GTask) {
     if (!onMove) return;
     if (isParentMap.has(t.id)) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    // Detect if click is near the right edge of the bar
+    const bar = e.currentTarget as HTMLElement;
+    const barRect = bar.getBoundingClientRect();
+    const distFromRight = barRect.right - e.clientX;
+    const mode: DragMode = (distFromRight <= RESIZE_EDGE_PX && e.pointerType === 'mouse') ? 'resize-end' : 'move';
 
     const initial: DragState = {
       id: t.id,
@@ -211,7 +224,8 @@
       pointerId: e.pointerId,
       pointerType: e.pointerType,
       armed: e.pointerType === 'mouse',
-      moved: false
+      moved: false,
+      mode
     };
     dragging = initial;
 
@@ -257,14 +271,23 @@
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     const wasArmed = dragging.armed;
     const offset = dragging.previewOffset;
+    const mode = dragging.mode;
     const t = { id: dragging.id, startDate: dragging.startDate, endDate: dragging.endDate };
     dragging = null;
     if (!wasArmed || !onMove) return;
     const dxDays = Math.round(offset / dayWidth());
     if (dxDays !== 0) {
-      const newStart = addDays(t.startDate, dxDays);
-      const newEnd = addDays(t.endDate, dxDays);
-      onMove(t.id, newStart, newEnd);
+      if (mode === 'resize-end') {
+        // Only change endDate, keep startDate
+        const newEnd = addDays(t.endDate, dxDays);
+        if (newEnd >= t.startDate) {
+          onMove(t.id, t.startDate, newEnd);
+        }
+      } else {
+        const newStart = addDays(t.startDate, dxDays);
+        const newEnd = addDays(t.endDate, dxDays);
+        onMove(t.id, newStart, newEnd);
+      }
     }
   }
 
@@ -347,6 +370,30 @@
     depMode = null;
   }
 
+  /* ===== Scroll-Sync: Vertikalen Scroll zwischen Liste und Timeline synchronisieren ===== */
+  let listEl = $state<HTMLElement | null>(null);
+  let timelineEl = $state<HTMLElement | null>(null);
+  let syncing = false;
+
+  function syncScroll(source: HTMLElement, target: HTMLElement) {
+    if (syncing) return;
+    syncing = true;
+    target.scrollTop = source.scrollTop;
+    requestAnimationFrame(() => { syncing = false; });
+  }
+
+  $effect(() => {
+    if (!listEl || !timelineEl) return;
+    const onListScroll = () => syncScroll(listEl!, timelineEl!);
+    const onTimelineScroll = () => syncScroll(timelineEl!, listEl!);
+    listEl.addEventListener('scroll', onListScroll, { passive: true });
+    timelineEl.addEventListener('scroll', onTimelineScroll, { passive: true });
+    return () => {
+      listEl?.removeEventListener('scroll', onListScroll);
+      timelineEl?.removeEventListener('scroll', onTimelineScroll);
+    };
+  });
+
   /* Layout-Lookup: y-Position einer Task in der visible-Liste = row-index * 32 + 16 (Mitte) */
   let visibleIndex = $derived.by(() => {
     const m = new Map<string, number>();
@@ -359,7 +406,10 @@
     const idx = visibleIndex.get(taskId);
     if (!t || idx === undefined) return null;
     const x1 = offsetPx(t.startDate);
-    const x2 = x1 + Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
+    const isMilestone = t.startDate === t.endDate;
+    const x2 = isMilestone
+      ? x1 + dayWidth()
+      : x1 + Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
     const y = idx * 32 + 16; // Mitte der Bar
     return { x1, x2, y };
   }
@@ -401,7 +451,7 @@
 </div>
 
 <div class="gantt-wrap">
-  <div class="gantt-list">
+  <div class="gantt-list" bind:this={listEl}>
     <div class="gantt-list-head">Vorgang</div>
     {#each visible as t (t.id)}
       <button
@@ -417,6 +467,8 @@
             role="button"
             tabindex="-1"
           >▶</span>
+        {:else if t.startDate === t.endDate}
+          <span class="gantt-list-toggle milestone" style={`color:${t.color ?? 'var(--red)'}`}>◆</span>
         {:else}
           <span class="gantt-list-toggle empty"></span>
         {/if}
@@ -426,15 +478,15 @@
     {/each}
   </div>
 
-  <div class="gantt-timeline-wrap">
+  <div class="gantt-timeline-wrap" bind:this={timelineEl}>
     <div class="gantt-timeline" style={`width:${widthPx}px`}>
       <div class="gantt-axis">
         {#each months() as m}
           <div class="gantt-axis-month" style={`left:${m.left}px;width:${m.width}px`}>{m.label}</div>
         {/each}
       </div>
-      {#each weekends() as w}
-        <div class="gantt-weekend" style={`left:${w.left}px;width:${w.width}px`}></div>
+      {#each nonWorkdays() as w}
+        <div class="gantt-weekend" class:holiday={!!w.holiday} style={`left:${w.left}px;width:${w.width}px`} title={w.holiday ?? ''}></div>
       {/each}
       {#if todayPos() !== null}
         <div class="gantt-today-line" style={`left:${todayPos()}px`}>
@@ -442,7 +494,19 @@
           <span class="gantt-today-label">Heute</span>
         </div>
       {/if}
-      <div class="gantt-rows">
+      <div class="gantt-rows" ondblclick={(e) => {
+        if (!onCreateAtDate) return;
+        // Only fire if double-click was on empty area (not on a bar)
+        const target = e.target as HTMLElement;
+        if (target.closest('.gantt-bar') || target.closest('.gantt-milestone')) return;
+        const timeline = (e.currentTarget as HTMLElement).closest('.gantt-timeline');
+        if (!timeline) return;
+        const rect = timeline.getBoundingClientRect();
+        const xInTimeline = e.clientX - rect.left + (timeline.parentElement?.scrollLeft ?? 0);
+        const dayIndex = Math.floor(xInTimeline / dayWidth());
+        const clickDate = addDays(range.start, dayIndex);
+        onCreateAtDate(clickDate);
+      }}>
         {#each visible as t (t.id)}
           {@const bl = baselineMap.get(t.id)}
           <div class="gantt-row depth-{t.depth}">
@@ -455,6 +519,59 @@
             {/if}
             {#if isParentMap.has(t.id)}
               <div class="gantt-bar summary" style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px`}></div>
+            {:else if t.startDate === t.endDate}
+              {@const vs = verzugStatus(t)}
+              <button
+                class="gantt-milestone"
+                class:critical={criticalPathIds.has(t.id)}
+                class:dimmed={criticalPathIds.size > 0 && !criticalPathIds.has(t.id)}
+                class:dragging={dragging?.id === t.id && dragging.armed}
+                class:dep-mode-target={depMode && depMode.id !== t.id}
+                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;--ms-color:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#E30613')}`}
+                onclick={() => {
+                  if (depMode) { applyDepMode(t.id); return; }
+                  if (!dragging || !dragging.moved) onSelect?.(t.id);
+                }}
+                onpointerdown={(e) => onBarPointerDown(e, t)}
+                onpointermove={onBarPointerMove}
+                onpointerup={onBarPointerUp}
+                onpointercancel={onBarPointerCancel}
+                data-task-id={t.id}
+              >
+                <span class="gantt-milestone-diamond"></span>
+                <span class="gantt-bar-tooltip" role="tooltip">
+                  <span class="tooltip-name">◆ {t.name}</span>
+                  <span class="tooltip-meta">Meilenstein: {t.startDate}</span>
+                  {#if defectMap.has(t.id)}
+                    {@const dc = defectMap.get(t.id)}
+                    <span class="tooltip-defects" class:overdue={vs === 'overdue'} class:clear={vs === 'clear'}>
+                      {dc?.open ?? 0} offene Mängel / {dc?.total ?? 0} gesamt
+                    </span>
+                  {/if}
+                </span>
+                {#if onDepCreate}
+                  <span
+                    class="gantt-dep-handle gantt-dep-handle-start"
+                    role="button"
+                    aria-label="Dependency vom Anfang ziehen"
+                    data-task-id={t.id}
+                    data-handle="start"
+                    onpointerdown={(e) => onHandlePointerDown(e, t.id, 'start')}
+                    onpointermove={onHandlePointerMove}
+                    onpointerup={onHandlePointerUp}
+                  ></span>
+                  <span
+                    class="gantt-dep-handle gantt-dep-handle-end"
+                    role="button"
+                    aria-label="Dependency vom Ende ziehen"
+                    data-task-id={t.id}
+                    data-handle="end"
+                    onpointerdown={(e) => onHandlePointerDown(e, t.id, 'end')}
+                    onpointermove={onHandlePointerMove}
+                    onpointerup={onHandlePointerUp}
+                  ></span>
+                {/if}
+              </button>
             {:else}
               {@const vs = verzugStatus(t)}
               <button
@@ -466,7 +583,7 @@
                 class:dep-mode-target={depMode && depMode.id !== t.id}
                 class:verzug-overdue={vs === 'overdue'}
                 class:verzug-clear={vs === 'clear'}
-                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#3B6CC4')}`}
+                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed && dragging.mode === 'move' ? dragging.previewOffset : 0)}px;width:${widthFor(t) + (dragging?.id === t.id && dragging.armed && dragging.mode === 'resize-end' ? dragging.previewOffset : 0)}px;background:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#3B6CC4')}`}
                 onclick={() => {
                   if (depMode) { applyDepMode(t.id); return; }
                   if (!dragging || !dragging.moved) onSelect?.(t.id);
@@ -495,10 +612,22 @@
                       {#if vs === 'clear'} — alle erledigt{/if}
                     </span>
                   {/if}
+                  {#if floatMap.has(t.id)}
+                    {@const float = floatMap.get(t.id) ?? 0}
+                    <span class="tooltip-meta tooltip-float" class:zero={float === 0}>
+                      Puffer: {float} AT{float === 0 ? ' (kritisch)' : ''}
+                    </span>
+                  {/if}
                   {#if criticalPathIds.has(t.id)}
                     <span class="tooltip-crit">Kritisch — Verzögerung wirkt 1:1 auf Übergabe</span>
                   {/if}
                 </span>
+                {#if floatMap.has(t.id) && (floatMap.get(t.id) ?? 0) > 0}
+                  <span
+                    class="gantt-float-line"
+                    style={`left:${widthFor(t)}px;width:${(floatMap.get(t.id) ?? 0) * dayWidth()}px`}
+                  ></span>
+                {/if}
                 {#if onDepCreate}
                   <span
                     class="gantt-dep-handle gantt-dep-handle-start"
@@ -612,8 +741,9 @@
     flex-shrink: 0; width: 300px;
     border-right: 1px solid var(--line-strong);
     background: var(--paper);
-    overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
+    overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
   }
+  .gantt-list::-webkit-scrollbar { display: none; }
   @media (max-width: 640px) { .gantt-list { width: 200px; } }
   .gantt-list-head {
     position: sticky; top: 0; z-index: 5;
@@ -644,6 +774,7 @@
   }
   .gantt-list-toggle.expanded { transform: rotate(90deg); }
   .gantt-list-toggle.empty { visibility: hidden; }
+  .gantt-list-toggle.milestone { visibility: visible; font-size: 11px; }
   .gantt-list-num {
     font-family: var(--mono); font-size: 10px;
     color: var(--muted); font-weight: 700;
@@ -681,6 +812,15 @@
     );
     pointer-events: none;
     z-index: 1;
+  }
+  .gantt-weekend.holiday {
+    background: repeating-linear-gradient(
+      135deg,
+      rgba(227, 6, 19, 0.04) 0,
+      rgba(227, 6, 19, 0.04) 4px,
+      rgba(227, 6, 19, 0.08) 4px,
+      rgba(227, 6, 19, 0.08) 8px
+    );
   }
   .gantt-today-line {
     position: absolute; top: 30px; bottom: 0; width: 2px;
@@ -834,6 +974,13 @@
     font-weight: 600;
     letter-spacing: .02em;
   }
+  .tooltip-float { color: rgba(255, 255, 255, .7); }
+  .tooltip-float.zero { color: var(--red); font-weight: 700; }
+  .gantt-float-line {
+    position: absolute; top: 14px; height: 2px;
+    border-top: 2px dashed rgba(15, 15, 16, .2);
+    pointer-events: none; z-index: 2;
+  }
   .tooltip-defects.overdue { background: #C62828; color: #fff; }
   .tooltip-defects.clear { background: #2E7D32; color: #fff; }
   .gantt-bar.dimmed { opacity: 0.32; filter: saturate(0.6); transition: opacity var(--d-std) var(--ease-out-expo); }
@@ -852,6 +999,12 @@
     text-transform: uppercase;
   }
   .gantt-bar { cursor: grab; }
+  .gantt-bar::after {
+    content: '';
+    position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
+    cursor: ew-resize; z-index: 2;
+  }
+  .gantt-bar.dragging { cursor: grabbing; }
   .gantt-bar-label { display: block; }
   .gantt-bar-tooltip {
     position: absolute; bottom: calc(100% + 6px); left: 50%;
@@ -878,4 +1031,48 @@
     background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
     font-size: 0; pointer-events: none;
   }
+  /* Milestone */
+  .gantt-milestone {
+    position: absolute; top: 4px; height: 24px; width: 24px;
+    transform: translateX(-4px);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; padding: 0;
+    z-index: 4;
+  }
+  .gantt-milestone:hover { z-index: 6; }
+  .gantt-milestone-diamond {
+    width: 14px; height: 14px;
+    background: var(--ms-color, var(--red));
+    transform: rotate(45deg);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .gantt-milestone:hover .gantt-milestone-diamond {
+    transform: rotate(45deg) scale(1.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  }
+  .gantt-milestone.critical .gantt-milestone-diamond {
+    box-shadow: 0 0 0 2px var(--red), 0 1px 3px rgba(0, 0, 0, .2);
+  }
+  .gantt-milestone.dimmed { opacity: 0.32; }
+  .gantt-milestone.dragging { opacity: .7; }
+  .gantt-milestone .gantt-bar-tooltip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    background: var(--glass-dark);
+    -webkit-backdrop-filter: var(--blur-std);
+    backdrop-filter: var(--blur-std);
+    color: #fff;
+    padding: 6px 10px; border-radius: 8px;
+    box-shadow: var(--shadow-2);
+    pointer-events: none; opacity: 0;
+    transition: opacity var(--d-fast) var(--ease-out-expo), transform var(--d-fast) var(--ease-out-expo);
+    z-index: 30; white-space: nowrap;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .gantt-milestone:hover .gantt-bar-tooltip { opacity: 1; transform: translateX(-50%) scale(1); }
+  .gantt-milestone .gantt-dep-handle { position: absolute; top: 50%; transform: translateY(-50%); }
+  .gantt-milestone .gantt-dep-handle-start { left: -12px; }
+  .gantt-milestone .gantt-dep-handle-end { right: -12px; }
 </style>

@@ -307,5 +307,57 @@ export const actions: Actions = {
 
     await db.delete(taskDependencies).where(eq(taskDependencies.id, parsed.data.depId));
     return { ok: true };
+  },
+
+  createTask: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const schema = z.object({
+      name: z.string().min(1).max(200),
+      startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      gewerkId: z.string().uuid().optional().or(z.literal('')),
+      color: z.string().max(20).optional().or(z.literal(''))
+    });
+    const parsed = schema.safeParse(fd);
+    if (!parsed.success) return fail(400, { error: 'Ungültige Eingabe.' });
+
+    // Get next sort order
+    const lastTask = await db
+      .select({ sortOrder: tasks.sortOrder })
+      .from(tasks)
+      .where(eq(tasks.projectId, params.projectId))
+      .orderBy(desc(tasks.sortOrder))
+      .limit(1);
+    const nextSort = (lastTask[0]?.sortOrder ?? 0) + 10;
+
+    // Get color from gewerk if not specified
+    let color = parsed.data.color || null;
+    if (!color && parsed.data.gewerkId) {
+      const [g] = await db.select({ color: gewerke.color }).from(gewerke).where(eq(gewerke.id, parsed.data.gewerkId)).limit(1);
+      if (g) color = g.color;
+    }
+
+    const [row] = await db.insert(tasks).values({
+      projectId: params.projectId,
+      name: parsed.data.name,
+      startDate: parsed.data.startDate,
+      endDate: parsed.data.endDate,
+      gewerkId: parsed.data.gewerkId || null,
+      color,
+      sortOrder: nextSort,
+      depth: 0
+    }).returning();
+
+    await db.insert(activity).values({
+      projectId: params.projectId,
+      userId: locals.user.id,
+      type: 'task_created',
+      message: `Termin "${parsed.data.name}" erstellt (${parsed.data.startDate} → ${parsed.data.endDate})`,
+      refTable: 'tasks',
+      refId: row.id
+    });
+
+    return { ok: true, taskId: row.id };
   }
 };
