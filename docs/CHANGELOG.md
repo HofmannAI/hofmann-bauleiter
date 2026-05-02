@@ -7,6 +7,10 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(bauzeit-pro): 6 Bauzeit-Pro Features aus pro-Plan 7 Spec:
+  BP-06 Sticky Scroll, BP-01 Meilensteine, BP-02 BW Feiertage +
+  fmtDate-Fix, BP-05 Pufferzeit, BP-03 Balken-Resize, BP-04 Inline-
+  Termin-Erstellung. Vollstaendige Roadmap 35 Items. (PR #30)
 - feat(verknuepfung): Termin-Mängel-Verknüpfung Phase 1 — jeder Mangel
   kann einem Bauzeitenplan-Termin zugeordnet werden (defects.task_id FK).
   Task-Detail zeigt verknüpfte Mängel-Liste (1 Klick statt 6-8).

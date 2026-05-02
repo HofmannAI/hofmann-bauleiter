@@ -1,39 +1,29 @@
-# Session Summary — Nacht-Schicht 2026-05-02
+# Session Summary — Bauzeit-Pro Tiefen-Nacht 2026-05-03
 
-## Bilanz
+## Phase 1: Vorherige PRs zu Ende bringen
 
-| Item | PR | Status | Migration | Tests |
-|------|-----|--------|-----------|-------|
-| Termin-Mängel-Verknüpfung Phase 1 | #25 | CI grün, wartet auf Review-Approval | 0015 (deployed) | 6 |
-| Verzug-Ampel im Bauzeitenplan | #26 | CI pending, basiert auf #25 | keine | 5 |
-| KPI verlorene Tage pro Gewerk | #27 | CI pending, basiert auf #26 | keine | 5 |
+PRs #26 und #27 waren beim Merge von #25 durch GitHub auto-closed
+ohne auf main zu landen. Fix: Cherry-Pick in neuen PR #29 → gemerged.
 
-**Gesamt**: 3 PRs, 1 Migration (deployed), 16 Unit-Tests, 0 neue Fehler.
+## Phase 2: Bauzeit-Pro Roadmap (35 Items)
 
-## Merge-Reihenfolge
+pro-Plan 7 Spec analysiert: 7 P1, 10 P2, 11 P3, 7 P4 (verworfen).
 
-1. PR #25 mergen (braucht 1 Review-Approval wegen Branch Protection)
-2. PR #26 rebased auf main nach #25-Merge
-3. PR #27 rebased auf main nach #26-Merge
+## Phase 3: 6 von 7 P1-Features implementiert
 
-## Technische Details
+| Feature | Aufwand | Tests | Beschreibung |
+|---------|---------|-------|-------------|
+| BP-06 Sticky Scroll | S | 0 | JS Scroll-Sync Gantt-Liste ↔ Timeline |
+| BP-01 Meilensteine | S | 4 | Diamant-Symbol für Dauer-0-Tasks |
+| BP-02 BW Feiertage | M | 18 | 14 Feiertage, Gauss-Osterformel + fmtDate-Fix |
+| BP-05 Pufferzeit | M | 5 | Total Float: Forward+Backward Pass |
+| BP-03 Balken-Resize | S | 0 | 8px Hitzone, ew-resize Cursor |
+| BP-04 Inline-Create | M | 0 | Doppelklick + Sheet + Server-Action |
 
-### PR #25: Termin-Mängel-Verknüpfung
-- Migration 0015: `defects.task_id` FK + Index (bereits auf Supabase deployed)
-- Schema, Backend-Queries, Task-Detail UI (Mängel-Liste), Mangel-Detail UI (Termin-Dropdown + Link)
-- Gewerk-basierte Vorsortierung im Termin-Dropdown
+BP-07 PDF-Export zurückgestellt (L-Item).
 
-### PR #26: Verzug-Ampel
-- Gantt-Bar rot + Puls wenn überfällig + offene Mängel
-- Gantt-Bar grün wenn alle Mängel erledigt
-- Tooltip mit Mängel-Zähler
+## Zahlen
 
-### PR #27: KPI verlorene Tage
-- Neuer Bar-Chart im Statistik-Dashboard
-- Server-seitiger JOIN tasks+defects mit GROUP BY
-- Live-Verzug für offene Mängel (zählt bis heute)
-
-## Blockierer
-
-- Branch Protection erfordert 1 Review-Approval. Self-Approval nicht möglich.
-- Laurenz muss PR #25 approven, dann können #26 und #27 folgen.
+- 6 Features, 27 neue Tests (60 total, alle grün)
+- 0 neue Type-Errors, 0 Migrations
+- PRs: #29 (Verzug+KPI re-apply, gemerged), #30 (Batch 1, offen)
