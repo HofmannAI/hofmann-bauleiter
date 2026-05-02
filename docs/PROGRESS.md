@@ -1,9 +1,14 @@
 # PROGRESS
 
 **Nacht-Session 2026-05-02** (Autopilot):
-- PR #TBD: Termin-Mängel-Verknüpfung Phase 1 — defects.task_id FK,
+- PR #25: Termin-Mängel-Verknüpfung Phase 1 — defects.task_id FK,
   bidirektionale UI (Task zeigt Mängel, Mangel zeigt Termin),
   Migration 0015, 6 Unit-Tests
+- PR #26: Verzug-Ampel im Bauzeitenplan — rot/grün Gantt-Bars,
+  Tooltip mit Mängel-Zähler, 5 Unit-Tests
+- PR #27: KPI verlorene Tage pro Gewerk — Bar-Chart im Statistik-
+  Dashboard, Live-Verzug-Tracking, 5 Unit-Tests
+- Issue #28: 5 Vorschläge für nächste Iteration
 
 **post-rc2 Session** (davor):
 - PR #5 (gemerged): /checklisten FROM-clause-Fix

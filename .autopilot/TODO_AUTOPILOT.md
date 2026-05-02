@@ -10,8 +10,10 @@ Items werden hier von Laurenz oder vom Autopilot selbst (nach Approval) hinzugef
 
 ## Aktive Items
 
-(Liste startet leer. Wenn der Autopilot zum ersten Mal startet ohne hier ein Item zu finden, generiert er Vorschläge in PROPOSALS.md.)
+(Leer — warte auf Approval der neuen Vorschläge in Issue #28.)
 
 ## Erledigte Items (Archiv)
 
-(Wird automatisch gefüllt nach erfolgreichem Merge.)
+1. **Termin-Mängel-Verknüpfung Phase 1** — PR #25, Migration 0015 deployed. [2026-05-02]
+2. **Verzug-Ampel im Bauzeitenplan** — PR #26, keine Migration. [2026-05-02]
+3. **KPI "Wegen Mängeln verlorene Tage pro Gewerk"** — PR #27, keine Migration. [2026-05-02]
