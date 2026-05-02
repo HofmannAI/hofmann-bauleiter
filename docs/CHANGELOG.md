@@ -12,7 +12,11 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
   Task-Detail zeigt verknüpfte Mängel-Liste (1 Klick statt 6-8).
   Mangel-Detail zeigt zugehörigen Termin mit Plan-Ende-Datum und
   Direktlink. Gewerk-basierte Termin-Vorschläge im Dropdown.
-  Migration 0015 (additive, task_id + Index). (PR #TBD)
+  Migration 0015 (additive, task_id + Index). (PR #25)
+- feat(verzug-ampel): Gantt-Bars werden rot wenn Termin ueberfaellig
+  UND offene Maengel hat, gruen wenn alle erledigt. Tooltip zeigt
+  "N offene Maengel / M gesamt" mit Verzug-Warnung. Sofortige
+  visuelle Erkennung statt manuelles Nachschlagen. (PR #TBD)
 
 ### Fixed
 - 🔥 **HOTFIX** fix(maengel/perf): Mängel-Seite lief in

@@ -347,6 +347,7 @@
       onDepClick={(id) => (depPopover = parent.deps.find((d) => d.id === id) ?? null)}
       baseline={activeBaseline}
       lookaheadWeeks={lookahead}
+      taskDefectCounts={parent.taskDefectCounts}
     />
   {/if}
 </div>
