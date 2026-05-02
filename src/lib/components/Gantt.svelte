@@ -347,6 +347,30 @@
     depMode = null;
   }
 
+  /* ===== Scroll-Sync: Vertikalen Scroll zwischen Liste und Timeline synchronisieren ===== */
+  let listEl = $state<HTMLElement | null>(null);
+  let timelineEl = $state<HTMLElement | null>(null);
+  let syncing = false;
+
+  function syncScroll(source: HTMLElement, target: HTMLElement) {
+    if (syncing) return;
+    syncing = true;
+    target.scrollTop = source.scrollTop;
+    requestAnimationFrame(() => { syncing = false; });
+  }
+
+  $effect(() => {
+    if (!listEl || !timelineEl) return;
+    const onListScroll = () => syncScroll(listEl!, timelineEl!);
+    const onTimelineScroll = () => syncScroll(timelineEl!, listEl!);
+    listEl.addEventListener('scroll', onListScroll, { passive: true });
+    timelineEl.addEventListener('scroll', onTimelineScroll, { passive: true });
+    return () => {
+      listEl?.removeEventListener('scroll', onListScroll);
+      timelineEl?.removeEventListener('scroll', onTimelineScroll);
+    };
+  });
+
   /* Layout-Lookup: y-Position einer Task in der visible-Liste = row-index * 32 + 16 (Mitte) */
   let visibleIndex = $derived.by(() => {
     const m = new Map<string, number>();
@@ -359,7 +383,10 @@
     const idx = visibleIndex.get(taskId);
     if (!t || idx === undefined) return null;
     const x1 = offsetPx(t.startDate);
-    const x2 = x1 + Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
+    const isMilestone = t.startDate === t.endDate;
+    const x2 = isMilestone
+      ? x1 + dayWidth()
+      : x1 + Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
     const y = idx * 32 + 16; // Mitte der Bar
     return { x1, x2, y };
   }
@@ -401,7 +428,7 @@
 </div>
 
 <div class="gantt-wrap">
-  <div class="gantt-list">
+  <div class="gantt-list" bind:this={listEl}>
     <div class="gantt-list-head">Vorgang</div>
     {#each visible as t (t.id)}
       <button
@@ -417,6 +444,8 @@
             role="button"
             tabindex="-1"
           >▶</span>
+        {:else if t.startDate === t.endDate}
+          <span class="gantt-list-toggle milestone" style={`color:${t.color ?? 'var(--red)'}`}>◆</span>
         {:else}
           <span class="gantt-list-toggle empty"></span>
         {/if}
@@ -426,7 +455,7 @@
     {/each}
   </div>
 
-  <div class="gantt-timeline-wrap">
+  <div class="gantt-timeline-wrap" bind:this={timelineEl}>
     <div class="gantt-timeline" style={`width:${widthPx}px`}>
       <div class="gantt-axis">
         {#each months() as m}
@@ -455,6 +484,59 @@
             {/if}
             {#if isParentMap.has(t.id)}
               <div class="gantt-bar summary" style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px`}></div>
+            {:else if t.startDate === t.endDate}
+              {@const vs = verzugStatus(t)}
+              <button
+                class="gantt-milestone"
+                class:critical={criticalPathIds.has(t.id)}
+                class:dimmed={criticalPathIds.size > 0 && !criticalPathIds.has(t.id)}
+                class:dragging={dragging?.id === t.id && dragging.armed}
+                class:dep-mode-target={depMode && depMode.id !== t.id}
+                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;--ms-color:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#E30613')}`}
+                onclick={() => {
+                  if (depMode) { applyDepMode(t.id); return; }
+                  if (!dragging || !dragging.moved) onSelect?.(t.id);
+                }}
+                onpointerdown={(e) => onBarPointerDown(e, t)}
+                onpointermove={onBarPointerMove}
+                onpointerup={onBarPointerUp}
+                onpointercancel={onBarPointerCancel}
+                data-task-id={t.id}
+              >
+                <span class="gantt-milestone-diamond"></span>
+                <span class="gantt-bar-tooltip" role="tooltip">
+                  <span class="tooltip-name">◆ {t.name}</span>
+                  <span class="tooltip-meta">Meilenstein: {t.startDate}</span>
+                  {#if defectMap.has(t.id)}
+                    {@const dc = defectMap.get(t.id)}
+                    <span class="tooltip-defects" class:overdue={vs === 'overdue'} class:clear={vs === 'clear'}>
+                      {dc?.open ?? 0} offene Mängel / {dc?.total ?? 0} gesamt
+                    </span>
+                  {/if}
+                </span>
+                {#if onDepCreate}
+                  <span
+                    class="gantt-dep-handle gantt-dep-handle-start"
+                    role="button"
+                    aria-label="Dependency vom Anfang ziehen"
+                    data-task-id={t.id}
+                    data-handle="start"
+                    onpointerdown={(e) => onHandlePointerDown(e, t.id, 'start')}
+                    onpointermove={onHandlePointerMove}
+                    onpointerup={onHandlePointerUp}
+                  ></span>
+                  <span
+                    class="gantt-dep-handle gantt-dep-handle-end"
+                    role="button"
+                    aria-label="Dependency vom Ende ziehen"
+                    data-task-id={t.id}
+                    data-handle="end"
+                    onpointerdown={(e) => onHandlePointerDown(e, t.id, 'end')}
+                    onpointermove={onHandlePointerMove}
+                    onpointerup={onHandlePointerUp}
+                  ></span>
+                {/if}
+              </button>
             {:else}
               {@const vs = verzugStatus(t)}
               <button
@@ -612,8 +694,9 @@
     flex-shrink: 0; width: 300px;
     border-right: 1px solid var(--line-strong);
     background: var(--paper);
-    overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
+    overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
   }
+  .gantt-list::-webkit-scrollbar { display: none; }
   @media (max-width: 640px) { .gantt-list { width: 200px; } }
   .gantt-list-head {
     position: sticky; top: 0; z-index: 5;
@@ -644,6 +727,7 @@
   }
   .gantt-list-toggle.expanded { transform: rotate(90deg); }
   .gantt-list-toggle.empty { visibility: hidden; }
+  .gantt-list-toggle.milestone { visibility: visible; font-size: 11px; }
   .gantt-list-num {
     font-family: var(--mono); font-size: 10px;
     color: var(--muted); font-weight: 700;
@@ -878,4 +962,48 @@
     background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
     font-size: 0; pointer-events: none;
   }
+  /* Milestone */
+  .gantt-milestone {
+    position: absolute; top: 4px; height: 24px; width: 24px;
+    transform: translateX(-4px);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; padding: 0;
+    z-index: 4;
+  }
+  .gantt-milestone:hover { z-index: 6; }
+  .gantt-milestone-diamond {
+    width: 14px; height: 14px;
+    background: var(--ms-color, var(--red));
+    transform: rotate(45deg);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .gantt-milestone:hover .gantt-milestone-diamond {
+    transform: rotate(45deg) scale(1.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  }
+  .gantt-milestone.critical .gantt-milestone-diamond {
+    box-shadow: 0 0 0 2px var(--red), 0 1px 3px rgba(0, 0, 0, .2);
+  }
+  .gantt-milestone.dimmed { opacity: 0.32; }
+  .gantt-milestone.dragging { opacity: .7; }
+  .gantt-milestone .gantt-bar-tooltip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    background: var(--glass-dark);
+    -webkit-backdrop-filter: var(--blur-std);
+    backdrop-filter: var(--blur-std);
+    color: #fff;
+    padding: 6px 10px; border-radius: 8px;
+    box-shadow: var(--shadow-2);
+    pointer-events: none; opacity: 0;
+    transition: opacity var(--d-fast) var(--ease-out-expo), transform var(--d-fast) var(--ease-out-expo);
+    z-index: 30; white-space: nowrap;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .gantt-milestone:hover .gantt-bar-tooltip { opacity: 1; transform: translateX(-50%) scale(1); }
+  .gantt-milestone .gantt-dep-handle { position: absolute; top: 50%; transform: translateY(-50%); }
+  .gantt-milestone .gantt-dep-handle-start { left: -12px; }
+  .gantt-milestone .gantt-dep-handle-end { right: -12px; }
 </style>
