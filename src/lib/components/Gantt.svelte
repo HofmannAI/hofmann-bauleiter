@@ -36,6 +36,7 @@
     dependencies?: Dependency[];
     lookaheadWeeks?: 0 | 3 | 4 | 6;
     taskDefectCounts?: TaskDefectCount[];
+    floatMap?: Map<string, number>;
   };
   let {
     tasks,
@@ -47,7 +48,8 @@
     baseline = [],
     dependencies = [],
     lookaheadWeeks = 0,
-    taskDefectCounts = []
+    taskDefectCounts = [],
+    floatMap = new Map<string, number>()
   }: Props = $props();
 
   /* ===== Verzug-Ampel: task overdue + open defects = red, all resolved = green ===== */
@@ -576,10 +578,22 @@
                       {#if vs === 'clear'} — alle erledigt{/if}
                     </span>
                   {/if}
+                  {#if floatMap.has(t.id)}
+                    {@const float = floatMap.get(t.id) ?? 0}
+                    <span class="tooltip-meta tooltip-float" class:zero={float === 0}>
+                      Puffer: {float} AT{float === 0 ? ' (kritisch)' : ''}
+                    </span>
+                  {/if}
                   {#if criticalPathIds.has(t.id)}
                     <span class="tooltip-crit">Kritisch — Verzögerung wirkt 1:1 auf Übergabe</span>
                   {/if}
                 </span>
+                {#if floatMap.has(t.id) && (floatMap.get(t.id) ?? 0) > 0}
+                  <span
+                    class="gantt-float-line"
+                    style={`left:${widthFor(t)}px;width:${(floatMap.get(t.id) ?? 0) * dayWidth()}px`}
+                  ></span>
+                {/if}
                 {#if onDepCreate}
                   <span
                     class="gantt-dep-handle gantt-dep-handle-start"
@@ -925,6 +939,13 @@
     font-size: 10px;
     font-weight: 600;
     letter-spacing: .02em;
+  }
+  .tooltip-float { color: rgba(255, 255, 255, .7); }
+  .tooltip-float.zero { color: var(--red); font-weight: 700; }
+  .gantt-float-line {
+    position: absolute; top: 14px; height: 2px;
+    border-top: 2px dashed rgba(15, 15, 16, .2);
+    pointer-events: none; z-index: 2;
   }
   .tooltip-defects.overdue { background: #C62828; color: #fff; }
   .tooltip-defects.clear { background: #2E7D32; color: #fff; }

@@ -4,7 +4,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { criticalPath, type EngineTask, type EngineDep } from '$lib/gantt/engine';
+  import { criticalPath, calculateFloat, type EngineTask, type EngineDep } from '$lib/gantt/engine';
   import { toast } from '$lib/components/Toast.svelte';
   import { confirm } from '$lib/components/ConfirmDialog.svelte';
 
@@ -123,6 +123,22 @@
       lagDays: d.lagDays
     }));
     return criticalPath(tasks, deps);
+  });
+
+  let floatMap = $derived.by(() => {
+    const tasks: EngineTask[] = parent.tasks.map((t) => ({
+      id: t.id,
+      startDate: t.startDate,
+      endDate: t.endDate,
+      durationAt: t.durationAt
+    }));
+    const deps: EngineDep[] = parent.deps.map((d) => ({
+      predecessorId: d.predecessorId,
+      successorId: d.successorId,
+      type: d.type as 'FS' | 'SS' | 'FF' | 'SF',
+      lagDays: d.lagDays
+    }));
+    return calculateFloat(tasks, deps);
   });
 
   type DiffRow = { id: string; name: string; num: string | null; oldStart: string; oldEnd: string; newStart: string; newEnd: string };
@@ -348,6 +364,7 @@
       baseline={activeBaseline}
       lookaheadWeeks={lookahead}
       taskDefectCounts={parent.taskDefectCounts}
+      floatMap={floatMap}
     />
   {/if}
 </div>

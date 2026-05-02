@@ -142,6 +142,102 @@ export function propagate(
 }
 
 /**
+ * Calculate Total Float (Pufferzeit) for each task.
+ * Float = how many days the task can slip without delaying the project end.
+ * Uses forward pass (early dates) + backward pass (late dates).
+ * Float = lateStart - earlyStart.
+ */
+export function calculateFloat(tasks: EngineTask[], deps: EngineDep[]): Map<string, number> {
+  if (tasks.length === 0) return new Map();
+
+  // Forward pass: early start/end (= current schedule)
+  const earlyStart = new Map<string, string>();
+  const earlyEnd = new Map<string, string>();
+  for (const t of tasks) {
+    earlyStart.set(t.id, t.startDate);
+    earlyEnd.set(t.id, t.endDate);
+  }
+
+  // Project end = latest earlyEnd
+  let projectEnd = tasks[0].endDate;
+  for (const t of tasks) if (t.endDate > projectEnd) projectEnd = t.endDate;
+
+  // Backward pass: late start/end
+  const lateEnd = new Map<string, string>();
+  const lateStart = new Map<string, string>();
+
+  // Initialize: tasks with no successors get lateEnd = projectEnd
+  const hasSuccessor = new Set<string>();
+  for (const d of deps) hasSuccessor.add(d.predecessorId);
+
+  for (const t of tasks) {
+    if (!hasSuccessor.has(t.id)) {
+      lateEnd.set(t.id, projectEnd);
+    }
+  }
+
+  // Reverse topological order
+  const order = topoOrder(tasks.map((t) => t.id), deps);
+  const reverseOrder = [...order].reverse();
+
+  // Multiple passes for convergence (handles complex dependency patterns)
+  for (let pass = 0; pass < 2; pass++) {
+    for (const id of reverseOrder) {
+      const t = tasks.find((x) => x.id === id);
+      if (!t) continue;
+
+      // lateEnd = min of all successors' required latest time for this task
+      for (const d of deps) {
+        if (d.predecessorId !== id) continue;
+        const succLateStart = lateStart.get(d.successorId);
+        if (!succLateStart) continue;
+
+        let constraint: string;
+        switch (d.type) {
+          case 'FS':
+            constraint = addWorkingDays(succLateStart, -(1 + d.lagDays));
+            break;
+          case 'SS': {
+            const dur = workingDaysBetween(t.startDate, t.endDate);
+            constraint = addWorkingDays(succLateStart, -d.lagDays);
+            // Convert to lateEnd
+            constraint = addWorkingDays(constraint, dur);
+            // But we want the end constraint
+            break;
+          }
+          default:
+            // For FF/SF, simplified: use FS-like behavior
+            constraint = addWorkingDays(succLateStart, -(1 + d.lagDays));
+            break;
+        }
+
+        const cur = lateEnd.get(id);
+        if (!cur || constraint < cur) lateEnd.set(id, constraint);
+      }
+
+      // Calculate lateStart from lateEnd
+      const le = lateEnd.get(id);
+      if (le) {
+        const dur = workingDaysBetween(t.startDate, t.endDate);
+        lateStart.set(id, addWorkingDays(le, -dur));
+      }
+    }
+  }
+
+  // Float = lateStart - earlyStart (in working days)
+  const floatMap = new Map<string, number>();
+  for (const t of tasks) {
+    const es = earlyStart.get(t.id);
+    const ls = lateStart.get(t.id);
+    if (es && ls) {
+      const float = workingDaysBetween(es, ls);
+      floatMap.set(t.id, Math.max(0, float));
+    }
+  }
+  return floatMap;
+}
+
+/**
  * Critical path: tasks on the longest chain ending at the project's last end_date.
  * Returns set of task ids on the path. Edge weights are the task's working-day
  * duration; we walk back from the latest-ending task following predecessors.
