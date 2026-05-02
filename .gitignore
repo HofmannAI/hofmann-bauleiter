@@ -39,3 +39,6 @@ test-results/
 # Temp
 *.tmp
 *.bak
+
+supabase/.temp/
+
