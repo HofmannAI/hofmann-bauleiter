@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { parseDate, addDays, daysBetween, fmtDate } from '$lib/gantt/calendar';
+  import { parseDate, addDays, daysBetween, fmtDate, isNonWorkday, holidayName } from '$lib/gantt/calendar';
 
   type GTask = {
     id: string;
@@ -135,17 +135,16 @@
     return Math.max(8, (daysBetween(t.startDate, t.endDate) + 1) * dayWidth());
   }
 
-  function weekends(): { left: number; width: number }[] {
+  function nonWorkdays(): { left: number; width: number; holiday: string | null }[] {
     if (zoom === 'month') return []; // too dense to render
-    const out: { left: number; width: number }[] = [];
+    const out: { left: number; width: number; holiday: string | null }[] = [];
     const start = parseDate(range.start);
     const end = parseDate(range.end);
     const cur = new Date(start);
     while (cur <= end) {
-      const dow = cur.getDay();
-      if (dow === 0 || dow === 6) {
+      if (isNonWorkday(cur)) {
         const left = daysBetween(range.start, fmtDate(cur)) * dayWidth();
-        out.push({ left, width: dayWidth() });
+        out.push({ left, width: dayWidth(), holiday: holidayName(cur) });
       }
       cur.setDate(cur.getDate() + 1);
     }
@@ -462,8 +461,8 @@
           <div class="gantt-axis-month" style={`left:${m.left}px;width:${m.width}px`}>{m.label}</div>
         {/each}
       </div>
-      {#each weekends() as w}
-        <div class="gantt-weekend" style={`left:${w.left}px;width:${w.width}px`}></div>
+      {#each nonWorkdays() as w}
+        <div class="gantt-weekend" class:holiday={!!w.holiday} style={`left:${w.left}px;width:${w.width}px`} title={w.holiday ?? ''}></div>
       {/each}
       {#if todayPos() !== null}
         <div class="gantt-today-line" style={`left:${todayPos()}px`}>
@@ -765,6 +764,15 @@
     );
     pointer-events: none;
     z-index: 1;
+  }
+  .gantt-weekend.holiday {
+    background: repeating-linear-gradient(
+      135deg,
+      rgba(227, 6, 19, 0.04) 0,
+      rgba(227, 6, 19, 0.04) 4px,
+      rgba(227, 6, 19, 0.08) 4px,
+      rgba(227, 6, 19, 0.08) 8px
+    );
   }
   .gantt-today-line {
     position: absolute; top: 30px; bottom: 0; width: 2px;
