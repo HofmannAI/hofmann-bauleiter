@@ -88,3 +88,44 @@ describe('taskDefectCounts', () => {
     expect(counts.size).toBe(0);
   });
 });
+
+// Mirrors the verzugStatus logic from Gantt.svelte
+type VerzugTask = { id: string; endDate: string };
+type DefectCounts = { total: number; open: number };
+
+function verzugStatus(t: VerzugTask, defectMap: Map<string, DefectCounts>, today: string): 'overdue' | 'clear' | 'none' {
+  const counts = defectMap.get(t.id);
+  if (!counts || counts.total === 0) return 'none';
+  if (t.endDate < today && counts.open > 0) return 'overdue';
+  if (counts.open === 0) return 'clear';
+  return 'none';
+}
+
+describe('verzugStatus (Verzug-Ampel)', () => {
+  const today = '2026-05-02';
+  const defectMap = new Map<string, DefectCounts>([
+    ['t1', { total: 3, open: 2 }],
+    ['t2', { total: 1, open: 0 }],
+    ['t3', { total: 5, open: 3 }]
+  ]);
+
+  it('returns overdue when task past endDate AND open defects', () => {
+    expect(verzugStatus({ id: 't1', endDate: '2026-04-30' }, defectMap, today)).toBe('overdue');
+  });
+
+  it('returns clear when all defects resolved', () => {
+    expect(verzugStatus({ id: 't2', endDate: '2026-04-30' }, defectMap, today)).toBe('clear');
+  });
+
+  it('returns none when task has no defects', () => {
+    expect(verzugStatus({ id: 't99', endDate: '2026-04-30' }, defectMap, today)).toBe('none');
+  });
+
+  it('returns none when task not yet overdue even with open defects', () => {
+    expect(verzugStatus({ id: 't3', endDate: '2026-06-01' }, defectMap, today)).toBe('none');
+  });
+
+  it('returns clear even when task is overdue but all defects closed', () => {
+    expect(verzugStatus({ id: 't2', endDate: '2026-03-01' }, defectMap, today)).toBe('clear');
+  });
+});
