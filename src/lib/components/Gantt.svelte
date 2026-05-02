@@ -14,6 +14,8 @@
     progressPct?: number;
   };
 
+  type TaskDefectCount = { taskId: string | null; total: number; open: number };
+
   type Baseline = { taskId: string; plannedStart: string; plannedEnd: string };
   export type Dependency = {
     id: string;
@@ -33,6 +35,7 @@
     baseline?: Baseline[];
     dependencies?: Dependency[];
     lookaheadWeeks?: 0 | 3 | 4 | 6;
+    taskDefectCounts?: TaskDefectCount[];
   };
   let {
     tasks,
@@ -43,8 +46,27 @@
     criticalPathIds = new Set<string>(),
     baseline = [],
     dependencies = [],
-    lookaheadWeeks = 0
+    lookaheadWeeks = 0,
+    taskDefectCounts = []
   }: Props = $props();
+
+  /* ===== Verzug-Ampel: task overdue + open defects = red, all resolved = green ===== */
+  let defectMap = $derived.by(() => {
+    const m = new Map<string, { total: number; open: number }>();
+    for (const c of taskDefectCounts) {
+      if (c.taskId) m.set(c.taskId, { total: c.total, open: c.open });
+    }
+    return m;
+  });
+
+  function verzugStatus(t: GTask): 'overdue' | 'clear' | 'none' {
+    const counts = defectMap.get(t.id);
+    if (!counts || counts.total === 0) return 'none';
+    const today = fmtDate(new Date());
+    if (t.endDate < today && counts.open > 0) return 'overdue';
+    if (counts.open === 0) return 'clear';
+    return 'none';
+  }
 
   let baselineMap = $derived.by(() => {
     const m = new Map<string, { plannedStart: string; plannedEnd: string }>();
@@ -434,6 +456,7 @@
             {#if isParentMap.has(t.id)}
               <div class="gantt-bar summary" style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px`}></div>
             {:else}
+              {@const vs = verzugStatus(t)}
               <button
                 class="gantt-bar"
                 class:critical={criticalPathIds.has(t.id)}
@@ -441,7 +464,9 @@
                 class:dragging={dragging?.id === t.id && dragging.armed}
                 class:armed-touch={dragging?.id === t.id && dragging.armed && dragging.pointerType !== 'mouse'}
                 class:dep-mode-target={depMode && depMode.id !== t.id}
-                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
+                class:verzug-overdue={vs === 'overdue'}
+                class:verzug-clear={vs === 'clear'}
+                style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;width:${widthFor(t)}px;background:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#3B6CC4')}`}
                 onclick={() => {
                   if (depMode) { applyDepMode(t.id); return; }
                   if (!dragging || !dragging.moved) onSelect?.(t.id);
@@ -461,6 +486,14 @@
                   <span class="tooltip-meta">{t.startDate} → {t.endDate}</span>
                   {#if (t.progressPct ?? 0) > 0}
                     <span class="tooltip-meta">Fortschritt: {t.progressPct}%</span>
+                  {/if}
+                  {#if defectMap.has(t.id)}
+                    {@const dc = defectMap.get(t.id)}
+                    <span class="tooltip-defects" class:overdue={vs === 'overdue'} class:clear={vs === 'clear'}>
+                      {dc?.open ?? 0} offene Mängel / {dc?.total ?? 0} gesamt
+                      {#if vs === 'overdue'} — Verzug!{/if}
+                      {#if vs === 'clear'} — alle erledigt{/if}
+                    </span>
                   {/if}
                   {#if criticalPathIds.has(t.id)}
                     <span class="tooltip-crit">Kritisch — Verzögerung wirkt 1:1 auf Übergabe</span>
@@ -777,6 +810,32 @@
     pointer-events: none;
     z-index: 1;
   }
+  .gantt-bar.verzug-overdue {
+    box-shadow: 0 0 0 2px #C62828, 0 2px 6px rgba(198, 40, 40, .35);
+    animation: verzugPulse 2s ease-in-out infinite;
+  }
+  .gantt-bar.verzug-clear {
+    box-shadow: 0 0 0 1px #2E7D32;
+  }
+  @keyframes verzugPulse {
+    0%   { box-shadow: 0 0 0 2px #C62828, 0 2px 6px rgba(198, 40, 40, .35); }
+    50%  { box-shadow: 0 0 0 4px rgba(198, 40, 40, .5), 0 2px 10px rgba(198, 40, 40, .5); }
+    100% { box-shadow: 0 0 0 2px #C62828, 0 2px 6px rgba(198, 40, 40, .35); }
+  }
+  @media (prefers-reduced-motion: reduce) { .gantt-bar.verzug-overdue { animation: none; } }
+  .tooltip-defects {
+    display: block;
+    margin-top: 4px;
+    padding: 3px 6px;
+    background: rgba(255, 255, 255, .15);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+  .tooltip-defects.overdue { background: #C62828; color: #fff; }
+  .tooltip-defects.clear { background: #2E7D32; color: #fff; }
   .gantt-bar.dimmed { opacity: 0.32; filter: saturate(0.6); transition: opacity var(--d-std) var(--ease-out-expo); }
   .gantt-bar.dimmed:hover { opacity: 0.7; }
   .tooltip-crit {
