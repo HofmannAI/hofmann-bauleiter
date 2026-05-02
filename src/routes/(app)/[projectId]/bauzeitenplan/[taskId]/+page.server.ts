@@ -5,17 +5,21 @@ import { db } from '$lib/db/client';
 import { tasks, activity, taskPhotos } from '$lib/db/schema';
 import { eq, and, asc } from 'drizzle-orm';
 import { getTaskWithApartmentProgress, setApartmentProgress } from '$lib/db/taskQueries';
+import { listDefectsForTask } from '$lib/db/defectQueries';
 
 export const load: PageServerLoad = async ({ params }) => {
   const detail = await getTaskWithApartmentProgress(params.projectId, params.taskId);
   if (!detail) error(404, 'Termin nicht gefunden');
-  if (!db) return { ...detail, photos: [] };
-  const photos = await db
-    .select()
-    .from(taskPhotos)
-    .where(eq(taskPhotos.taskId, params.taskId))
-    .orderBy(asc(taskPhotos.sortOrder), asc(taskPhotos.createdAt));
-  return { ...detail, photos };
+  if (!db) return { ...detail, photos: [], linkedDefects: [] };
+  const [photos, linkedDefects] = await Promise.all([
+    db
+      .select()
+      .from(taskPhotos)
+      .where(eq(taskPhotos.taskId, params.taskId))
+      .orderBy(asc(taskPhotos.sortOrder), asc(taskPhotos.createdAt)),
+    listDefectsForTask(params.taskId)
+  ]);
+  return { ...detail, photos, linkedDefects };
 };
 
 const aptProgressSchema = z.object({

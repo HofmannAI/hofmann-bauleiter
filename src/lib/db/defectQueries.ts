@@ -8,6 +8,7 @@ import {
   gewerke,
   apartments,
   houses,
+  tasks,
   activity
 } from './schema';
 import { eq, and, asc, desc, sql, inArray } from 'drizzle-orm';
@@ -35,6 +36,7 @@ export async function listDefects(projectId: string) {
       roomId: defects.roomId,
       bauteil: defects.bauteil,
       bauteilqualitaet: defects.bauteilqualitaet,
+      taskId: defects.taskId,
       createdAt: defects.createdAt
     })
     .from(defects)
@@ -56,11 +58,12 @@ export async function getDefect(projectId: string, defectId: string) {
   const [c] = d.contactId ? await db.select().from(contacts).where(eq(contacts.id, d.contactId)).limit(1) : [null];
   const [p] = d.planId ? await db.select().from(plans).where(eq(plans.id, d.planId)).limit(1) : [null];
   const [a] = d.apartmentId ? await db.select().from(apartments).where(eq(apartments.id, d.apartmentId)).limit(1) : [null];
+  const [t] = d.taskId ? await db.select().from(tasks).where(eq(tasks.id, d.taskId)).limit(1) : [null];
 
   const photos = await db.select().from(defectPhotos).where(eq(defectPhotos.defectId, d.id));
   const history = await db.select().from(defectHistory).where(eq(defectHistory.defectId, d.id)).orderBy(desc(defectHistory.createdAt));
 
-  return { defect: d, gewerk: g, contact: c, plan: p, apartment: a, photos, history };
+  return { defect: d, gewerk: g, contact: c, plan: p, apartment: a, task: t, photos, history };
 }
 
 /**
@@ -93,6 +96,7 @@ export type CreateDefectInput = {
   xPct?: number | null;
   yPct?: number | null;
   planCropPath?: string | null;
+  taskId?: string | null;
   deadline?: string | null;
   priority?: number;
   createdBy: string;
@@ -116,6 +120,7 @@ export async function createDefect(input: CreateDefectInput) {
       xPct: input.xPct != null ? input.xPct.toString() : null,
       yPct: input.yPct != null ? input.yPct.toString() : null,
       planCropPath: input.planCropPath ?? null,
+      taskId: input.taskId ?? null,
       deadline: input.deadline ?? null,
       priority: input.priority ?? 2,
       status: 'open',
@@ -150,6 +155,7 @@ export async function updateDefectFields(
     gewerkId: string | null;
     contactId: string | null;
     apartmentId: string | null;
+    taskId: string | null;
     deadline: string | null;
     followupDate: string | null;
     dueDate: string | null;
@@ -257,4 +263,24 @@ export async function listContactsForProject(projectId: string) {
     .leftJoin(gewerke, eq(gewerke.id, contacts.gewerkId))
     .where(sql`(${contacts.projectId} = ${projectId} OR ${contacts.projectId} IS NULL)`)
     .orderBy(asc(gewerke.name));
+}
+
+/** All defects linked to a specific task (for task-detail view). */
+export async function listDefectsForTask(taskId: string) {
+  if (!db) return [];
+  return await db
+    .select({
+      id: defects.id,
+      shortId: defects.shortId,
+      title: defects.title,
+      status: defects.status,
+      priority: defects.priority,
+      deadline: defects.deadline,
+      gewerkName: gewerke.name,
+      gewerkColor: gewerke.color
+    })
+    .from(defects)
+    .leftJoin(gewerke, eq(gewerke.id, defects.gewerkId))
+    .where(eq(defects.taskId, taskId))
+    .orderBy(asc(defects.shortId));
 }
