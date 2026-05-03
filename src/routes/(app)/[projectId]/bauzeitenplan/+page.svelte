@@ -453,6 +453,7 @@
       multiSelected={multiSelected}
       onMultiSelect={(ids) => (multiSelected = ids)}
       backgrounds={parent.backgrounds ?? []}
+      bookmarks={parent.bookmarks ?? []}
     />
     {#if parent.gewerke.length > 0}
       <div class="gantt-legend">
