@@ -767,12 +767,7 @@
                     <span class="tooltip-crit">Kritisch — Verzögerung wirkt 1:1 auf Übergabe</span>
                   {/if}
                 </span>
-                {#if floatMap.has(t.id) && (floatMap.get(t.id) ?? 0) > 0}
-                  <span
-                    class="gantt-float-line"
-                    style={`left:${widthFor(t)}px;width:${(floatMap.get(t.id) ?? 0) * dayWidth()}px`}
-                  ></span>
-                {/if}
+                <!-- Pufferzeit-Info nur im Tooltip, keine visuelle Linie -->
                 {#if onDepCreate}
                   <span
                     class="gantt-dep-handle gantt-dep-handle-start"
