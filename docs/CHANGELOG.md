@@ -7,6 +7,12 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 ## [unreleased] — post-rc2
 
 ### Added
+- feat(bauzeit-pro-batch2): 10 weitere Features + Hotfix:
+  BP-14 Projektende-Linie, BP-15 Verknuepfte hervorheben,
+  BP-16 Ghost-Bars, BP-08 Soll-Ist Dual-Bars, BP-10 Rueckmeldung
+  (Migration 0016), BP-17 Balkentext, BP-27 Orientierungslinien,
+  V-001 Auto-Verknuepfung Mangel-Termin, V-002 Maengel-Filter per
+  Termin, HOTFIX vorgaengeByProject RLS-Timeout. (PR #TBD)
 - feat(bauzeit-pro): 6 Bauzeit-Pro Features aus pro-Plan 7 Spec:
   BP-06 Sticky Scroll, BP-01 Meilensteine, BP-02 BW Feiertage +
   fmtDate-Fix, BP-05 Pufferzeit, BP-03 Balken-Resize, BP-04 Inline-
