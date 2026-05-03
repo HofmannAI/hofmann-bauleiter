@@ -13,6 +13,7 @@
     depth: number;
     sortOrder: number;
     progressPct?: number;
+    durationAt?: number | null;
     segments?: Segment[] | null;
     reminderDate?: string | null;
   };
@@ -113,6 +114,9 @@
   let zoom = $state<'day' | 'week' | 'month'>('week');
   let collapsed = $state<Record<string, boolean>>({});
   let pinnedIds = $state<Set<string>>(new Set());
+  let showColumns = $state<{ start: boolean; end: boolean; duration: boolean; progress: boolean }>({
+    start: false, end: false, duration: false, progress: false
+  });
 
   function togglePin(id: string) {
     const next = new Set(pinnedIds);
@@ -510,12 +514,27 @@
   {#if pinnedIds.size > 0}
     <button class="gantt-zoom-btn" onclick={() => (pinnedIds = new Set())}>📌 {pinnedIds.size} entpinnen</button>
   {/if}
+  <details class="gantt-col-dropdown">
+    <summary class="gantt-zoom-btn">Spalten</summary>
+    <div class="gantt-col-panel">
+      <label><input type="checkbox" bind:checked={showColumns.start} /> Start</label>
+      <label><input type="checkbox" bind:checked={showColumns.end} /> Ende</label>
+      <label><input type="checkbox" bind:checked={showColumns.duration} /> Dauer</label>
+      <label><input type="checkbox" bind:checked={showColumns.progress} /> Fortschritt</label>
+    </div>
+  </details>
   <span class="gantt-info"><b>{tasks.length}</b> Termine</span>
 </div>
 
 <div class="gantt-wrap">
   <div class="gantt-list" bind:this={listEl}>
-    <div class="gantt-list-head">Vorgang</div>
+    <div class="gantt-list-head">
+      <span style="flex:1">Vorgang</span>
+      {#if showColumns.start}<span class="col-extra">Start</span>{/if}
+      {#if showColumns.end}<span class="col-extra">Ende</span>{/if}
+      {#if showColumns.duration}<span class="col-extra">AT</span>{/if}
+      {#if showColumns.progress}<span class="col-extra">%</span>{/if}
+    </div>
     {#each visible as t (t.id)}
       <button
         class="gantt-row-list depth-{t.depth}"
@@ -545,6 +564,10 @@
         {:else if !isParentMap.has(t.id) && (t.progressPct ?? 0) >= 100}
           <span class="gantt-status-dot green"></span>
         {/if}
+        {#if showColumns.start}<span class="col-extra-val">{t.startDate.slice(5)}</span>{/if}
+        {#if showColumns.end}<span class="col-extra-val">{t.endDate.slice(5)}</span>{/if}
+        {#if showColumns.duration}<span class="col-extra-val">{t.durationAt ?? daysBetween(t.startDate, t.endDate)}</span>{/if}
+        {#if showColumns.progress}<span class="col-extra-val">{t.progressPct ?? 0}</span>{/if}
       </button>
     {/each}
   </div>
@@ -860,7 +883,7 @@
     overflow: hidden; border-top: 1px solid var(--line);
   }
   .gantt-list {
-    flex-shrink: 0; width: 300px;
+    flex-shrink: 0; width: 300px; min-width: 200px;
     border-right: 1px solid var(--line-strong);
     background: var(--paper);
     overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
@@ -903,6 +926,13 @@
     flex-shrink: 0; min-width: 38px; letter-spacing: -.02em;
   }
   .gantt-list-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .col-extra { font-family: var(--mono); font-size: 9px; width: 48px; text-align: right; flex-shrink: 0; }
+  .col-extra-val { font-family: var(--mono); font-size: 10px; width: 48px; text-align: right; flex-shrink: 0; color: var(--muted); }
+  .gantt-col-dropdown { position: relative; }
+  .gantt-col-dropdown summary { list-style: none; cursor: pointer; }
+  .gantt-col-dropdown summary::-webkit-details-marker { display: none; }
+  .gantt-col-panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 25; background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-2); padding: 8px; display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+  .gantt-col-panel label { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
   .gantt-pin-btn { width: 18px; height: 18px; flex-shrink: 0; font-size: 10px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; cursor: pointer; opacity: 0; transition: opacity .12s; padding: 0; }
   .gantt-row-list:hover .gantt-pin-btn { opacity: 0.4; }
   .gantt-pin-btn.pinned { opacity: 1; }
