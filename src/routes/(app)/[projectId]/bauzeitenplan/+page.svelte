@@ -5,12 +5,21 @@
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/state';
   import { criticalPath, calculateFloat, type EngineTask, type EngineDep } from '$lib/gantt/engine';
-  import { fmtDate } from '$lib/gantt/calendar';
+  import { fmtDate, setProjectExceptions } from '$lib/gantt/calendar';
   import { toast } from '$lib/components/Toast.svelte';
   import { confirm } from '$lib/components/ConfirmDialog.svelte';
 
   let { data } = $props();
   let parent = $derived(data);
+
+  // Set project calendar exceptions
+  $effect(() => {
+    const exc = parent.calExceptions ?? [];
+    setProjectExceptions(
+      exc.filter(e => e.type === 'holiday').map(e => e.date),
+      exc.filter(e => e.type === 'workday').map(e => e.date)
+    );
+  });
 
   let selected = $state<string | null>(null);
   let selectedTask = $derived(parent.tasks.find((t) => t.id === selected) ?? null);

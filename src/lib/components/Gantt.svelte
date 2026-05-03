@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { parseDate, addDays, daysBetween, fmtDate, isNonWorkday, holidayName } from '$lib/gantt/calendar';
+  import { parseDate, addDays, daysBetween, fmtDate, isNonWorkdayFull, holidayName } from '$lib/gantt/calendar';
 
   type GTask = {
     id: string;
@@ -169,7 +169,7 @@
     const end = parseDate(range.end);
     const cur = new Date(start);
     while (cur <= end) {
-      if (isNonWorkday(cur)) {
+      if (isNonWorkdayFull(cur)) {
         const left = daysBetween(range.start, fmtDate(cur)) * dayWidth();
         out.push({ left, width: dayWidth(), holiday: holidayName(cur) });
       }
