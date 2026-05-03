@@ -44,6 +44,7 @@
     multiSelected?: Set<string>;
     onMultiSelect?: (ids: Set<string>) => void;
     backgrounds?: { id: string; label: string; color: string; startDate: string; endDate: string }[];
+    bookmarks?: { id: string; type: string; date: string | null; color: string; label: string | null }[];
   };
   let {
     tasks,
@@ -61,7 +62,8 @@
     highlightedTaskId = null,
     multiSelected = new Set<string>(),
     onMultiSelect,
-    backgrounds = []
+    backgrounds = [],
+    bookmarks = []
   }: Props = $props();
 
   /* Transitive connected set from highlightedTaskId */
@@ -560,6 +562,12 @@
           <span class="gantt-today-label">Heute</span>
         </div>
       {/if}
+      {#each bookmarks.filter(b => b.type === 'date' && b.date) as bm (bm.id)}
+        {@const bmLeft = daysBetween(range.start, bm.date!) * dayWidth()}
+        <div class="gantt-bookmark-line" style={`left:${bmLeft}px;border-color:${bm.color}`}>
+          {#if bm.label}<span class="gantt-bookmark-label" style={`background:${bm.color}`}>{bm.label}</span>{/if}
+        </div>
+      {/each}
       {#if projectEndPos}
         <div class="gantt-project-end-line" style={`left:${projectEndPos.px}px`}>
           <span class="gantt-project-end-label">Projektende</span>
@@ -943,6 +951,16 @@
     position: absolute; top: 30px; bottom: 0; width: 2px;
     background: var(--red); z-index: 8; pointer-events: none;
     box-shadow: 0 0 0 1px rgba(227, 6, 19, .2);
+  }
+  .gantt-bookmark-line {
+    position: absolute; top: 30px; bottom: 0; width: 0;
+    border-left: 2px solid; z-index: 7; pointer-events: none;
+  }
+  .gantt-bookmark-label {
+    position: absolute; left: -1px; top: 0;
+    color: #fff; font-family: var(--mono); font-size: 9px; font-weight: 700;
+    padding: 1px 5px; border-radius: 0 4px 4px 0;
+    text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
   }
   .gantt-project-end-line {
     position: absolute; top: 30px; bottom: 0; width: 2px;

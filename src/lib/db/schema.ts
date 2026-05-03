@@ -447,6 +447,20 @@ export const defectTemplates = pgTable('defect_templates', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+/* ----- Gantt Bookmarks (Lesezeichen) ----- */
+
+export const ganttBookmarks = pgTable('gantt_bookmarks', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  type: text('type', { enum: ['row', 'date'] }).notNull(),
+  taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'cascade' }),
+  date: date('date'),
+  color: text('color').notNull().default('#E30613'),
+  label: text('label'),
+  createdBy: uuid('created_by').references(() => profiles.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 /* ----- Gantt Background Regions (Bauphasen) ----- */
 
 export const ganttBackgrounds = pgTable('gantt_backgrounds', {
