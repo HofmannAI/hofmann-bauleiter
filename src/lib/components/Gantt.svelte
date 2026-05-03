@@ -468,15 +468,19 @@
   /** Pfad-Generator: rechteckige Polylinie zwischen zwei Punkten,
    * ähnlich MS-Project: vom predecessor-Edge nach rechts/links,
    * dann vertikal, dann zur successor-Bar. */
+  let diagonalDeps = $state(false);
+
   function depPath(d: Dependency): string | null {
     const pred = barEdges(d.predecessorId);
     const succ = barEdges(d.successorId);
     if (!pred || !succ) return null;
     const fromX = d.type === 'SS' || d.type === 'SF' ? pred.x1 : pred.x2;
     const toX = d.type === 'FF' || d.type === 'SF' ? succ.x2 : succ.x1;
+    if (diagonalDeps) {
+      return `M ${fromX} ${pred.y} L ${toX} ${succ.y}`;
+    }
     const fromDir = d.type === 'SS' || d.type === 'SF' ? -1 : 1;
     const toDir = d.type === 'FF' || d.type === 'SF' ? 1 : -1;
-    // Fahre 8px in fromDir, dann vertikal, dann 8px gegen toDir
     const stub = 10;
     const elbow1 = fromX + fromDir * stub;
     const elbow2 = toX + toDir * stub;
@@ -498,6 +502,9 @@
     <button class="gantt-zoom-btn" class:active={zoom === 'month'} onclick={() => (zoom = 'month')}>Monat</button>
   </div>
   <div class="gantt-toolbar-spacer"></div>
+  <button class="gantt-zoom-btn" class:active={diagonalDeps} onclick={() => (diagonalDeps = !diagonalDeps)} title="Verknüpfungslinien: orthogonal/diagonal">
+    {diagonalDeps ? '╲' : '┘'}
+  </button>
   {#if pinnedIds.size > 0}
     <button class="gantt-zoom-btn" onclick={() => (pinnedIds = new Set())}>📌 {pinnedIds.size} entpinnen</button>
   {/if}
