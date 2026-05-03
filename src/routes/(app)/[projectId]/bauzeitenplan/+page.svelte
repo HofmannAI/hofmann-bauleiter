@@ -317,6 +317,10 @@
       </div>
     </div>
   {:else}
+    <div class="print-header">
+      <h1>{parent.project.name} — Bauzeitenplan</h1>
+      <p>Stand: {new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+    </div>
     <div class="gantt-extras">
       <button class="filter-pill" class:active={lookahead === 0} onclick={() => { lookahead = 0; syncUrl(); }}>
         Vollplan
@@ -334,6 +338,9 @@
       </button>
       <button class="filter-pill" onclick={() => openCreateSheet(fmtDate(new Date()))}>
         + Termin
+      </button>
+      <button class="filter-pill" onclick={() => window.print()}>
+        PDF
       </button>
       <span class="extras-spacer"></span>
       {#if parent.gewerke.length > 0}
@@ -652,6 +659,22 @@
   .diff-dates { font-family: var(--mono); font-size: 11px; color: var(--ink-2); flex-shrink: 0; }
   .multi-select-bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--blue-soft, rgba(59, 108, 196, .08)); border-bottom: 1px solid var(--blue, #3B6CC4); font-size: 13px; }
   .multi-select-bar b { font-family: var(--mono); }
+
+  .print-header { display: none; }
+  /* Print/PDF styles */
+  @media print {
+    .print-header { display: block !important; padding: 0 0 8px; border-bottom: 2px solid #000; margin-bottom: 8px; }
+    .print-header h1 { font-family: var(--display); font-size: 18px; font-weight: 800; margin: 0; }
+    .print-header p { font-family: var(--mono); font-size: 11px; color: #666; margin: 2px 0 0; }
+    :global(.topbar), :global(.tabbar), :global(.sheet), :global(.scrim),
+    :global(.dialog), :global(.dep-mode-banner), :global(.toast-container) { display: none !important; }
+    .gantt-extras { display: none !important; }
+    .multi-select-bar { display: none !important; }
+    .gantt-page { padding: 0 !important; margin: 0 !important; }
+    .gantt-legend { page-break-inside: avoid; }
+  }
+  @page { size: A3 landscape; margin: 10mm; }
+
   .gantt-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 14px; background: var(--paper-tint); border-top: 1px solid var(--line); font-size: 11px; }
   .gantt-legend-title { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-size: 10px; margin-right: 4px; }
   .gantt-legend-item { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); }
