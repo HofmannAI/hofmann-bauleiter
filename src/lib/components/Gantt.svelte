@@ -374,6 +374,8 @@
   }>(null);
   let depMode = $state<{ id: string; handle: DepHandle } | null>(null); // Touch-Mode
 
+  const AXIS_HEIGHT = 60; // Height of the gantt-axis header
+
   function onHandlePointerDown(e: PointerEvent, taskId: string, handle: DepHandle) {
     e.stopPropagation();
     if (!onDepCreate) return;
@@ -381,14 +383,15 @@
     const wrap = (e.currentTarget as HTMLElement).closest('.gantt-timeline');
     if (!wrap) return;
     const rect = wrap.getBoundingClientRect();
+    // Subtract AXIS_HEIGHT because the SVG overlay starts at top:60px
     depDrag = {
       predecessorId: taskId,
       predHandle: handle,
       pointerId: e.pointerId,
       cursorX: e.clientX - rect.left,
-      cursorY: e.clientY - rect.top,
+      cursorY: e.clientY - rect.top - AXIS_HEIGHT,
       startX: e.clientX - rect.left,
-      startY: e.clientY - rect.top
+      startY: e.clientY - rect.top - AXIS_HEIGHT
     };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
@@ -397,7 +400,7 @@
     const wrap = (e.currentTarget as HTMLElement).closest('.gantt-timeline');
     if (!wrap) return;
     const rect = wrap.getBoundingClientRect();
-    depDrag = { ...depDrag, cursorX: e.clientX - rect.left, cursorY: e.clientY - rect.top };
+    depDrag = { ...depDrag, cursorX: e.clientX - rect.left, cursorY: e.clientY - rect.top - AXIS_HEIGHT };
   }
   function onHandlePointerUp(e: PointerEvent) {
     if (!depDrag || depDrag.pointerId !== e.pointerId) return;
@@ -474,7 +477,7 @@
   /** Pfad-Generator: rechteckige Polylinie zwischen zwei Punkten,
    * ähnlich MS-Project: vom predecessor-Edge nach rechts/links,
    * dann vertikal, dann zur successor-Bar. */
-  let diagonalDeps = $state(true); // Default: diagonal (natürlicher)
+  let diagonalDeps = $state(false); // Default: orthogonal (rechtwinklig)
 
   function depPath(d: Dependency): string | null {
     const pred = barEdges(d.predecessorId);
