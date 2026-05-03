@@ -169,6 +169,7 @@ export const tasks = pgTable('tasks', {
   actualStartDate: date('actual_start_date'),
   actualEndDate: date('actual_end_date'),
   segments: jsonb('segments'),
+  reminderDate: date('reminder_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });

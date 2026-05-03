@@ -14,6 +14,7 @@
     sortOrder: number;
     progressPct?: number;
     segments?: Segment[] | null;
+    reminderDate?: string | null;
   };
 
   type TaskDefectCount = { taskId: string | null; total: number; open: number };
