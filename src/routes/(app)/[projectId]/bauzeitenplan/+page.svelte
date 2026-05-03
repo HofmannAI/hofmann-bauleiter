@@ -445,6 +445,7 @@
       highlightedTaskId={selected}
       multiSelected={multiSelected}
       onMultiSelect={(ids) => (multiSelected = ids)}
+      backgrounds={parent.backgrounds ?? []}
     />
     {#if parent.gewerke.length > 0}
       <div class="gantt-legend">

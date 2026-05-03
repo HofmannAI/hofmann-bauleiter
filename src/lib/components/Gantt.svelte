@@ -41,6 +41,7 @@
     highlightedTaskId?: string | null;
     multiSelected?: Set<string>;
     onMultiSelect?: (ids: Set<string>) => void;
+    backgrounds?: { id: string; label: string; color: string; startDate: string; endDate: string }[];
   };
   let {
     tasks,
@@ -57,7 +58,8 @@
     floatMap = new Map<string, number>(),
     highlightedTaskId = null,
     multiSelected = new Set<string>(),
-    onMultiSelect
+    onMultiSelect,
+    backgrounds = []
   }: Props = $props();
 
   /* Transitive connected set from highlightedTaskId */
@@ -524,6 +526,13 @@
       {#each nonWorkdays() as w}
         <div class="gantt-weekend" class:holiday={!!w.holiday} style={`left:${w.left}px;width:${w.width}px`} title={w.holiday ?? ''}></div>
       {/each}
+      {#each backgrounds as bg (bg.id)}
+        {@const left = offsetPx(bg.startDate)}
+        {@const width = Math.max(dayWidth(), (daysBetween(bg.startDate, bg.endDate) + 1) * dayWidth())}
+        <div class="gantt-bg-region" style={`left:${left}px;width:${width}px;background:${bg.color}20`}>
+          <span class="gantt-bg-label" style={`color:${bg.color}`}>{bg.label}</span>
+        </div>
+      {/each}
       {#if todayPos() !== null}
         <div class="gantt-today-line" style={`left:${todayPos()}px`}>
           <span class="gantt-today-pulse"></span>
@@ -872,6 +881,19 @@
     );
     pointer-events: none;
     z-index: 1;
+  }
+  .gantt-bg-region {
+    position: absolute; top: 60px; bottom: 0;
+    pointer-events: none; z-index: 0;
+    border-left: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    opacity: 0.6;
+  }
+  .gantt-bg-label {
+    position: absolute; top: 2px; left: 4px;
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap; pointer-events: none;
   }
   .gantt-weekend.holiday {
     background: repeating-linear-gradient(
