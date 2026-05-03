@@ -28,8 +28,9 @@
   // ---- Filters: gewerk + house (multi-select) — persist in URL ----
   let gewerkFilter = $state<Set<string>>(new Set());
   let houseFilter = $state<Set<string>>(new Set());
-  let lookahead = $state<0 | 3 | 4 | 6>(4); // Default: 4-Wochen-Lookahead
-  let showOverdueOnly = $state(false);
+  type ViewMode = 'next' | 'full';
+  let viewMode = $state<ViewMode>('next'); // Default: Next-Ansicht
+  let lookahead = $derived<0 | 3 | 4 | 6>(viewMode === 'next' ? 4 : 0);
 
   // Hydrate from URL once on mount
   $effect(() => {
@@ -37,11 +38,9 @@
     const sp = new URLSearchParams(window.location.search);
     const g = sp.get('gewerke');
     const h = sp.get('haus');
-    const la = sp.get('la');
     if (g) gewerkFilter = new Set(g.split(','));
     if (h) houseFilter = new Set(h.split(','));
-    if (la === '0' || la === '3' || la === '4' || la === '6') lookahead = Number(la) as 0 | 3 | 4 | 6;
-    if (sp.get('overdue') === '1') showOverdueOnly = true;
+    if (sp.get('view') === 'full') viewMode = 'full';
   });
 
   // Persist back to URL
@@ -52,8 +51,8 @@
     else sp.delete('gewerke');
     if (houseFilter.size) sp.set('haus', [...houseFilter].join(','));
     else sp.delete('haus');
-    if (lookahead) sp.set('la', String(lookahead));
-    else sp.delete('la');
+    if (viewMode === 'full') sp.set('view', 'full');
+    else sp.delete('view');
     const next = sp.toString();
     const url = next ? `?${next}` : page.url.pathname;
     history.replaceState({}, '', url);
@@ -78,22 +77,40 @@
     syncUrl();
   });
 
-  // tasks gefiltert (hierarchy bleibt: Eltern bleiben sichtbar wenn ein Kind matcht)
+  // tasks gefiltert
   let visibleTasks = $derived.by(() => {
-    const today = fmtDate(new Date());
-    const hasFilter = gewerkFilter.size > 0 || houseFilter.size > 0 || showOverdueOnly;
-    if (!hasFilter) return parent.tasks;
+    const today = new Date();
+    const todayStr = fmtDate(today);
+    const byId = new Map(parent.tasks.map((t) => [t.id, t]));
+    const isParent = new Set(parent.tasks.filter(t => t.parentId).map(t => t.parentId!));
 
-    const houseNames = parent.houses.filter((h) => houseFilter.has(h.id)).map((h) => h.name.toLowerCase());
+    // Step 1: filter leaf tasks
     const matches = new Set<string>();
     for (const t of parent.tasks) {
+      if (isParent.has(t.id)) continue; // parents checked later
+
+      // Gewerk/House filter
+      const houseNames = parent.houses.filter((h) => houseFilter.has(h.id)).map((h) => h.name.toLowerCase());
       const gewerkOk = gewerkFilter.size === 0 || (t.gewerkId != null && gewerkFilter.has(t.gewerkId));
       const houseOk = houseFilter.size === 0 || houseNames.some((hn) => t.name.toLowerCase().includes(hn));
-      const overdueOk = !showOverdueOnly || (t.endDate < today && (t.progressPct ?? 0) < 100);
-      if (gewerkOk && houseOk && overdueOk) matches.add(t.id);
+      if (!gewerkOk || !houseOk) continue;
+
+      // Next-Mode: only tasks that overlap with [-2 weeks, +3 weeks] window
+      if (viewMode === 'next') {
+        const windowStart = new Date(today);
+        windowStart.setDate(windowStart.getDate() - 14);
+        const windowEnd = new Date(today);
+        windowEnd.setDate(windowEnd.getDate() + 21);
+        const wStart = fmtDate(windowStart);
+        const wEnd = fmtDate(windowEnd);
+        // Task overlaps window if task.start <= windowEnd AND task.end >= windowStart
+        if (t.startDate > wEnd || t.endDate < wStart) continue;
+      }
+
+      matches.add(t.id);
     }
-    // Add ancestors of every match
-    const byId = new Map(parent.tasks.map((t) => [t.id, t]));
+
+    // Step 2: add parents ONLY if they have at least one visible child
     for (const id of [...matches]) {
       let p = byId.get(id)?.parentId ?? null;
       while (p) {
@@ -101,6 +118,7 @@
         p = byId.get(p)?.parentId ?? null;
       }
     }
+
     return parent.tasks.filter((t) => matches.has(t.id));
   });
 
@@ -322,17 +340,14 @@
       <p>Stand: {new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
     </div>
     <div class="gantt-extras">
-      <button class="filter-pill" class:active={lookahead === 0} onclick={() => { lookahead = 0; syncUrl(); }}>
-        Vollplan
-      </button>
-      {#each [3, 4, 6] as const as wks}
-        <button class="filter-pill" class:active={lookahead === wks} onclick={() => { lookahead = wks; syncUrl(); }}>
-          {wks}W
+      <div class="gantt-toolbar-group" style="margin-right:6px">
+        <button class="gantt-zoom-btn" class:active={viewMode === 'next'} onclick={() => { viewMode = 'next'; syncUrl(); }}>
+          Next
         </button>
-      {/each}
-      <button class="filter-pill" class:active={showOverdueOnly} onclick={() => (showOverdueOnly = !showOverdueOnly)} style={showOverdueOnly ? 'background:var(--red);color:#fff;border-color:var(--red)' : ''}>
-        Überfällige
-      </button>
+        <button class="gantt-zoom-btn" class:active={viewMode === 'full'} onclick={() => { viewMode = 'full'; syncUrl(); }}>
+          Vollplan
+        </button>
+      </div>
       <button class="filter-pill" class:active={showCritical} onclick={() => (showCritical = !showCritical)}>
         Kritisch {#if showCritical}<span class="badge">{cpIds.size}</span>{/if}
       </button>
@@ -342,11 +357,10 @@
           {#each parent.savedViews ?? [] as v (v.id)}
             <button class="dropdown-item" onclick={async () => {
               try {
-                const f = v.filterJson as { gewerke?: string[]; haus?: string[]; la?: number; overdue?: boolean; critical?: boolean };
+                const f = v.filterJson as { gewerke?: string[]; haus?: string[]; view?: string; critical?: boolean };
                 if (f.gewerke) gewerkFilter = new Set(f.gewerke);
                 if (f.haus) houseFilter = new Set(f.haus);
-                if (f.la !== undefined) lookahead = f.la as 0|3|4|6;
-                if (f.overdue) showOverdueOnly = f.overdue;
+                if (f.view === 'full') viewMode = 'full'; else viewMode = 'next';
                 if (f.critical) showCritical = f.critical;
                 syncUrl();
                 toast(`Ansicht "${v.name}" geladen.`);
@@ -359,8 +373,7 @@
             const filterJson = JSON.stringify({
               gewerke: [...gewerkFilter],
               haus: [...houseFilter],
-              la: lookahead,
-              overdue: showOverdueOnly,
+              view: viewMode,
               critical: showCritical
             });
             const fd = new FormData();
