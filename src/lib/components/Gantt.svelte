@@ -46,6 +46,7 @@
     onMultiSelect?: (ids: Set<string>) => void;
     backgrounds?: { id: string; label: string; color: string; startDate: string; endDate: string }[];
     bookmarks?: { id: string; type: string; date: string | null; color: string; label: string | null }[];
+    infoboxes?: { id: string; title: string | null; body: string; color: string; date: string; rowIndex: number }[];
   };
   let {
     tasks,
@@ -64,7 +65,8 @@
     multiSelected = new Set<string>(),
     onMultiSelect,
     backgrounds = [],
-    bookmarks = []
+    bookmarks = [],
+    infoboxes = []
   }: Props = $props();
 
   /* Transitive connected set from highlightedTaskId */
@@ -771,6 +773,13 @@
         {/each}
       </div>
 
+      {#each infoboxes as ib (ib.id)}
+        <div class="gantt-infobox" style={`left:${offsetPx(ib.date)}px;top:${60 + ib.rowIndex * 32}px;background:${ib.color}`}>
+          {#if ib.title}<div class="gantt-infobox-title">{ib.title}</div>{/if}
+          <div class="gantt-infobox-body">{ib.body}</div>
+        </div>
+      {/each}
+
       {#if dependencies.length > 0 || depDrag}
         <svg class="gantt-deps" width="100%" height="100%" preserveAspectRatio="none">
           <defs>
@@ -1192,6 +1201,16 @@
   .gantt-bar-tooltip .tooltip-name { font-family: var(--display); font-weight: 700; font-size: 12px; }
   .gantt-bar-tooltip .tooltip-meta { font-family: var(--mono); font-size: 10px; opacity: 0.8; }
   .gantt-bar:hover .gantt-bar-tooltip { opacity: 1; transform: translateX(-50%) scale(1); }
+  .gantt-infobox {
+    position: absolute; z-index: 10;
+    min-width: 80px; max-width: 200px;
+    padding: 4px 8px; border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, .1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+    font-size: 11px; pointer-events: auto;
+  }
+  .gantt-infobox-title { font-weight: 700; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
+  .gantt-infobox-body { line-height: 1.3; white-space: pre-wrap; word-break: break-word; }
   .gantt-segment-gap {
     position: absolute; top: 0; bottom: 0;
     background: var(--paper); z-index: 1;

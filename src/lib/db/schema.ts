@@ -448,6 +448,21 @@ export const defectTemplates = pgTable('defect_templates', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+/* ----- Gantt Infoboxes (frei platzierbare Textboxen) ----- */
+
+export const ganttInfoboxes = pgTable('gantt_infoboxes', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+  title: text('title'),
+  body: text('body').notNull(),
+  color: text('color').notNull().default('#FFF9C4'),
+  date: date('date').notNull(),
+  rowIndex: integer('row_index').default(0).notNull(),
+  createdBy: uuid('created_by').references(() => profiles.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 /* ----- Gantt Bookmarks (Lesezeichen) ----- */
 
 export const ganttBookmarks = pgTable('gantt_bookmarks', {
