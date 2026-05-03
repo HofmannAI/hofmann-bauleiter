@@ -129,21 +129,29 @@
   --d-std:   220ms;
   --d-page:  400ms;
 
-  /* Glass surfaces */
-  --glass-light:  rgba(255, 255, 255, 0.72);
-  --glass-frost:  rgba(255, 255, 255, 0.55);
+  /* Glass surfaces (Liquid Construction System) */
+  --glass-card:   rgba(255, 255, 255, 0.70);
+  --glass-modal:  rgba(255, 255, 255, 0.80);
+  --glass-nav:    rgba(255, 255, 255, 0.72);
   --glass-dark:   rgba(15, 15, 16, 0.72);
-  --blur-std:     saturate(180%) blur(20px);
-  --blur-strong:  saturate(180%) blur(28px);
+  --blur-card:    saturate(180%) blur(20px);
+  --blur-modal:   saturate(180%) blur(30px);
+  --blur-nav:     saturate(180%) blur(20px);
 
-  /* Depth layers (use on bg) */
-  --layer-0: var(--bg);          /* page */
-  --layer-1: var(--paper);       /* card */
-  --layer-2: var(--paper-tint);  /* card-section */
-  --layer-3: rgba(15, 15, 16, 0.04); /* input wells */
+  /* Legacy glass aliases */
+  --glass-light:  var(--glass-nav);
+  --glass-frost:  rgba(255, 255, 255, 0.55);
+  --blur-std:     var(--blur-card);
+  --blur-strong:  var(--blur-modal);
+
+  /* Depth layers */
+  --layer-0: var(--background);
+  --layer-1: var(--surface-container-lowest);
+  --layer-2: var(--surface-container-low);
+  --layer-3: var(--surface-container);
 
   /* Status accent tints (subtle) */
-  --tint-red:   rgba(227, 6, 19, 0.06);
+  --tint-red:   rgba(226, 22, 42, 0.06);
   --tint-amber: rgba(201, 119, 0, 0.06);
   --tint-green: rgba(46, 125, 50, 0.06);
 
@@ -164,6 +172,63 @@
     animation-iteration-count: 1 !important;
     transition-duration: var(--d-fast) !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   Glass Surface Utilities — Liquid Construction System
+   Three elevation levels: card < modal < nav
+   ============================================================ */
+@layer components {
+  /* Surface Layer — Cards (12px radius, 20px blur, white/70, 0.5px white/50 border) */
+  .surface-card {
+    background: var(--glass-card);
+    -webkit-backdrop-filter: var(--blur-card);
+    backdrop-filter: var(--blur-card);
+    border-radius: var(--r-md);
+    border: 0.5px solid rgba(255, 255, 255, 0.50);
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .surface-card {
+      background: var(--surface-container-lowest);
+    }
+  }
+
+  /* Floating Layer — Modals/Action Sheets (16-20px radius, 30px blur, soft shadow) */
+  .surface-modal {
+    background: var(--glass-modal);
+    -webkit-backdrop-filter: var(--blur-modal);
+    backdrop-filter: var(--blur-modal);
+    border-radius: var(--r-lg);
+    border: 0.5px solid rgba(255, 255, 255, 0.50);
+    box-shadow: var(--shadow-float);
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .surface-modal {
+      background: var(--surface-container-lowest);
+      box-shadow: var(--shadow-3);
+    }
+  }
+
+  /* Navigation Layer — Top/Bottom bars (SystemUltraThin equivalent) */
+  .surface-nav {
+    background: var(--glass-nav);
+    -webkit-backdrop-filter: var(--blur-nav);
+    backdrop-filter: var(--blur-nav);
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .surface-nav {
+      background: var(--surface-container-low);
+    }
+  }
+
+  /* Compact density variant — reduced padding for data-heavy views */
+  .density-compact {
+    --stack-sm: 2px;
+    --stack-md: 4px;
+    --stack-lg: 8px;
+    --stack-xl: 12px;
+    --gutter: 8px;
   }
 }
 
