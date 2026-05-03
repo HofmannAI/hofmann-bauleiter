@@ -18,7 +18,8 @@
   // ---- Filters: gewerk + house (multi-select) — persist in URL ----
   let gewerkFilter = $state<Set<string>>(new Set());
   let houseFilter = $state<Set<string>>(new Set());
-  let lookahead = $state<0 | 3 | 4 | 6>(0);
+  let lookahead = $state<0 | 3 | 4 | 6>(4); // Default: 4-Wochen-Lookahead
+  let showOverdueOnly = $state(false);
 
   // Hydrate from URL once on mount
   $effect(() => {
@@ -29,7 +30,8 @@
     const la = sp.get('la');
     if (g) gewerkFilter = new Set(g.split(','));
     if (h) houseFilter = new Set(h.split(','));
-    if (la === '3' || la === '4' || la === '6') lookahead = Number(la) as 3 | 4 | 6;
+    if (la === '0' || la === '3' || la === '4' || la === '6') lookahead = Number(la) as 0 | 3 | 4 | 6;
+    if (sp.get('overdue') === '1') showOverdueOnly = true;
   });
 
   // Persist back to URL
@@ -68,14 +70,17 @@
 
   // tasks gefiltert (hierarchy bleibt: Eltern bleiben sichtbar wenn ein Kind matcht)
   let visibleTasks = $derived.by(() => {
-    if (gewerkFilter.size === 0 && houseFilter.size === 0) return parent.tasks;
-    // Determine matching by gewerk + house-name heuristic in task name
+    const today = fmtDate(new Date());
+    const hasFilter = gewerkFilter.size > 0 || houseFilter.size > 0 || showOverdueOnly;
+    if (!hasFilter) return parent.tasks;
+
     const houseNames = parent.houses.filter((h) => houseFilter.has(h.id)).map((h) => h.name.toLowerCase());
     const matches = new Set<string>();
     for (const t of parent.tasks) {
       const gewerkOk = gewerkFilter.size === 0 || (t.gewerkId != null && gewerkFilter.has(t.gewerkId));
       const houseOk = houseFilter.size === 0 || houseNames.some((hn) => t.name.toLowerCase().includes(hn));
-      if (gewerkOk && houseOk) matches.add(t.id);
+      const overdueOk = !showOverdueOnly || (t.endDate < today && (t.progressPct ?? 0) < 100);
+      if (gewerkOk && houseOk && overdueOk) matches.add(t.id);
     }
     // Add ancestors of every match
     const byId = new Map(parent.tasks.map((t) => [t.id, t]));
@@ -303,14 +308,20 @@
     </div>
   {:else}
     <div class="gantt-extras">
-      <button class="filter-pill" class:active={showCritical} onclick={() => (showCritical = !showCritical)}>
-        Kritischer Pfad {#if showCritical}<span class="badge">{cpIds.size}</span>{/if}
+      <button class="filter-pill" class:active={lookahead === 0} onclick={() => { lookahead = 0; syncUrl(); }}>
+        Vollplan
       </button>
       {#each [3, 4, 6] as const as wks}
-        <button class="filter-pill" class:active={lookahead === wks} onclick={() => (lookahead = lookahead === wks ? 0 : wks)}>
-          Lookahead {wks}W
+        <button class="filter-pill" class:active={lookahead === wks} onclick={() => { lookahead = wks; syncUrl(); }}>
+          {wks}W
         </button>
       {/each}
+      <button class="filter-pill" class:active={showOverdueOnly} onclick={() => (showOverdueOnly = !showOverdueOnly)} style={showOverdueOnly ? 'background:var(--red);color:#fff;border-color:var(--red)' : ''}>
+        Überfällige
+      </button>
+      <button class="filter-pill" class:active={showCritical} onclick={() => (showCritical = !showCritical)}>
+        Kritisch {#if showCritical}<span class="badge">{cpIds.size}</span>{/if}
+      </button>
       <button class="filter-pill" onclick={() => openCreateSheet(fmtDate(new Date()))}>
         + Termin
       </button>
