@@ -105,6 +105,13 @@
 
   let zoom = $state<'day' | 'week' | 'month'>('week');
   let collapsed = $state<Record<string, boolean>>({});
+  let pinnedIds = $state<Set<string>>(new Set());
+
+  function togglePin(id: string) {
+    const next = new Set(pinnedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    pinnedIds = next;
+  }
 
   function dayWidth(): number {
     return zoom === 'day' ? 28 : zoom === 'week' ? 12 : 4;
@@ -154,7 +161,13 @@
     return false;
   }
 
-  let visible = $derived(tasks.filter((t) => !isHidden(t)));
+  let visible = $derived.by(() => {
+    const base = tasks.filter((t) => !isHidden(t));
+    if (pinnedIds.size === 0) return base;
+    const pinned = base.filter((t) => pinnedIds.has(t.id));
+    const rest = base.filter((t) => !pinnedIds.has(t.id));
+    return [...pinned, ...rest];
+  });
 
   function offsetPx(date: string): number {
     return daysBetween(range.start, date) * dayWidth();
@@ -480,6 +493,9 @@
     <button class="gantt-zoom-btn" class:active={zoom === 'month'} onclick={() => (zoom = 'month')}>Monat</button>
   </div>
   <div class="gantt-toolbar-spacer"></div>
+  {#if pinnedIds.size > 0}
+    <button class="gantt-zoom-btn" onclick={() => (pinnedIds = new Set())}>📌 {pinnedIds.size} entpinnen</button>
+  {/if}
   <span class="gantt-info"><b>{tasks.length}</b> Termine</span>
 </div>
 
@@ -507,6 +523,9 @@
         {/if}
         <span class="gantt-list-num">{t.num ?? ''}</span>
         <span class="gantt-list-name">{t.name}</span>
+        <span class="gantt-pin-btn" class:pinned={pinnedIds.has(t.id)} onclick={(e) => { e.stopPropagation(); togglePin(t.id); }} onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); togglePin(t.id); } }} role="button" tabindex="-1" aria-label={pinnedIds.has(t.id) ? 'Entpinnen' : 'Pinnen'}>
+          {pinnedIds.has(t.id) ? '📌' : ''}
+        </span>
         {#if !isParentMap.has(t.id) && t.startDate !== t.endDate && t.endDate < fmtDate(new Date()) && (t.progressPct ?? 0) < 100}
           <span class="gantt-status-dot red"></span>
         {:else if !isParentMap.has(t.id) && (t.progressPct ?? 0) >= 100}
@@ -847,6 +866,10 @@
     flex-shrink: 0; min-width: 38px; letter-spacing: -.02em;
   }
   .gantt-list-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gantt-pin-btn { width: 18px; height: 18px; flex-shrink: 0; font-size: 10px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; cursor: pointer; opacity: 0; transition: opacity .12s; padding: 0; }
+  .gantt-row-list:hover .gantt-pin-btn { opacity: 0.4; }
+  .gantt-pin-btn.pinned { opacity: 1; }
+  .gantt-pin-btn:hover { opacity: 1; }
   .gantt-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: transparent; margin-left: 4px; }
   .gantt-status-dot.red { background: var(--red); }
   .gantt-status-dot.green { background: var(--green); }
