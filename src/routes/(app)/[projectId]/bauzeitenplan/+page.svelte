@@ -437,6 +437,25 @@
       multiSelected={multiSelected}
       onMultiSelect={(ids) => (multiSelected = ids)}
     />
+    {#if parent.gewerke.length > 0}
+      <div class="gantt-legend">
+        <span class="gantt-legend-title">Legende</span>
+        {#each parent.gewerke as g (g.id)}
+          <span class="gantt-legend-item">
+            <span class="gantt-legend-dot" style={`background:${g.color}`}></span>
+            <span>{g.name}</span>
+          </span>
+        {/each}
+        <span class="gantt-legend-item">
+          <span class="gantt-legend-dot" style="background:var(--red)">◆</span>
+          <span>Meilenstein</span>
+        </span>
+        <span class="gantt-legend-item">
+          <span class="gantt-legend-dot" style="background:transparent;border:2px dashed var(--ink-2)"></span>
+          <span>Projektende</span>
+        </span>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -623,4 +642,8 @@
   .diff-dates { font-family: var(--mono); font-size: 11px; color: var(--ink-2); flex-shrink: 0; }
   .multi-select-bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--blue-soft, rgba(59, 108, 196, .08)); border-bottom: 1px solid var(--blue, #3B6CC4); font-size: 13px; }
   .multi-select-bar b { font-family: var(--mono); }
+  .gantt-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 14px; background: var(--paper-tint); border-top: 1px solid var(--line); font-size: 11px; }
+  .gantt-legend-title { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-size: 10px; margin-right: 4px; }
+  .gantt-legend-item { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); }
+  .gantt-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; color: #fff; }
 </style>
