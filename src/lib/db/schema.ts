@@ -446,6 +446,20 @@ export const defectTemplates = pgTable('defect_templates', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+/* ----- Gantt Background Regions (Bauphasen) ----- */
+
+export const ganttBackgrounds = pgTable('gantt_backgrounds', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(),
+  color: text('color').notNull().default('#E3F2FD'),
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date').notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdBy: uuid('created_by').references(() => profiles.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 /* ----- Calendar Exceptions (Betriebsferien, Sperrungen) ----- */
 
 export const calendarExceptions = pgTable('calendar_exceptions', {

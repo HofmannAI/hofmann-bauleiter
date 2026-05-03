@@ -2,7 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity, defects, calendarExceptions } from '$lib/db/schema';
+import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity, defects, calendarExceptions, ganttBackgrounds } from '$lib/db/schema';
 import { eq, and, asc, desc, or, sql } from 'drizzle-orm';
 import { loadGaisbachSample } from '$lib/db/projectQueries';
 import { getProjectTasksAndDeps, applyTaskUpdates } from '$lib/db/taskQueries';
@@ -47,12 +47,17 @@ export const load: PageServerLoad = async ({ params }) => {
     baselineLabels.push({ label: r.label, snapshotAt: r.snapshotAt });
   }
 
-  const calExceptions = await db
-    .select({ date: calendarExceptions.date, type: calendarExceptions.type, label: calendarExceptions.label })
-    .from(calendarExceptions)
-    .where(eq(calendarExceptions.projectId, params.projectId));
+  const [calExceptions, backgrounds] = await Promise.all([
+    db.select({ date: calendarExceptions.date, type: calendarExceptions.type, label: calendarExceptions.label })
+      .from(calendarExceptions)
+      .where(eq(calendarExceptions.projectId, params.projectId)),
+    db.select({ id: ganttBackgrounds.id, label: ganttBackgrounds.label, color: ganttBackgrounds.color, startDate: ganttBackgrounds.startDate, endDate: ganttBackgrounds.endDate })
+      .from(ganttBackgrounds)
+      .where(eq(ganttBackgrounds.projectId, params.projectId))
+      .orderBy(asc(ganttBackgrounds.sortOrder))
+  ]);
 
-  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels, taskDefectCounts, calExceptions };
+  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels, taskDefectCounts, calExceptions, backgrounds };
 };
 
 const moveSchema = z.object({
