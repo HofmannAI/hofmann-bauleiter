@@ -123,6 +123,28 @@ export function holidayName(d: Date): string | null {
   return null;
 }
 
+/* ===== Project-level exceptions (set from server data) ===== */
+let projectHolidays = new Set<string>(); // extra non-work days
+let projectWorkdays = new Set<string>(); // force-work days (e.g. Saturday)
+
+export function setProjectExceptions(holidays: string[], workdays: string[]) {
+  projectHolidays = new Set(holidays);
+  projectWorkdays = new Set(workdays);
+}
+
+export function clearProjectExceptions() {
+  projectHolidays = new Set();
+  projectWorkdays = new Set();
+}
+
+/** Full non-workday check: weekend OR holiday OR project-holiday, MINUS project-workday overrides. */
+export function isNonWorkdayFull(d: Date): boolean {
+  const iso = fmtDate(d);
+  if (projectWorkdays.has(iso)) return false; // explicit workday override
+  if (projectHolidays.has(iso)) return true; // project holiday
+  return isNonWorkday(d); // weekend or BW holiday
+}
+
 export function addWorkingDays(start: string, n: number): string {
   if (n === 0) return start;
   const dir = n > 0 ? 1 : -1;
@@ -130,7 +152,7 @@ export function addWorkingDays(start: string, n: number): string {
   const d = parseDate(start);
   while (remaining > 0) {
     d.setDate(d.getDate() + dir);
-    if (!isNonWorkday(d)) remaining--;
+    if (!isNonWorkdayFull(d)) remaining--;
   }
   return fmtDate(d);
 }
@@ -143,7 +165,7 @@ export function workingDaysBetween(a: string, b: string): number {
   const end = parseDate(b);
   while ((dir > 0 && d < end) || (dir < 0 && d > end)) {
     d.setDate(d.getDate() + dir);
-    if (!isNonWorkday(d)) count++;
+    if (!isNonWorkdayFull(d)) count++;
   }
   return count * dir;
 }

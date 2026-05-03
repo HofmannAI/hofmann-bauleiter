@@ -2,7 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity, defects } from '$lib/db/schema';
+import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity, defects, calendarExceptions } from '$lib/db/schema';
 import { eq, and, asc, desc, or, sql } from 'drizzle-orm';
 import { loadGaisbachSample } from '$lib/db/projectQueries';
 import { getProjectTasksAndDeps, applyTaskUpdates } from '$lib/db/taskQueries';
@@ -10,7 +10,7 @@ import { propagate, type EngineTask, type EngineDep } from '$lib/gantt/engine';
 
 export const load: PageServerLoad = async ({ params }) => {
   const { tasks: tRows, deps } = await getProjectTasksAndDeps(params.projectId);
-  if (!db) return { tasks: tRows, deps, gewerke: [], houses: [], baselineLabels: [], taskDefectCounts: [] };
+  if (!db) return { tasks: tRows, deps, gewerke: [], houses: [], baselineLabels: [], taskDefectCounts: [], calExceptions: [] };
 
   const [gewerkeRows, houseRows, taskDefectCounts] = await Promise.all([
     db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)),
@@ -47,7 +47,12 @@ export const load: PageServerLoad = async ({ params }) => {
     baselineLabels.push({ label: r.label, snapshotAt: r.snapshotAt });
   }
 
-  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels, taskDefectCounts };
+  const calExceptions = await db
+    .select({ date: calendarExceptions.date, type: calendarExceptions.type, label: calendarExceptions.label })
+    .from(calendarExceptions)
+    .where(eq(calendarExceptions.projectId, params.projectId));
+
+  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels, taskDefectCounts, calExceptions };
 };
 
 const moveSchema = z.object({
@@ -359,5 +364,49 @@ export const actions: Actions = {
     });
 
     return { ok: true, taskId: row.id };
+  },
+
+  addCalException: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const schema = z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      type: z.enum(['holiday', 'workday']),
+      label: z.string().max(100).optional().or(z.literal(''))
+    });
+    const parsed = schema.safeParse(fd);
+    if (!parsed.success) return fail(400, { error: 'Ungültige Eingabe.' });
+
+    // Upsert: bei Duplikat den Typ aktualisieren
+    const existing = await db
+      .select()
+      .from(calendarExceptions)
+      .where(and(eq(calendarExceptions.projectId, params.projectId), eq(calendarExceptions.date, parsed.data.date)))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db.update(calendarExceptions)
+        .set({ type: parsed.data.type, label: parsed.data.label || null })
+        .where(eq(calendarExceptions.id, existing[0].id));
+    } else {
+      await db.insert(calendarExceptions).values({
+        projectId: params.projectId,
+        date: parsed.data.date,
+        type: parsed.data.type,
+        label: parsed.data.label || null,
+        createdBy: locals.user.id
+      });
+    }
+    return { ok: true };
+  },
+
+  removeCalException: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const date = String(fd.date ?? '');
+    if (!date) return fail(400);
+    await db.delete(calendarExceptions)
+      .where(and(eq(calendarExceptions.projectId, params.projectId), eq(calendarExceptions.date, date)));
+    return { ok: true };
   }
 };

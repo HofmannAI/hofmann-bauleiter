@@ -446,6 +446,18 @@ export const defectTemplates = pgTable('defect_templates', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+/* ----- Calendar Exceptions (Betriebsferien, Sperrungen) ----- */
+
+export const calendarExceptions = pgTable('calendar_exceptions', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  date: date('date').notNull(),
+  type: text('type', { enum: ['holiday', 'workday'] }).notNull(),
+  label: text('label'),
+  createdBy: uuid('created_by').references(() => profiles.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 /* ----- Activity feed ----- */
 
 export const activity = pgTable('activity', {
