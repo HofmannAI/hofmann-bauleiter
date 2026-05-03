@@ -403,6 +403,7 @@
       lookaheadWeeks={lookahead}
       taskDefectCounts={parent.taskDefectCounts}
       floatMap={floatMap}
+      highlightedTaskId={selected}
     />
   {/if}
 </div>

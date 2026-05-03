@@ -38,6 +38,7 @@
     lookaheadWeeks?: 0 | 3 | 4 | 6;
     taskDefectCounts?: TaskDefectCount[];
     floatMap?: Map<string, number>;
+    highlightedTaskId?: string | null;
   };
   let {
     tasks,
@@ -51,8 +52,26 @@
     dependencies = [],
     lookaheadWeeks = 0,
     taskDefectCounts = [],
-    floatMap = new Map<string, number>()
+    floatMap = new Map<string, number>(),
+    highlightedTaskId = null
   }: Props = $props();
+
+  /* Transitive connected set from highlightedTaskId */
+  let connectedIds = $derived.by(() => {
+    if (!highlightedTaskId) return new Set<string>();
+    const connected = new Set<string>();
+    const queue = [highlightedTaskId];
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      if (connected.has(id)) continue;
+      connected.add(id);
+      for (const d of dependencies) {
+        if (d.predecessorId === id && !connected.has(d.successorId)) queue.push(d.successorId);
+        if (d.successorId === id && !connected.has(d.predecessorId)) queue.push(d.predecessorId);
+      }
+    }
+    return connected;
+  });
 
   /* ===== Verzug-Ampel: task overdue + open defects = red, all resolved = green ===== */
   let defectMap = $derived.by(() => {
@@ -181,6 +200,14 @@
     if (today < range.start || today > range.end) return null;
     return daysBetween(range.start, today) * dayWidth();
   }
+
+  let projectEndPos = $derived.by(() => {
+    if (tasks.length === 0) return null;
+    let latest = tasks[0].endDate;
+    for (const t of tasks) if (t.endDate > latest) latest = t.endDate;
+    if (latest < range.start || latest > range.end) return null;
+    return { px: (daysBetween(range.start, latest) + 1) * dayWidth(), date: latest };
+  });
 
   /* ===== Drag-to-move (Pointer Events: Maus + Touch) =====
    *
@@ -494,6 +521,11 @@
           <span class="gantt-today-label">Heute</span>
         </div>
       {/if}
+      {#if projectEndPos}
+        <div class="gantt-project-end-line" style={`left:${projectEndPos.px}px`}>
+          <span class="gantt-project-end-label">Projektende</span>
+        </div>
+      {/if}
       <div class="gantt-rows" ondblclick={(e) => {
         if (!onCreateAtDate) return;
         // Only fire if double-click was on empty area (not on a bar)
@@ -517,6 +549,12 @@
                 style={`left:${offsetPx(bl.plannedStart)}px;width:${Math.max(8, (daysBetween(bl.plannedStart, bl.plannedEnd) + 1) * dayWidth())}px`}
               ></div>
             {/if}
+            {#if dragging?.id === t.id && dragging.armed && dragging.moved}
+              <div
+                class="gantt-ghost"
+                style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
+              ></div>
+            {/if}
             {#if isParentMap.has(t.id)}
               <div class="gantt-bar summary" style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px`}></div>
             {:else if t.startDate === t.endDate}
@@ -524,7 +562,7 @@
               <button
                 class="gantt-milestone"
                 class:critical={criticalPathIds.has(t.id)}
-                class:dimmed={criticalPathIds.size > 0 && !criticalPathIds.has(t.id)}
+                class:dimmed={(criticalPathIds.size > 0 && !criticalPathIds.has(t.id)) || (connectedIds.size > 0 && !connectedIds.has(t.id))}
                 class:dragging={dragging?.id === t.id && dragging.armed}
                 class:dep-mode-target={depMode && depMode.id !== t.id}
                 style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;--ms-color:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#E30613')}`}
@@ -577,7 +615,7 @@
               <button
                 class="gantt-bar"
                 class:critical={criticalPathIds.has(t.id)}
-                class:dimmed={criticalPathIds.size > 0 && !criticalPathIds.has(t.id)}
+                class:dimmed={(criticalPathIds.size > 0 && !criticalPathIds.has(t.id)) || (connectedIds.size > 0 && !connectedIds.has(t.id))}
                 class:dragging={dragging?.id === t.id && dragging.armed}
                 class:armed-touch={dragging?.id === t.id && dragging.armed && dragging.pointerType !== 'mouse'}
                 class:dep-mode-target={depMode && depMode.id !== t.id}
@@ -827,6 +865,20 @@
     background: var(--red); z-index: 8; pointer-events: none;
     box-shadow: 0 0 0 1px rgba(227, 6, 19, .2);
   }
+  .gantt-project-end-line {
+    position: absolute; top: 30px; bottom: 0; width: 2px;
+    background: var(--ink-2); z-index: 7; pointer-events: none;
+    border-left: 2px dashed var(--ink-2);
+    opacity: 0.6;
+  }
+  .gantt-project-end-label {
+    position: absolute; left: -22px; top: 0;
+    background: var(--ink-2); color: #fff;
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap;
+  }
   .gantt-today-label {
     position: absolute; left: -14px; top: 0;
     background: var(--red); color: #fff;
@@ -1026,6 +1078,13 @@
   .gantt-bar-tooltip .tooltip-name { font-family: var(--display); font-weight: 700; font-size: 12px; }
   .gantt-bar-tooltip .tooltip-meta { font-family: var(--mono); font-size: 10px; opacity: 0.8; }
   .gantt-bar:hover .gantt-bar-tooltip { opacity: 1; transform: translateX(-50%) scale(1); }
+  .gantt-ghost {
+    position: absolute; top: 6px; height: 20px;
+    border-radius: 4px; opacity: 0.2;
+    pointer-events: none; z-index: 1;
+    border: 2px dashed rgba(15, 15, 16, .3);
+    background: transparent !important;
+  }
   .gantt-bar.summary {
     height: 8px; top: 12px; border-radius: 2px;
     background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
