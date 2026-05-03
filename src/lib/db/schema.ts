@@ -284,6 +284,10 @@ export const defects = pgTable('defects', {
   roomId: uuid('room_id').references(() => rooms.id, { onDelete: 'set null' }),
   bauteil: text('bauteil'),
   bauteilqualitaet: text('bauteilqualitaet'),
+  cost: numeric('cost'),
+  externalId: text('external_id'),
+  latitude: numeric('latitude'),
+  longitude: numeric('longitude'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });

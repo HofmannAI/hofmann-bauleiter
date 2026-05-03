@@ -2,14 +2,14 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { gewerke, defectPhotos, defectHistory, defects as defectsTable, defectLayouts, defectTemplates, tasks } from '$lib/db/schema';
+import { gewerke, defectPhotos, defectHistory, defects as defectsTable, defectLayouts, defectTemplates, tasks, projectMembers, profiles } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
 import { loadStructureTree } from '$lib/db/structureQueries';
 import { vorgaengeByProject } from '$lib/db/vorgangQueries';
 import { asc, desc, sql, and, eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params }) => {
-  const [defects, plans, contacts, gewerkeRows, vorgaengeMap, layouts, structure, templates] = await Promise.all([
+  const [defects, plans, contacts, gewerkeRows, vorgaengeMap, layouts, structure, templates, members] = await Promise.all([
     listDefects(params.projectId),
     listPlans(params.projectId),
     listContactsForProject(params.projectId),
@@ -28,6 +28,14 @@ export const load: PageServerLoad = async ({ params }) => {
           .select()
           .from(defectTemplates)
           .orderBy(desc(defectTemplates.useCount), asc(defectTemplates.name))
+      : Promise.resolve([]),
+    db
+      ? db
+          .select({ id: profiles.id, name: profiles.name })
+          .from(projectMembers)
+          .innerJoin(profiles, eq(profiles.id, projectMembers.userId))
+          .where(eq(projectMembers.projectId, params.projectId))
+          .orderBy(asc(profiles.name))
       : Promise.resolve([])
   ]);
   // Reduce Map → array of {defectId, anStatus, agStatus, anTermin} for serialization
@@ -37,7 +45,7 @@ export const load: PageServerLoad = async ({ params }) => {
     anTermin: v.AN?.termin ?? null,
     agStatus: v.AG?.status ?? null
   }));
-  return { defects, plans, contacts, gewerke: gewerkeRows, layouts, vorgaenge, structure, templates };
+  return { defects, plans, contacts, gewerke: gewerkeRows, layouts, vorgaenge, structure, templates, members };
 };
 
 const photoEntry = z.object({
@@ -54,6 +62,9 @@ const createSchema = z.object({
   contactId: z.string().uuid().optional().or(z.literal('')),
   deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
   priority: z.coerce.number().int().min(1).max(3).default(2),
+  cost: z.coerce.number().min(0).optional().or(z.literal('').transform(() => undefined)),
+  latitude: z.coerce.number().optional().or(z.literal('').transform(() => undefined)),
+  longitude: z.coerce.number().optional().or(z.literal('').transform(() => undefined)),
   photos: z.string().optional() // JSON-serialized photoEntry[]
 });
 
@@ -91,6 +102,9 @@ export const actions: Actions = {
       taskId: autoTaskId,
       deadline: parsed.data.deadline || null,
       priority: parsed.data.priority,
+      cost: parsed.data.cost ?? null,
+      latitude: parsed.data.latitude ?? null,
+      longitude: parsed.data.longitude ?? null,
       createdBy: locals.user.id
     });
 
@@ -133,6 +147,29 @@ export const actions: Actions = {
     for (const id of ids) {
       await db.update(defectsTable)
         .set({ status, updatedAt: new Date() })
+        .where(and(eq(defectsTable.id, id), eq(defectsTable.projectId, params.projectId)));
+    }
+    return { ok: true, count: ids.length };
+  },
+
+  bulkUpdate: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const ids = String(fd.ids ?? '').split(',').filter(Boolean);
+    if (ids.length === 0) return fail(400);
+
+    const update: Record<string, unknown> = { updatedAt: new Date() };
+    const deadline = String(fd.deadline ?? '');
+    const contactId = String(fd.contactId ?? '');
+
+    if (deadline && /^\d{4}-\d{2}-\d{2}$/.test(deadline)) update.deadline = deadline;
+    if (contactId) update.contactId = contactId === '_clear' ? null : contactId;
+
+    if (Object.keys(update).length <= 1) return fail(400); // only updatedAt = nothing useful
+
+    for (const id of ids) {
+      await db.update(defectsTable)
+        .set(update)
         .where(and(eq(defectsTable.id, id), eq(defectsTable.projectId, params.projectId)));
     }
     return { ok: true, count: ids.length };

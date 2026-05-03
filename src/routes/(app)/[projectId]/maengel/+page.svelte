@@ -237,6 +237,7 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
       if (!fristMatches(d)) return false;
       if (!searchMatches(d)) return false;
       if (!defectMatchesStruktur(d)) return false;
+      if (creatorFilter !== 'all' && d.createdBy !== creatorFilter) return false;
       return true;
     })
   );
@@ -256,10 +257,57 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   let createSelectedTemplateId = $state<string>('');
   let createTitle = $state('');
   let createGewerkId = $state('');
+  let createContactId = $state('');
   let createDeadline = $state('');
   let createPriority = $state<string>('2');
+  let createCost = $state('');
   let createDescription = $state('');
   let createTemplateHinweis = $state<string | null>(null);
+  let createLatitude = $state<number | null>(null);
+  let createLongitude = $state<number | null>(null);
+  let gpsLoading = $state(false);
+
+  // Ersteller-Filter
+  let creatorFilter = $state<string>('all');
+
+  // Bulk-Update state
+  let bulkDeadline = $state('');
+  let bulkContactId = $state('');
+  let showBulkExtras = $state(false);
+
+  function captureGps() {
+    if (!navigator.geolocation) { toast('GPS nicht verfügbar.'); return; }
+    gpsLoading = true;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        createLatitude = pos.coords.latitude;
+        createLongitude = pos.coords.longitude;
+        gpsLoading = false;
+        toast('Standort erfasst.');
+      },
+      () => { gpsLoading = false; toast('Standort konnte nicht ermittelt werden.'); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  async function bulkUpdateFields() {
+    if (selected.size === 0) return;
+    const fd = new FormData();
+    fd.append('ids', Array.from(selected).join(','));
+    if (bulkDeadline) fd.append('deadline', bulkDeadline);
+    if (bulkContactId) fd.append('contactId', bulkContactId);
+    if (!bulkDeadline && !bulkContactId) { toast('Kein Feld zum Aktualisieren.'); return; }
+    const res = await fetch('?/bulkUpdate', { method: 'POST', body: fd });
+    if (res.ok) {
+      toast(`${selected.size} Mängel aktualisiert.`);
+      selected = new Set();
+      showBulkExtras = false;
+      bulkDeadline = '';
+      bulkContactId = '';
+      suppressRealtimeFor(2000);
+      await invalidateAll();
+    }
+  }
 
   function applyCreateTemplate(id: string) {
     if (!id) {
@@ -402,6 +450,15 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
     {/each}
   </div>
 
+  {#if parent.members.length > 1}
+    <div class="filter-bar">
+      <button class="filter-pill" class:active={creatorFilter === 'all'} onclick={() => (creatorFilter = 'all')}>Alle Ersteller</button>
+      {#each parent.members as m (m.id)}
+        <button class="filter-pill" class:active={creatorFilter === m.id} onclick={() => (creatorFilter = m.id)}>{m.name}</button>
+      {/each}
+    </div>
+  {/if}
+
 <div class="layout-bar">
     <span class="layout-eyebrow">Layout</span>
     <button class="filter-pill" class:active={!activeLayoutId} onclick={() => applyLayout(null)} type="button">— frei —</button>
@@ -433,10 +490,35 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
       <button class="btn btn-ghost btn-sm" onclick={() => bulkSetStatus('resolved')} type="button">
         Erledigt
       </button>
+      <button class="btn btn-ghost btn-sm" onclick={() => (showBulkExtras = !showBulkExtras)} type="button">
+        <Icon name="edit" size={12} /> Frist/Firma
+      </button>
       <button class="btn btn-ghost btn-sm" onclick={() => (selected = new Set())} type="button">
         <Icon name="close" size={12} /> Abwählen
       </button>
     </div>
+    {#if showBulkExtras}
+      <div class="bulk-extras">
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="bulk-dl">Frist setzen</label>
+            <input id="bulk-dl" type="date" class="field-input" bind:value={bulkDeadline} />
+          </div>
+          <div class="field">
+            <label class="field-label" for="bulk-ct">Kontakt zuweisen</label>
+            <select id="bulk-ct" class="field-input" bind:value={bulkContactId}>
+              <option value="">— wählen —</option>
+              {#each parent.contacts as c (c.id)}
+                <option value={c.id}>{c.company ?? ''}{c.company && c.contactName ? ' — ' : ''}{c.contactName ?? ''}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick={bulkUpdateFields} type="button">
+          Auf {selected.size} Mängel anwenden
+        </button>
+      </div>
+    {/if}
   {/if}
   <div class="filter-bar">
     <button class="filter-pill" class:active={fristFilter === 'all'} onclick={() => (fristFilter = 'all')}>Frist: alle</button>
@@ -623,8 +705,23 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
         </select>
       </div>
       <div class="field">
-        <label class="field-label" for="dl">Deadline</label>
-        <input id="dl" name="deadline" type="date" class="field-input" bind:value={createDeadline} />
+        <label class="field-label" for="ct">Firma / Kontakt</label>
+        <select id="ct" name="contactId" class="field-input" bind:value={createContactId}>
+          <option value="">— wählen —</option>
+          {#each parent.contacts as c (c.id)}
+            <option value={c.id}>{c.company ?? ''}{c.company && c.contactName ? ' — ' : ''}{c.contactName ?? ''}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label" for="dl">Deadline</label>
+          <input id="dl" name="deadline" type="date" class="field-input" bind:value={createDeadline} />
+        </div>
+        <div class="field">
+          <label class="field-label" for="co">Kosten (EUR)</label>
+          <input id="co" name="cost" type="number" step="0.01" min="0" class="field-input" placeholder="0,00" bind:value={createCost} />
+        </div>
       </div>
       <div class="field">
         <label class="field-label" for="pr">Priorität</label>
@@ -637,6 +734,20 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
       <div class="field">
         <label class="field-label" for="d">Beschreibung</label>
         <textarea id="d" name="description" class="field-input" rows="4" bind:value={createDescription}></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">Standort (GPS)</label>
+        <div class="gps-row">
+          <button type="button" class="btn btn-ghost btn-sm" onclick={captureGps} disabled={gpsLoading}>
+            <Icon name="pin" size={14} />
+            {#if gpsLoading}Ermittelt…{:else if createLatitude != null}Erfasst{:else}Standort erfassen{/if}
+          </button>
+          {#if createLatitude != null && createLongitude != null}
+            <span class="gps-coords">{createLatitude.toFixed(5)}, {createLongitude.toFixed(5)}</span>
+          {/if}
+        </div>
+        <input type="hidden" name="latitude" value={createLatitude ?? ''} />
+        <input type="hidden" name="longitude" value={createLongitude ?? ''} />
       </div>
       <button class="btn btn-primary btn-block" type="submit">Anlegen</button>
     </form>
@@ -790,4 +901,7 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   .group-header .count { font-size: 10px; opacity: 0.7; }
   .defect-card.overdue { border-color: rgba(226, 22, 42, 0.3); background: linear-gradient(to right, var(--tint-red), var(--surface-container-lowest) 30%); }
   .defect-prio { font-family: var(--display); font-weight: 800; font-size: 18px; color: var(--primary-container); width: 24px; text-align: center; flex-shrink: 0; }
+  .gps-row { display: flex; align-items: center; gap: var(--stack-md); }
+  .gps-coords { font-size: 12px; color: var(--secondary); font-variant-numeric: tabular-nums; }
+  .bulk-extras { padding: 10px var(--gutter); margin-bottom: var(--gutter); background: var(--surface-container-low); border: 1px solid var(--outline-variant); border-radius: var(--r-md); display: flex; flex-direction: column; gap: var(--stack-md); }
 </style>

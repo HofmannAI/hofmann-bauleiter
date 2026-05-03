@@ -37,6 +37,7 @@ export async function listDefects(projectId: string) {
       bauteil: defects.bauteil,
       bauteilqualitaet: defects.bauteilqualitaet,
       taskId: defects.taskId,
+      createdBy: defects.createdBy,
       createdAt: defects.createdAt
     })
     .from(defects)
@@ -99,6 +100,9 @@ export type CreateDefectInput = {
   taskId?: string | null;
   deadline?: string | null;
   priority?: number;
+  cost?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   createdBy: string;
 };
 
@@ -123,6 +127,9 @@ export async function createDefect(input: CreateDefectInput) {
       taskId: input.taskId ?? null,
       deadline: input.deadline ?? null,
       priority: input.priority ?? 2,
+      cost: input.cost != null ? input.cost.toString() : null,
+      latitude: input.latitude != null ? input.latitude.toString() : null,
+      longitude: input.longitude != null ? input.longitude.toString() : null,
       status: 'open',
       createdBy: input.createdBy
     })
@@ -161,6 +168,8 @@ export async function updateDefectFields(
     dueDate: string | null;
     rechtsgrundlage: string | null;
     priority: number;
+    cost: string | null;
+    externalId: string | null;
     status: 'open' | 'sent' | 'acknowledged' | 'resolved' | 'accepted' | 'rejected' | 'reopened';
   }>
 ) {
