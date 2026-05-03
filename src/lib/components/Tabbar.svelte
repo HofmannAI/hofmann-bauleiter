@@ -8,7 +8,7 @@
   type Tab = { href: string; label: string; icon: IconName; match: string };
   const tabs: Tab[] = [
     { href: 'dashboard',    label: 'Übersicht',     icon: 'home',     match: 'dashboard' },
-    { href: 'checklisten',  label: 'Checklisten',   icon: 'list',     match: 'checklisten' },
+    { href: 'gewerke',      label: 'Gewerke',       icon: 'building', match: 'gewerke' },
     { href: 'bauzeitenplan',label: 'Bauzeit',       icon: 'gantt',    match: 'bauzeitenplan' },
     { href: 'aufgaben',     label: 'Aufgaben',      icon: 'tasks',    match: 'aufgaben' },
     { href: 'maengel',      label: 'Mängel',        icon: 'defect',   match: 'maengel' },
