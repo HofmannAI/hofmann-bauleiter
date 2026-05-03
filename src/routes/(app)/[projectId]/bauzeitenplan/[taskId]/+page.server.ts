@@ -136,6 +136,36 @@ export const actions: Actions = {
     return { ok: true };
   },
 
+  setActualDates: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const schema = z.object({
+      actualStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+      actualEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal(''))
+    });
+    const parsed = schema.safeParse(fd);
+    if (!parsed.success) return fail(400, { error: 'Ungültiges Datum.' });
+
+    const update: Record<string, unknown> = { updatedAt: new Date() };
+    update.actualStartDate = parsed.data.actualStartDate || null;
+    update.actualEndDate = parsed.data.actualEndDate || null;
+
+    await db
+      .update(tasks)
+      .set(update)
+      .where(and(eq(tasks.id, params.taskId), eq(tasks.projectId, params.projectId)));
+
+    await db.insert(activity).values({
+      projectId: params.projectId,
+      userId: locals.user.id,
+      type: 'task_feedback',
+      message: `Rückmeldung: Ist-Start ${parsed.data.actualStartDate || '—'}, Ist-Ende ${parsed.data.actualEndDate || '—'}`,
+      refTable: 'tasks',
+      refId: params.taskId
+    });
+    return { ok: true };
+  },
+
   delete: async ({ params, locals }) => {
     if (!locals.user || !db) return fail(401);
     await db.delete(tasks).where(and(eq(tasks.id, params.taskId), eq(tasks.projectId, params.projectId)));

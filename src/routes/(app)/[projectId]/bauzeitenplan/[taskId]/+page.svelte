@@ -160,6 +160,36 @@
     <textarea id="task-notes" class="field-input" rows="3" bind:value={notes} onblur={save}></textarea>
   </div>
 
+  <h3 class="section-title">Rückmeldung (Ist-Daten)</h3>
+  <div class="field-row">
+    <div class="field">
+      <label class="field-label" for="actual-start">Ist-Start</label>
+      <input id="actual-start" type="date" class="field-input" value={parent.task.actualStartDate ?? ''} onchange={async (e) => {
+        const v = (e.currentTarget as HTMLInputElement).value;
+        await postForm('setActualDates', { actualStartDate: v, actualEndDate: parent.task.actualEndDate ?? '' });
+        toast('Ist-Start gespeichert.');
+      }} />
+    </div>
+    <div class="field">
+      <label class="field-label" for="actual-end">Ist-Ende</label>
+      <input id="actual-end" type="date" class="field-input" value={parent.task.actualEndDate ?? ''} onchange={async (e) => {
+        const v = (e.currentTarget as HTMLInputElement).value;
+        await postForm('setActualDates', { actualStartDate: parent.task.actualStartDate ?? '', actualEndDate: v });
+        toast('Ist-Ende gespeichert.');
+      }} />
+    </div>
+  </div>
+  {#if parent.task.actualStartDate || parent.task.actualEndDate}
+    <p class="field-hint">
+      Plan: {parent.task.startDate} → {parent.task.endDate}
+      {#if parent.task.actualEndDate && parent.task.actualEndDate > parent.task.endDate}
+        · <span style="color:var(--red);font-weight:700">Verzug: {Math.round((new Date(parent.task.actualEndDate).getTime() - new Date(parent.task.endDate).getTime()) / 86400000)} Tage</span>
+      {:else if parent.task.actualEndDate}
+        · <span style="color:var(--green);font-weight:700">Pünktlich</span>
+      {/if}
+    </p>
+  {/if}
+
   <div class="field">
     <span class="field-label">Fotos {parent.photos?.length ?? 0}</span>
     <div class="task-photos">

@@ -544,10 +544,12 @@
           <div class="gantt-row depth-{t.depth}">
             {#if bl && !isParentMap.has(t.id)}
               <div
-                class="gantt-baseline"
+                class="gantt-baseline-bar"
                 title={`Soll: ${bl.plannedStart} → ${bl.plannedEnd}`}
                 style={`left:${offsetPx(bl.plannedStart)}px;width:${Math.max(8, (daysBetween(bl.plannedStart, bl.plannedEnd) + 1) * dayWidth())}px`}
-              ></div>
+              >
+                <span class="gantt-baseline-label">Soll</span>
+              </div>
             {/if}
             {#if dragging?.id === t.id && dragging.armed && dragging.moved}
               <div
@@ -994,13 +996,18 @@
     z-index: 60;
   }
   .dep-mode-banner .btn { color: #fff; }
-  .gantt-baseline {
-    position: absolute; top: 22px; height: 4px;
-    background: transparent;
-    border: 1.5px dashed rgba(15, 15, 16, 0.45);
-    border-radius: 2px;
+  .gantt-baseline-bar {
+    position: absolute; top: 2px; height: 6px;
+    background: rgba(15, 15, 16, 0.15);
+    border-radius: 3px;
     pointer-events: none;
     z-index: 1;
+  }
+  .gantt-baseline-label {
+    position: absolute; left: 2px; top: -1px;
+    font-family: var(--mono); font-size: 7px; font-weight: 700;
+    color: rgba(15, 15, 16, 0.35); text-transform: uppercase;
+    letter-spacing: .04em; pointer-events: none;
   }
   .gantt-bar.verzug-overdue {
     box-shadow: 0 0 0 2px #C62828, 0 2px 6px rgba(198, 40, 40, .35);
