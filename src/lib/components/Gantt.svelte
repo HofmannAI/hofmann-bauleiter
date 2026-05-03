@@ -802,7 +802,7 @@
   .gantt-row-list:hover { background: var(--paper-tint); }
   .gantt-row-list.depth-0 {
     font-weight: 800; font-family: var(--display); font-size: 13px;
-    background: var(--paper-tint);
+    background: var(--paper-tint); border-bottom: 2px solid var(--line-strong);
   }
   .gantt-row-list.depth-0:hover { background: var(--grey-soft); }
   .gantt-row-list.depth-1 { font-weight: 700; }
@@ -905,7 +905,7 @@
   }
   .gantt-rows { position: relative; }
   .gantt-row { position: relative; height: 32px; border-bottom: 1px solid var(--line); }
-  .gantt-row.depth-0 { background: var(--paper-tint); }
+  .gantt-row.depth-0 { background: var(--paper-tint); border-bottom: 2px solid var(--line-strong); }
   .gantt-row:hover { background: rgba(227, 6, 19, .03); }
   .gantt-bar {
     position: absolute; top: 6px; height: 20px;
@@ -1057,14 +1057,17 @@
     letter-spacing: .04em;
     text-transform: uppercase;
   }
-  .gantt-bar { cursor: grab; }
+  .gantt-bar { cursor: grab; overflow: visible; }
   .gantt-bar::after {
     content: '';
     position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
     cursor: ew-resize; z-index: 2;
   }
   .gantt-bar.dragging { cursor: grabbing; }
-  .gantt-bar-label { display: block; }
+  .gantt-bar-label {
+    display: block; position: relative; z-index: 1;
+    white-space: nowrap; pointer-events: none;
+  }
   .gantt-bar-tooltip {
     position: absolute; bottom: calc(100% + 6px); left: 50%;
     transform: translateX(-50%) scale(0.9);
