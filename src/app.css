@@ -250,9 +250,9 @@
     opacity: 0.45;
   }
   :focus-visible {
-    outline: 2px solid var(--red);
+    outline: 2px solid var(--primary-container);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: var(--r-sm);
   }
 }
 
@@ -271,7 +271,7 @@ body {
 }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
 input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
-input:focus, textarea:focus, select:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--primary-container); outline-offset: 1px; }
 
 /* App shell */
 .app-shell { min-height: 100dvh; display: flex; flex-direction: column; }
@@ -583,27 +583,33 @@ main { flex: 1; padding-bottom: 80px; }
   margin-top: 2px;
 }
 
-/* Form fields */
-.field { margin-bottom: 16px; }
+/* Form fields — Inset Group Style */
+.field { margin-bottom: var(--stack-lg); }
 .field-label {
-  display: block; font-family: var(--mono); font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .05em;
-  color: var(--muted); margin-bottom: 6px;
+  display: block;
+  font-size: 12px; line-height: 16px; letter-spacing: 0.06px; font-weight: 500;
+  text-transform: uppercase;
+  color: var(--secondary); margin-bottom: var(--stack-sm);
 }
 .field-input {
-  width: 100%; padding: 11px 14px;
-  border: 1px solid var(--line-strong); border-radius: var(--r-md);
-  background: var(--paper-tint); transition: all .15s;
+  width: 100%; padding: 11px var(--margin-main);
+  min-height: 44px;
+  border: 1px solid var(--outline-variant); border-radius: var(--r-md);
+  background: var(--surface-container-low);
+  transition: all var(--d-fast) var(--ease-out-expo);
 }
-.field-input:focus { background: var(--paper); border-color: var(--red); }
-.field-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.field-input:focus {
+  background: var(--surface-container-lowest);
+  border-color: var(--primary-container);
+}
+.field-hint { font-size: 13px; line-height: 18px; color: var(--secondary); margin-top: var(--stack-sm); }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* Stepper */
 .stepper {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--paper-tint); border: 1px solid var(--line-strong);
-  border-radius: var(--r-md); padding: 4px; width: fit-content;
+  display: flex; align-items: center; gap: var(--stack-md);
+  background: var(--surface-container-low); border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md); padding: var(--stack-sm); width: fit-content;
 }
 .stepper-btn {
   width: 44px; height: 44px;
