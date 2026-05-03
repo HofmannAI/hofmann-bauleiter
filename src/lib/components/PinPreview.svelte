@@ -109,7 +109,7 @@
   .pin-preview-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .pin-preview-id { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--muted); }
   .pin-preview-title { font-family: var(--display); font-weight: 700; font-size: 13px; line-height: 1.2; }
-  .pin-preview-status { font-family: var(--mono); font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 999px; align-self: flex-start; text-transform: uppercase; letter-spacing: .04em; }
+  .pin-preview-status { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; padding: 2px 8px; border-radius: var(--r-sm); align-self: flex-start; text-transform: uppercase; }
   .pin-preview-img { width: 56px; height: 56px; border-radius: 8px; overflow: hidden; padding: 0; border: 1px solid var(--line); flex-shrink: 0; cursor: zoom-in; }
   .pin-preview-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .pin-preview-actions { display: flex; gap: 4px; padding: 6px 10px 10px; position: relative; }
@@ -122,8 +122,8 @@
   }
   .menu-item { padding: 8px 12px; text-align: left; font-size: 13px; cursor: pointer; }
   .menu-item:hover { background: var(--paper-tint); }
-  .status-open, .status-reopened { background: var(--red-soft); color: var(--red); }
-  .status-sent, .status-acknowledged { background: var(--amber-soft); color: var(--amber); }
-  .status-resolved, .status-accepted { background: var(--green-soft); color: var(--green); }
-  .status-rejected { background: var(--grey-soft); color: var(--muted); }
+  .status-open, .status-reopened { background: rgba(226, 22, 42, 0.10); color: var(--primary-container); border: 1px solid rgba(226, 22, 42, 0.30); }
+  .status-sent, .status-acknowledged { background: rgba(201, 119, 0, 0.10); color: var(--amber); border: 1px solid rgba(201, 119, 0, 0.30); }
+  .status-resolved, .status-accepted { background: rgba(46, 125, 50, 0.10); color: var(--green); border: 1px solid rgba(46, 125, 50, 0.30); }
+  .status-rejected { background: var(--surface-container); color: var(--secondary); border: 1px solid var(--outline-variant); }
 </style>

@@ -347,9 +347,9 @@
   .defect-link-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .defect-link-id { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
   .defect-link-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .defect-link-status { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
-  .defect-link-status.status-open, .defect-link-status.status-reopened { background: var(--red-soft); color: var(--red); }
-  .defect-link-status.status-sent, .defect-link-status.status-acknowledged { background: var(--amber-soft); color: var(--amber); }
-  .defect-link-status.status-resolved, .defect-link-status.status-accepted { background: var(--green-soft); color: var(--green); }
-  .defect-link-status.status-rejected { background: var(--grey-soft); color: var(--muted); }
+  .defect-link-status { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; text-transform: uppercase; padding: 2px 8px; border-radius: var(--r-sm); flex-shrink: 0; }
+  .defect-link-status.status-open, .defect-link-status.status-reopened { background: rgba(226, 22, 42, 0.10); color: var(--primary-container); border: 1px solid rgba(226, 22, 42, 0.30); }
+  .defect-link-status.status-sent, .defect-link-status.status-acknowledged { background: rgba(201, 119, 0, 0.10); color: var(--amber); border: 1px solid rgba(201, 119, 0, 0.30); }
+  .defect-link-status.status-resolved, .defect-link-status.status-accepted { background: rgba(46, 125, 50, 0.10); color: var(--green); border: 1px solid rgba(46, 125, 50, 0.30); }
+  .defect-link-status.status-rejected { background: var(--surface-container); color: var(--secondary); border: 1px solid var(--outline-variant); }
 </style>

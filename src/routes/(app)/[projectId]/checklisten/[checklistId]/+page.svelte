@@ -238,8 +238,8 @@
   .checklist-num { flex-shrink: 0; width: 30px; height: 30px; background: var(--ink); color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 13px; }
   .filter-houses { display: flex; gap: 6px; overflow-x: auto; margin: 4px 0 14px; padding: 2px 0; scrollbar-width: none; }
   .filter-houses::-webkit-scrollbar { display: none; }
-  .house-chip { padding: 6px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: all .12s; cursor: pointer; }
-  .house-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .house-chip { padding: 6px 12px; min-height: 36px; background: var(--surface-container-low); border: 1px solid var(--outline-variant); border-radius: 9999px; font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; text-transform: uppercase; color: var(--secondary); white-space: nowrap; transition: all var(--d-fast) var(--ease-out-expo); cursor: pointer; display: inline-flex; align-items: center; }
+  .house-chip.active { background: var(--inverse-surface); color: var(--inverse-on-surface); border-color: var(--inverse-surface); }
   .section-block { margin-bottom: 16px; }
   .section-heading { font-family: var(--display); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; padding: 0 4px; }
   .item-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; margin-bottom: 8px; transition: all .15s; box-shadow: var(--shadow-1); }
