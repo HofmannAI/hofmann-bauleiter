@@ -2,19 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens — ported 1:1 from reference/prototype.html */
+/* ============================================================
+   Liquid Construction System — Design Tokens
+   Source of truth: reference/design/liquid-construction-system.md
+   ============================================================ */
 :root {
-  --red: #E30613;
-  --red-deep: #B70510;
-  --red-soft: #FDECEE;
-  --ink: #0F0F10;
-  --ink-2: #2A2925;
-  --muted: #6B6660;
-  --line: rgba(15, 15, 16, 0.08);
-  --line-strong: rgba(15, 15, 16, 0.16);
-  --bg: #F6F4F1;
-  --paper: #FFFFFF;
-  --paper-tint: #FAF8F4;
+  /* --- Surface palette --- */
+  --surface: #f9f9fe;
+  --surface-dim: #d9dade;
+  --surface-bright: #f9f9fe;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f3f3f8;
+  --surface-container: #ededf2;
+  --surface-container-high: #e8e8ed;
+  --surface-container-highest: #e2e2e7;
+  --on-surface: #1a1c1f;
+  --on-surface-variant: #5d3f3d;
+  --inverse-surface: #2e3034;
+  --inverse-on-surface: #f0f0f5;
+  --surface-tint: #c0001e;
+  --surface-variant: #e2e2e7;
+
+  /* --- Primary (Construction Red) --- */
+  --primary: #b7001c;
+  --on-primary: #ffffff;
+  --primary-container: #e2162a;
+  --on-primary-container: #fff7f6;
+  --inverse-primary: #ffb3ae;
+
+  /* --- Secondary --- */
+  --secondary: #5d5e5f;
+  --on-secondary: #ffffff;
+  --secondary-container: #e0dfe0;
+  --on-secondary-container: #626364;
+
+  /* --- Tertiary --- */
+  --tertiary: #5a5a5a;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #727272;
+  --on-tertiary-container: #f8f8f8;
+
+  /* --- Error --- */
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+
+  /* --- Fixed variants --- */
+  --primary-fixed: #ffdad7;
+  --primary-fixed-dim: #ffb3ae;
+  --on-primary-fixed: #410004;
+  --on-primary-fixed-variant: #930014;
+  --secondary-fixed: #e3e2e3;
+  --secondary-fixed-dim: #c6c6c7;
+  --on-secondary-fixed: #1a1c1d;
+  --on-secondary-fixed-variant: #464748;
+  --tertiary-fixed: #e2e2e2;
+  --tertiary-fixed-dim: #c6c6c6;
+  --on-tertiary-fixed: #1b1b1b;
+  --on-tertiary-fixed-variant: #474747;
+
+  /* --- Outline --- */
+  --outline: #926e6c;
+  --outline-variant: #e7bdb9;
+
+  /* --- Background --- */
+  --background: #f9f9fe;
+  --on-background: #1a1c1f;
+
+  /* --- Legacy aliases (keep existing component CSS working) --- */
+  --red: var(--primary-container);       /* #E2162A */
+  --red-deep: var(--primary);            /* #B7001C */
+  --red-soft: var(--primary-fixed);      /* #FFDAD7 */
+  --ink: var(--on-surface);              /* #1A1C1F */
+  --ink-2: var(--on-surface-variant);    /* #5D3F3D */
+  --muted: var(--secondary);             /* #5D5E5F */
+  --line: var(--outline-variant);        /* #E7BDB9 */
+  --line-strong: var(--outline);         /* #926E6C */
+  --bg: var(--background);              /* #F9F9FE */
+  --paper: var(--surface-container-lowest); /* #FFFFFF */
+  --paper-tint: var(--surface-container-low); /* #F3F3F8 */
   --green: #2E7D32;
   --green-soft: #E8F4E9;
   --amber: #C97700;
@@ -22,17 +89,33 @@
   --blue: #1F4163;
   --blue-soft: #E5EBF1;
   --grey: #B5B0AB;
-  --grey-soft: #ECE9E4;
+  --grey-soft: var(--surface-container-highest); /* #E2E2E7 */
+
+  /* --- Shadows --- */
   --shadow-1: 0 1px 2px rgba(15, 15, 16, .04), 0 2px 6px rgba(15, 15, 16, .04);
   --shadow-2: 0 4px 12px rgba(15, 15, 16, .08), 0 12px 32px rgba(15, 15, 16, .06);
   --shadow-3: 0 24px 48px rgba(15, 15, 16, .18);
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 20px;
-  --display: 'Archivo', system-ui, sans-serif;
+  --shadow-float: 0px 10px 30px rgba(0, 0, 0, 0.08);
+
+  /* --- Radii (Liquid Construction System) --- */
+  --r-sm: 0.25rem;   /* 4px */
+  --r-DEFAULT: 0.5rem; /* 8px */
+  --r-md: 0.75rem;   /* 12px — Cards */
+  --r-lg: 1rem;       /* 16px — Modals */
+  --r-xl: 1.5rem;     /* 24px */
+
+  /* --- Typography --- */
+  --display: 'Inter', system-ui, sans-serif;
   --body: 'Inter', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* --- Spacing --- */
+  --margin-main: 16px;
+  --gutter: 12px;
+  --stack-sm: 4px;
+  --stack-md: 8px;
+  --stack-lg: 16px;
+  --stack-xl: 24px;
 
   /* ---------- Premium UX system (Phase B) ---------- */
   /* Easing curves (Apple-ish) */
@@ -113,10 +196,10 @@ html, body { margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--body);
-  background: var(--bg);
-  color: var(--ink);
-  font-size: 15px;
-  line-height: 1.5;
+  background: var(--background);
+  color: var(--on-surface);
+  font-size: 17px;
+  line-height: 1.29; /* 22/17 — iOS body ratio */
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
   overflow-x: hidden;
@@ -128,7 +211,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--red); outli
 /* App shell */
 .app-shell { min-height: 100dvh; display: flex; flex-direction: column; }
 main { flex: 1; padding-bottom: 80px; }
-.page { padding: 14px; max-width: 1100px; margin: 0 auto; }
+.page { padding: var(--margin-main); max-width: 1100px; margin: 0 auto; }
 
 /* Topbar (glass) */
 .topbar {
