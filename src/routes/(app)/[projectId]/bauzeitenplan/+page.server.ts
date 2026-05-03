@@ -2,7 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity, defects, calendarExceptions, ganttBackgrounds, ganttBookmarks, ganttInfoboxes } from '$lib/db/schema';
+import { tasks, taskBaselines, taskDependencies, gewerke, houses, apartments, activity, defects, calendarExceptions, ganttBackgrounds, ganttBookmarks, ganttInfoboxes, ganttViews } from '$lib/db/schema';
 import { eq, and, asc, desc, or, sql } from 'drizzle-orm';
 import { loadGaisbachSample } from '$lib/db/projectQueries';
 import { getProjectTasksAndDeps, applyTaskUpdates } from '$lib/db/taskQueries';
@@ -47,7 +47,7 @@ export const load: PageServerLoad = async ({ params }) => {
     baselineLabels.push({ label: r.label, snapshotAt: r.snapshotAt });
   }
 
-  const [calExceptions, backgrounds, bookmarks, infoboxes] = await Promise.all([
+  const [calExceptions, backgrounds, bookmarks, infoboxes, savedViews] = await Promise.all([
     db.select({ date: calendarExceptions.date, type: calendarExceptions.type, label: calendarExceptions.label })
       .from(calendarExceptions)
       .where(eq(calendarExceptions.projectId, params.projectId)),
@@ -60,10 +60,14 @@ export const load: PageServerLoad = async ({ params }) => {
       .where(eq(ganttBookmarks.projectId, params.projectId)),
     db.select()
       .from(ganttInfoboxes)
-      .where(eq(ganttInfoboxes.projectId, params.projectId))
+      .where(eq(ganttInfoboxes.projectId, params.projectId)),
+    db.select()
+      .from(ganttViews)
+      .where(eq(ganttViews.projectId, params.projectId))
+      .orderBy(asc(ganttViews.sortOrder))
   ]);
 
-  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels, taskDefectCounts, calExceptions, backgrounds, bookmarks, infoboxes };
+  return { tasks: tRows, deps, gewerke: gewerkeRows, houses: houseTree, baselineLabels, taskDefectCounts, calExceptions, backgrounds, bookmarks, infoboxes, savedViews };
 };
 
 const moveSchema = z.object({
@@ -418,6 +422,32 @@ export const actions: Actions = {
     if (!date) return fail(400);
     await db.delete(calendarExceptions)
       .where(and(eq(calendarExceptions.projectId, params.projectId), eq(calendarExceptions.date, date)));
+    return { ok: true };
+  },
+
+  saveView: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const name = String(fd.name ?? '').trim();
+    const filterJson = String(fd.filterJson ?? '{}');
+    if (!name) return fail(400, { error: 'Name nötig.' });
+    let parsed: unknown;
+    try { parsed = JSON.parse(filterJson); } catch { return fail(400); }
+    await db.insert(ganttViews).values({
+      projectId: params.projectId,
+      name,
+      filterJson: parsed as never,
+      createdBy: locals.user.id
+    });
+    return { ok: true };
+  },
+
+  deleteView: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const viewId = String(fd.viewId ?? '');
+    if (!viewId) return fail(400);
+    await db.delete(ganttViews).where(and(eq(ganttViews.id, viewId), eq(ganttViews.projectId, params.projectId)));
     return { ok: true };
   }
 };
