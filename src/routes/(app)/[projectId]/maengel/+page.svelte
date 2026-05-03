@@ -11,6 +11,7 @@
   import { onMount } from 'svelte';
 import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, type VorgangAggregate } from '$lib/db/layoutFilter';
   import { getSignedUrl } from '$lib/storage/photos';
+  import { suppressRealtimeFor } from '$lib/stores/realtime';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -106,6 +107,7 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
     if (res.ok) {
       toast(`${selected.size} Mängel auf "${status}".`);
       selected = new Set();
+      suppressRealtimeFor(2000);
       await invalidateAll();
     }
   }
@@ -572,11 +574,16 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
       </div>
       <button class="sheet-close" onclick={() => (showCreate = false)} aria-label="Schließen"><Icon name="close" /></button>
     </div>
-    <form method="POST" action="?/create" use:enhance={() => async ({ update }) => {
+    <form method="POST" action="?/create" use:enhance={() => async ({ result, update }) => {
       if (createSelectedTemplateId) {
         const fd = new FormData();
         fd.append('id', createSelectedTemplateId);
         await fetch('?/applyTemplate', { method: 'POST', body: fd });
+      }
+      suppressRealtimeFor(3000);
+      if (result.type === 'redirect') {
+        await update();
+        return;
       }
       await update();
     }} class="sheet-body">
@@ -694,6 +701,7 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
         if (result.type === 'success') {
           toast(`${(result.data as { count?: number })?.count ?? 0} Mängel angelegt.`);
           showBulk = false;
+          suppressRealtimeFor(3000);
           await invalidateAll();
         }
       }}
