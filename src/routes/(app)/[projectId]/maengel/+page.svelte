@@ -728,42 +728,43 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   @media (min-width: 980px) { .maengel-layout { grid-template-columns: 240px 1fr; } }
   .maengel-main { min-width: 0; }
   .maengel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-.layout-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 0; margin-bottom: 12px; border-top: 1px dashed var(--line); border-bottom: 1px dashed var(--line); }
-  .layout-eyebrow { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-right: 4px; }
+.layout-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--stack-sm); padding: 10px 0; margin-bottom: var(--gutter); border-top: 1px dashed var(--outline-variant); border-bottom: 1px dashed var(--outline-variant); }
+  .layout-eyebrow { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; text-transform: uppercase; color: var(--secondary); margin-right: 4px; }
   .layout-spacer { flex: 1; }
-  .layout-group { font-family: var(--mono); font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-  .filter-input-inline { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 4px 8px; font-size: 12px; font-family: inherit; }
-  .layout-code { font-family: var(--mono); font-weight: 700; color: var(--red); margin-right: 4px; }
-  .bulk-bar { position: sticky; top: 8px; z-index: 4; display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--glass-frost, var(--paper)); border: 1px solid var(--line-strong); border-radius: var(--r-md); margin-bottom: 12px; box-shadow: var(--shadow-1); }
-  .bulk-count { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--red); }
-  .defect-row { display: flex; align-items: stretch; gap: 8px; }
-  .defect-row.selected .defect-card { background: var(--paper-tint); border-color: var(--red); }
-  .select-cb { width: 28px; min-width: 28px; align-self: stretch; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--line-strong); border-radius: var(--r-sm); background: var(--paper); cursor: pointer; color: var(--paper); }
-  .select-cb.checked { background: var(--red); border-color: var(--red); color: #fff; }
-  .select-all { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 2px 6px; }
-  .select-all:hover { color: var(--red); }
-  .filter-pill-red.active { background: var(--red-soft); color: var(--red); border-color: rgba(227, 6, 19, 0.3); }
+  .layout-group { font-size: 12px; color: var(--secondary); display: flex; align-items: center; gap: 6px; }
+  .filter-input-inline { background: var(--surface-container-low); border: 1px solid var(--outline-variant); border-radius: var(--r-sm); padding: 4px 8px; font-size: 12px; font-family: inherit; min-height: 36px; }
+  .layout-code { font-weight: 700; color: var(--primary-container); margin-right: 4px; }
+  .bulk-bar { position: sticky; top: 8px; z-index: 4; display: flex; align-items: center; gap: var(--stack-md); padding: 10px var(--gutter); background: var(--glass-card); -webkit-backdrop-filter: var(--blur-card); backdrop-filter: var(--blur-card); border: 0.5px solid rgba(255, 255, 255, 0.50); border-radius: var(--r-md); margin-bottom: var(--gutter); box-shadow: var(--shadow-1); }
+  .bulk-count { font-size: 12px; font-weight: 600; color: var(--primary-container); }
+  .defect-row { display: flex; align-items: stretch; gap: var(--stack-md); }
+  .defect-row.selected .defect-card { background: var(--surface-container-low); border-color: var(--primary-container); }
+  .select-cb { width: 28px; min-width: 28px; min-height: 44px; align-self: stretch; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--outline); border-radius: var(--r-sm); background: var(--surface-container-lowest); cursor: pointer; color: var(--surface-container-lowest); }
+  .select-cb.checked { background: var(--primary-container); border-color: var(--primary-container); color: var(--on-primary); }
+  .select-all { background: transparent; border: none; color: var(--secondary); cursor: pointer; padding: 2px 6px; min-height: 44px; }
+  .select-all:hover { color: var(--primary-container); }
+  .filter-pill-red.active { background: rgba(226, 22, 42, 0.10); color: var(--primary-container); border-color: rgba(226, 22, 42, 0.30); }
   .search-spacer { flex: 1; min-width: 8px; }
-  .search-wrap { display: inline-flex; align-items: center; gap: 6px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 4px 10px; min-width: 220px; }
-  .search-wrap:focus-within { border-color: var(--red); }
+  .search-wrap { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-container-low); border: 1px solid var(--outline-variant); border-radius: var(--r-sm); padding: 4px 10px; min-width: 220px; min-height: 44px; }
+  .search-wrap:focus-within { border-color: var(--primary-container); }
   .search-input { border: none; background: transparent; outline: none; font: inherit; flex: 1; min-width: 100px; }
-  .search-clear { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 4px; display: inline-flex; align-items: center; }
-  .search-clear:hover { color: var(--red); }
+  .search-clear { background: none; border: none; color: var(--secondary); cursor: pointer; padding: 2px 4px; display: inline-flex; align-items: center; min-height: 44px; }
+  .search-clear:hover { color: var(--primary-container); }
   .maengel-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .defect-list { display: flex; flex-direction: column; gap: 6px; }
-  .defect-card { display: flex; gap: 10px; align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; text-decoration: none; color: inherit; transition: all .12s; }
-  .defect-card:hover { border-color: var(--line-strong); transform: translateX(2px); }
+  .defect-list { display: flex; flex-direction: column; gap: var(--stack-sm); }
+  .defect-card { display: flex; gap: var(--gutter); align-items: center; background: var(--glass-card); -webkit-backdrop-filter: var(--blur-card); backdrop-filter: var(--blur-card); border: 0.5px solid rgba(255, 255, 255, 0.50); border-radius: var(--r-md); padding: var(--stack-md) var(--gutter); text-decoration: none; color: inherit; transition: all var(--d-fast) var(--ease-out-expo); min-height: 44px; }
+  @supports not (backdrop-filter: blur(1px)) { .defect-card { background: var(--surface-container-lowest); border-color: var(--outline-variant); } }
+  .defect-card:hover { border-color: var(--outline-variant); transform: translateX(2px); }
   .defect-stripe { width: 4px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
-  .defect-crop-thumb { width: 60px; height: 45px; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--grey-soft); border: 1px solid var(--line); display: block; }
+  .defect-crop-thumb { width: 60px; height: 45px; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--surface-container-highest); border: 1px solid var(--outline-variant); display: block; }
   .defect-crop-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .defect-crop-thumb.defect-crop-skeleton { background: linear-gradient(90deg, var(--paper-tint) 0%, var(--grey-soft) 50%, var(--paper-tint) 100%); background-size: 200% 100%; animation: defect-crop-shimmer 1.4s linear infinite; }
+  .defect-crop-thumb.defect-crop-skeleton { background: linear-gradient(90deg, var(--surface-container-low) 0%, var(--surface-container-highest) 50%, var(--surface-container-low) 100%); background-size: 200% 100%; animation: defect-crop-shimmer 1.4s linear infinite; }
   @keyframes defect-crop-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
   @media (prefers-reduced-motion: reduce) { .defect-crop-thumb.defect-crop-skeleton { animation: none; } }
   .defect-body { flex: 1; min-width: 0; }
   .defect-line1 { display: flex; align-items: baseline; gap: 8px; }
-  .defect-num { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
-  .defect-title { font-weight: 600; font-size: 14px; }
-  .defect-line2 { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .defect-num { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; color: var(--secondary); flex-shrink: 0; }
+  .defect-title { font-weight: 600; font-size: 15px; line-height: 20px; }
+  .defect-line2 { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; color: var(--secondary); text-transform: uppercase; margin-top: 2px; display: flex; gap: var(--stack-sm); flex-wrap: wrap; }
   .defect-status { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; text-transform: uppercase; padding: 4px 8px; border-radius: var(--r-sm); flex-shrink: 0; }
   .status-open, .status-reopened { background: rgba(226, 22, 42, 0.10); color: var(--primary-container); border: 1px solid rgba(226, 22, 42, 0.30); }
   .status-sent, .status-acknowledged { background: rgba(201, 119, 0, 0.10); color: var(--amber); border: 1px solid rgba(201, 119, 0, 0.30); }
@@ -771,15 +772,15 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   .status-rejected { background: var(--surface-container); color: var(--secondary); border: 1px solid var(--outline-variant); }
   .group-header {
     position: sticky; top: 56px; z-index: 10;
-    margin: 16px 0 6px; padding: 6px 12px;
-    font-family: var(--mono); font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .04em;
-    border-radius: 999px;
-    background: var(--glass-light);
-    -webkit-backdrop-filter: var(--blur-std);
-    backdrop-filter: var(--blur-std);
+    margin: var(--stack-lg) 0 var(--stack-sm); padding: 6px var(--gutter);
+    font-size: 12px; line-height: 16px; font-weight: 500;
+    letter-spacing: 0.06px; text-transform: uppercase;
+    border-radius: 9999px;
+    background: var(--glass-nav);
+    -webkit-backdrop-filter: var(--blur-nav);
+    backdrop-filter: var(--blur-nav);
     box-shadow: var(--shadow-1);
-    display: inline-flex; align-items: center; gap: 8px;
+    display: inline-flex; align-items: center; gap: var(--stack-md);
     width: fit-content;
   }
   .group-header.status-open, .group-header.status-reopened { color: var(--primary-container); }
@@ -787,6 +788,6 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   .group-header.status-resolved, .group-header.status-accepted { color: var(--green); }
   .group-header.status-rejected { color: var(--secondary); }
   .group-header .count { font-size: 10px; opacity: 0.7; }
-  .defect-card.overdue { border-color: rgba(227, 6, 19, 0.3); background: linear-gradient(to right, var(--tint-red), var(--paper) 30%); }
-  .defect-prio { font-family: var(--display); font-weight: 900; font-size: 18px; color: var(--red); width: 24px; text-align: center; flex-shrink: 0; }
+  .defect-card.overdue { border-color: rgba(226, 22, 42, 0.3); background: linear-gradient(to right, var(--tint-red), var(--surface-container-lowest) 30%); }
+  .defect-prio { font-family: var(--display); font-weight: 800; font-size: 18px; color: var(--primary-container); width: 24px; text-align: center; flex-shrink: 0; }
 </style>
