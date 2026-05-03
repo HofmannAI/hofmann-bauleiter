@@ -92,12 +92,12 @@
   .vorgang-item.tint-blue .vorgang-dot { background: var(--blue); }
   .vorgang-body { flex: 1; min-width: 0; }
   .vorgang-line1 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-  .vorgang-status { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); }
-  .vorgang-status.status-red { color: var(--red); background: var(--red-soft); border-color: rgba(227, 6, 19, 0.2); }
-  .vorgang-status.status-amber { color: var(--amber); background: var(--amber-soft); border-color: rgba(217, 119, 6, 0.2); }
-  .vorgang-status.status-green { color: var(--green); background: var(--green-soft); border-color: rgba(46, 125, 50, 0.2); }
-  .vorgang-status.status-blue { color: var(--blue); background: var(--blue-soft); border-color: rgba(59, 108, 196, 0.2); }
-  .vorgang-status.status-grey { color: var(--ink-2); background: var(--paper-tint); }
+  .vorgang-status { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; text-transform: uppercase; padding: 2px 8px; border-radius: var(--r-sm); border: 1px solid var(--outline-variant); }
+  .vorgang-status.status-red { color: var(--primary-container); background: rgba(226, 22, 42, 0.10); border-color: rgba(226, 22, 42, 0.30); }
+  .vorgang-status.status-amber { color: var(--amber); background: rgba(201, 119, 0, 0.10); border-color: rgba(201, 119, 0, 0.30); }
+  .vorgang-status.status-green { color: var(--green); background: rgba(46, 125, 50, 0.10); border-color: rgba(46, 125, 50, 0.30); }
+  .vorgang-status.status-blue { color: var(--blue); background: rgba(31, 65, 99, 0.10); border-color: rgba(31, 65, 99, 0.30); }
+  .vorgang-status.status-grey { color: var(--secondary); background: var(--surface-container-low); }
   .vorgang-time { font-family: var(--mono); font-size: 10px; color: var(--muted); }
   .vorgang-text { font-size: 13px; color: var(--ink); margin-top: 4px; line-height: 1.4; }
   .vorgang-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; font-family: var(--mono); font-size: 10px; color: var(--muted); }

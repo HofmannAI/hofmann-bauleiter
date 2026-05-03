@@ -764,11 +764,11 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   .defect-num { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
   .defect-title { font-weight: 600; font-size: 14px; }
   .defect-line2 { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; display: flex; gap: 4px; flex-wrap: wrap; }
-  .defect-status { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 4px 8px; border-radius: 999px; flex-shrink: 0; }
-  .status-open, .status-reopened { background: var(--red-soft); color: var(--red); }
-  .status-sent, .status-acknowledged { background: var(--amber-soft); color: var(--amber); }
-  .status-resolved, .status-accepted { background: var(--green-soft); color: var(--green); }
-  .status-rejected { background: var(--grey-soft); color: var(--muted); }
+  .defect-status { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; text-transform: uppercase; padding: 4px 8px; border-radius: var(--r-sm); flex-shrink: 0; }
+  .status-open, .status-reopened { background: rgba(226, 22, 42, 0.10); color: var(--primary-container); border: 1px solid rgba(226, 22, 42, 0.30); }
+  .status-sent, .status-acknowledged { background: rgba(201, 119, 0, 0.10); color: var(--amber); border: 1px solid rgba(201, 119, 0, 0.30); }
+  .status-resolved, .status-accepted { background: rgba(46, 125, 50, 0.10); color: var(--green); border: 1px solid rgba(46, 125, 50, 0.30); }
+  .status-rejected { background: var(--surface-container); color: var(--secondary); border: 1px solid var(--outline-variant); }
   .group-header {
     position: sticky; top: 56px; z-index: 10;
     margin: 16px 0 6px; padding: 6px 12px;
@@ -782,10 +782,10 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
     display: inline-flex; align-items: center; gap: 8px;
     width: fit-content;
   }
-  .group-header.status-open, .group-header.status-reopened { color: var(--red); }
+  .group-header.status-open, .group-header.status-reopened { color: var(--primary-container); }
   .group-header.status-sent, .group-header.status-acknowledged { color: var(--amber); }
   .group-header.status-resolved, .group-header.status-accepted { color: var(--green); }
-  .group-header.status-rejected { color: var(--muted); }
+  .group-header.status-rejected { color: var(--secondary); }
   .group-header .count { font-size: 10px; opacity: 0.7; }
   .defect-card.overdue { border-color: rgba(227, 6, 19, 0.3); background: linear-gradient(to right, var(--tint-red), var(--paper) 30%); }
   .defect-prio { font-family: var(--display); font-weight: 900; font-size: 18px; color: var(--red); width: 24px; text-align: center; flex-shrink: 0; }

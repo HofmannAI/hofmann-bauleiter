@@ -478,40 +478,43 @@ main { flex: 1; padding-bottom: 80px; }
   color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
 }
 
-/* Filter pills */
+/* Filter pills & Chips — lower-opacity bg + high-contrast border */
 .filter-bar {
-  display: flex; gap: 6px; overflow-x: auto;
-  margin-bottom: 12px; padding-bottom: 4px;
+  display: flex; gap: var(--stack-sm); overflow-x: auto;
+  margin-bottom: var(--gutter); padding-bottom: var(--stack-sm);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .filter-bar::-webkit-scrollbar { display: none; }
 .filter-pill {
   padding: 7px 13px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-family: var(--mono); font-size: 11px; font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase; letter-spacing: .04em;
+  min-height: 36px;
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-full, 9999px);
+  font-size: 12px; line-height: 16px; font-weight: 500;
+  letter-spacing: 0.06px; text-transform: uppercase;
+  color: var(--secondary);
   white-space: nowrap;
   cursor: pointer;
+  transition: all var(--d-fast) var(--ease-out-expo);
 }
 .filter-pill:hover {
-  border-color: var(--ink); color: var(--ink);
+  border-color: var(--outline); color: var(--on-surface);
   transform: translateY(-1px);
   box-shadow: var(--shadow-1);
 }
 .filter-pill.active {
-  background: var(--ink); color: #fff; border-color: var(--ink);
+  background: var(--inverse-surface); color: var(--inverse-on-surface);
+  border-color: var(--inverse-surface);
   box-shadow: 0 4px 12px rgba(15, 15, 16, 0.15);
 }
 .filter-pill .badge {
   display: inline-block; margin-left: 6px;
-  padding: 1px 6px; background: rgba(255, 255, 255, .18); border-radius: 8px;
+  padding: 1px 6px; background: rgba(255, 255, 255, .18); border-radius: var(--r-DEFAULT);
   font-size: 10px;
 }
-.filter-pill:not(.active) .badge { background: var(--grey-soft); color: var(--ink); }
+.filter-pill:not(.active) .badge { background: var(--surface-container-highest); color: var(--on-surface); }
 
 /* Cards / Items — Glass Surface */
 .scope-group {

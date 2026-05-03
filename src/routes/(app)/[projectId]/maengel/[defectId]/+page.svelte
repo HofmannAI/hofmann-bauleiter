@@ -663,7 +663,7 @@
   }
   .defect-title-input { flex: 1; min-width: 200px; font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1.1; letter-spacing: -.015em; border: none; padding: 4px 0; background: transparent; }
   .defect-title-input:focus { border-bottom: 2px solid var(--red); outline: none; }
-  .status-pill { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+  .status-pill { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; text-transform: uppercase; padding: 4px 10px; border-radius: var(--r-sm); }
   .status-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
   .vorgaenge-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
   @media (min-width: 768px) { .vorgaenge-grid { grid-template-columns: 1fr 1fr; } }
@@ -684,10 +684,10 @@
   .photo-add-tile { aspect-ratio: 1; border: 2px dashed var(--line-strong); border-radius: var(--r-md); background: var(--paper-tint); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); transition: all .15s; cursor: pointer; }
   .photo-add-tile:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }
   .photo-add-tile span { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-  .status-open, .status-reopened { background: var(--red-soft); color: var(--red); }
-  .status-sent, .status-acknowledged { background: var(--amber-soft); color: var(--amber); }
-  .status-resolved, .status-accepted { background: var(--green-soft); color: var(--green); }
-  .status-rejected { background: var(--grey-soft); color: var(--muted); }
+  .status-open, .status-reopened { background: rgba(226, 22, 42, 0.10); color: var(--primary-container); border: 1px solid rgba(226, 22, 42, 0.30); }
+  .status-sent, .status-acknowledged { background: rgba(201, 119, 0, 0.10); color: var(--amber); border: 1px solid rgba(201, 119, 0, 0.30); }
+  .status-resolved, .status-accepted { background: rgba(46, 125, 50, 0.10); color: var(--green); border: 1px solid rgba(46, 125, 50, 0.30); }
+  .status-rejected { background: var(--surface-container); color: var(--secondary); border: 1px solid var(--outline-variant); }
   .task-link-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-top: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); text-decoration: none; color: inherit; transition: all .12s; min-height: 44px; }
   .task-link-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-1); }
   .task-link-icon { font-size: 18px; flex-shrink: 0; }
