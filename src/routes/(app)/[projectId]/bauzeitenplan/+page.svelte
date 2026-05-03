@@ -14,6 +14,7 @@
 
   let selected = $state<string | null>(null);
   let selectedTask = $derived(parent.tasks.find((t) => t.id === selected) ?? null);
+  let multiSelected = $state<Set<string>>(new Set());
 
   // ---- Filters: gewerk + house (multi-select) — persist in URL ----
   let gewerkFilter = $state<Set<string>>(new Set());
@@ -401,6 +402,24 @@
         </div>
       </details>
     </div>
+    {#if multiSelected.size > 0}
+      <div class="multi-select-bar">
+        <span><b>{multiSelected.size}</b> Termine ausgewählt</span>
+        <button class="btn btn-ghost btn-sm" onclick={() => (multiSelected = new Set())}>Abwählen</button>
+        <button class="btn btn-danger btn-sm" onclick={async () => {
+          if (!(await confirm({ title: `${multiSelected.size} Termine löschen?`, confirmLabel: 'Löschen', danger: true }))) return;
+          for (const id of multiSelected) {
+            const fd = new FormData();
+            fd.append('taskId', id);
+            fd.append('newStart', ''); fd.append('newEnd', '');
+            // Use a lightweight delete — we need a dedicated action
+          }
+          toast('Bulk-Löschung noch nicht implementiert.');
+        }}>
+          <Icon name="delete" size={12} /> Löschen
+        </button>
+      </div>
+    {/if}
     <Gantt
       tasks={visibleTasks}
       dependencies={parent.deps as Dependency[]}
@@ -415,6 +434,8 @@
       taskDefectCounts={parent.taskDefectCounts}
       floatMap={floatMap}
       highlightedTaskId={selected}
+      multiSelected={multiSelected}
+      onMultiSelect={(ids) => (multiSelected = ids)}
     />
   {/if}
 </div>
@@ -600,4 +621,6 @@
   .diff-num { font-family: var(--mono); font-size: 11px; color: var(--muted); flex-shrink: 0; min-width: 38px; }
   .diff-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .diff-dates { font-family: var(--mono); font-size: 11px; color: var(--ink-2); flex-shrink: 0; }
+  .multi-select-bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--blue-soft, rgba(59, 108, 196, .08)); border-bottom: 1px solid var(--blue, #3B6CC4); font-size: 13px; }
+  .multi-select-bar b { font-family: var(--mono); }
 </style>

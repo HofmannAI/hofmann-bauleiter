@@ -39,6 +39,8 @@
     taskDefectCounts?: TaskDefectCount[];
     floatMap?: Map<string, number>;
     highlightedTaskId?: string | null;
+    multiSelected?: Set<string>;
+    onMultiSelect?: (ids: Set<string>) => void;
   };
   let {
     tasks,
@@ -53,7 +55,9 @@
     lookaheadWeeks = 0,
     taskDefectCounts = [],
     floatMap = new Map<string, number>(),
-    highlightedTaskId = null
+    highlightedTaskId = null,
+    multiSelected = new Set<string>(),
+    onMultiSelect
   }: Props = $props();
 
   /* Transitive connected set from highlightedTaskId */
@@ -629,10 +633,18 @@
                 class:verzug-overdue={vs === 'overdue'}
                 class:verzug-clear={vs === 'clear'}
                 style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed && dragging.mode === 'move' ? dragging.previewOffset : 0)}px;width:${widthFor(t) + (dragging?.id === t.id && dragging.armed && dragging.mode === 'resize-end' ? dragging.previewOffset : 0)}px;background:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#3B6CC4')}`}
-                onclick={() => {
+                onclick={(e) => {
                   if (depMode) { applyDepMode(t.id); return; }
-                  if (!dragging || !dragging.moved) onSelect?.(t.id);
+                  if (dragging?.moved) return;
+                  if (e.shiftKey && onMultiSelect) {
+                    const next = new Set(multiSelected);
+                    if (next.has(t.id)) next.delete(t.id); else next.add(t.id);
+                    onMultiSelect(next);
+                    return;
+                  }
+                  onSelect?.(t.id);
                 }}
+                class:multi-selected={multiSelected.has(t.id)}
                 onpointerdown={(e) => onBarPointerDown(e, t)}
                 onpointermove={onBarPointerMove}
                 onpointerup={onBarPointerUp}
@@ -1071,6 +1083,7 @@
     position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
     cursor: ew-resize; z-index: 2;
   }
+  .gantt-bar.multi-selected { box-shadow: 0 0 0 2px var(--blue, #3B6CC4), 0 2px 6px rgba(59, 108, 196, .3); }
   .gantt-bar.dragging { cursor: grabbing; }
   .gantt-bar-label {
     display: block; position: relative; z-index: 1;
