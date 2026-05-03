@@ -160,6 +160,23 @@
     <textarea id="task-notes" class="field-input" rows="3" bind:value={notes} onblur={save}></textarea>
   </div>
 
+  <div class="field">
+    <label class="field-label" for="task-reminder">Erinnerung</label>
+    <input id="task-reminder" type="date" class="field-input" value={parent.task.reminderDate ?? ''} onchange={async (e) => {
+      const v = (e.currentTarget as HTMLInputElement).value;
+      await postForm('saveFields', { name, notes, color, reminderDate: v });
+      toast(v ? `Erinnerung am ${v} gesetzt.` : 'Erinnerung entfernt.');
+    }} />
+    {#if parent.task.reminderDate}
+      {@const today = new Date().toISOString().slice(0, 10)}
+      {#if parent.task.reminderDate <= today}
+        <p class="field-hint" style="color:var(--red);font-weight:700">Erinnerung fällig!</p>
+      {:else}
+        <p class="field-hint">Erinnerung in {Math.round((new Date(parent.task.reminderDate).getTime() - Date.now()) / 86400000)} Tagen</p>
+      {/if}
+    {/if}
+  </div>
+
   <h3 class="section-title">Rückmeldung (Ist-Daten)</h3>
   <div class="field-row">
     <div class="field">

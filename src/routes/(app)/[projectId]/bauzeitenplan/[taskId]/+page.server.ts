@@ -45,11 +45,18 @@ export const actions: Actions = {
     const name = String(fd.name ?? '').trim();
     const notes = String(fd.notes ?? '');
     const color = String(fd.color ?? '');
+    const reminderDate = String(fd.reminderDate ?? '');
     if (!name) return fail(400, { error: 'Name darf nicht leer sein.' });
 
     await db
       .update(tasks)
-      .set({ name, notes: notes || null, color: color || null, updatedAt: new Date() })
+      .set({
+        name,
+        notes: notes || null,
+        color: color || null,
+        reminderDate: reminderDate || null,
+        updatedAt: new Date()
+      })
       .where(and(eq(tasks.id, params.taskId), eq(tasks.projectId, params.projectId)));
 
     await db.insert(activity).values({
