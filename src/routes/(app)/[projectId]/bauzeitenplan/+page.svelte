@@ -336,6 +336,41 @@
       <button class="filter-pill" class:active={showCritical} onclick={() => (showCritical = !showCritical)}>
         Kritisch {#if showCritical}<span class="badge">{cpIds.size}</span>{/if}
       </button>
+      <details class="filter-dropdown">
+        <summary class="filter-pill">Ansichten</summary>
+        <div class="dropdown-panel">
+          {#each parent.savedViews ?? [] as v (v.id)}
+            <button class="dropdown-item" onclick={async () => {
+              try {
+                const f = v.filterJson as { gewerke?: string[]; haus?: string[]; la?: number; overdue?: boolean; critical?: boolean };
+                if (f.gewerke) gewerkFilter = new Set(f.gewerke);
+                if (f.haus) houseFilter = new Set(f.haus);
+                if (f.la !== undefined) lookahead = f.la as 0|3|4|6;
+                if (f.overdue) showOverdueOnly = f.overdue;
+                if (f.critical) showCritical = f.critical;
+                syncUrl();
+                toast(`Ansicht "${v.name}" geladen.`);
+              } catch { toast('Fehler.'); }
+            }}>{v.name}</button>
+          {/each}
+          <button class="dropdown-item" style="color:var(--blue);font-weight:700" onclick={async () => {
+            const name = prompt('Name der Ansicht:');
+            if (!name) return;
+            const filterJson = JSON.stringify({
+              gewerke: [...gewerkFilter],
+              haus: [...houseFilter],
+              la: lookahead,
+              overdue: showOverdueOnly,
+              critical: showCritical
+            });
+            const fd = new FormData();
+            fd.append('name', name);
+            fd.append('filterJson', filterJson);
+            const res = await fetch('?/saveView', { method: 'POST', body: fd });
+            if (res.ok) { toast(`Ansicht "${name}" gespeichert.`); await invalidateAll(); }
+          }}>+ Aktuelle Ansicht speichern</button>
+        </div>
+      </details>
       <button class="filter-pill" onclick={() => openCreateSheet(fmtDate(new Date()))}>
         + Termin
       </button>
