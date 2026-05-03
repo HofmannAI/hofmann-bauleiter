@@ -148,6 +148,7 @@
   let gewerkId = $state(data.defect.gewerkId ?? '');
   let contactId = $state(data.defect.contactId ?? '');
   let taskId = $state(data.defect.taskId ?? '');
+  let externalId = $state((data.defect as Record<string, unknown>).externalId as string ?? '');
 
   // Filter tasks by same gewerk (if set), but always show all
   let filteredTasks = $derived.by(() => {
@@ -234,7 +235,7 @@
   }
 
   async function save() {
-    const res = await postForm('saveFields', { title, description, gewerkId, contactId, taskId, deadline, followupDate, priority, status });
+    const res = await postForm('saveFields', { title, description, gewerkId, contactId, taskId, deadline, followupDate, priority, status, externalId });
     if (res.ok) toast('Gespeichert.');
     else toast('Fehler.');
   }
@@ -329,6 +330,7 @@
 
   <div class="defect-header">
     <span class="defect-num-tag">{parent.defect.shortId}</span>
+    <input class="external-id-input" bind:value={externalId} onblur={save} placeholder="Ext. Nr." title="Externe Mangelnummer" />
     <input class="defect-title-input" bind:value={title} onblur={save} />
     <span class="status-pill status-{status}">{status}</span>
   </div>
@@ -647,6 +649,9 @@
   .back-link:hover { color: var(--on-surface); }
   .defect-header { display: flex; align-items: center; gap: var(--gutter); margin-bottom: var(--stack-lg); flex-wrap: wrap; }
   .defect-num-tag { font-size: 13px; font-weight: 600; color: var(--on-surface); background: var(--surface-container-low); padding: 4px 10px; border-radius: var(--r-sm); border: 1px solid var(--outline-variant); }
+  .external-id-input { width: 80px; font-size: 12px; font-weight: 500; color: var(--secondary); background: transparent; border: 1px dashed var(--outline-variant); border-radius: var(--r-sm); padding: 4px 8px; text-align: center; }
+  .external-id-input:focus { border-style: solid; border-color: var(--primary-container); outline: none; }
+  .external-id-input::placeholder { color: var(--outline-variant); }
   .plan-crop-section { display: flex; gap: var(--stack-lg); align-items: center; padding: var(--stack-md); margin-bottom: var(--stack-lg); background: var(--glass-card); -webkit-backdrop-filter: var(--blur-card); backdrop-filter: var(--blur-card); border: 0.5px solid rgba(255, 255, 255, 0.50); border-radius: var(--r-md); text-decoration: none; color: inherit; transition: all var(--d-fast) var(--ease-out-expo); }
   .plan-crop-section:hover { border-color: var(--outline-variant); transform: translateX(2px); box-shadow: var(--shadow-1); }
   .plan-crop-img { width: 200px; height: 150px; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--surface-container-highest); border: 1px solid var(--outline-variant); display: block; position: relative; }

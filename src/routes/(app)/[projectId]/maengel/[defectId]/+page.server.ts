@@ -52,7 +52,8 @@ const fieldsSchema = z.object({
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
   rechtsgrundlage: z.string().max(120).optional().or(z.literal('')),
   priority: z.coerce.number().int().min(1).max(3).optional(),
-  status: z.enum(['open', 'sent', 'acknowledged', 'resolved', 'accepted', 'rejected', 'reopened']).optional()
+  status: z.enum(['open', 'sent', 'acknowledged', 'resolved', 'accepted', 'rejected', 'reopened']).optional(),
+  externalId: z.string().max(100).optional().or(z.literal(''))
 });
 
 const photoLinkSchema = z.object({
@@ -89,7 +90,7 @@ export const actions: Actions = {
     const fields: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(parsed.data)) {
       if (v === '' || v === undefined) {
-        if (['gewerkId', 'contactId', 'apartmentId', 'taskId', 'deadline', 'followupDate'].includes(k)) {
+        if (['gewerkId', 'contactId', 'apartmentId', 'taskId', 'deadline', 'followupDate', 'externalId'].includes(k)) {
           fields[k] = null;
         }
       } else {
