@@ -422,14 +422,14 @@ main { flex: 1; padding-bottom: 80px; }
 
 /* Hero */
 .hero {
-  background: var(--ink); color: #fff;
+  background: var(--inverse-surface); color: var(--inverse-on-surface);
   border-radius: var(--r-xl); padding: 22px 20px;
-  margin-bottom: 14px; position: relative; overflow: hidden;
+  margin-bottom: var(--stack-lg); position: relative; overflow: hidden;
 }
 .hero::before {
   content: ''; position: absolute; top: -40px; right: -40px;
   width: 200px; height: 200px;
-  background: radial-gradient(circle, rgba(227, 6, 19, .18) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(226, 22, 42, .18) 0%, transparent 65%);
   pointer-events: none;
 }
 .hero-eyebrow {
@@ -446,7 +446,7 @@ main { flex: 1; padding-bottom: 80px; }
 .progress-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .progress-ring circle { fill: none; stroke-width: 7; }
 .progress-ring .ring-bg { stroke: rgba(255, 255, 255, .12); }
-.progress-ring .ring-fg { stroke: var(--red); transition: stroke-dashoffset .6s ease; stroke-linecap: round; }
+.progress-ring .ring-fg { stroke: var(--primary-container); transition: stroke-dashoffset .6s ease; stroke-linecap: round; }
 .progress-ring-label {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: var(--display); font-weight: 800; font-size: 17px;
@@ -513,50 +513,64 @@ main { flex: 1; padding-bottom: 80px; }
 }
 .filter-pill:not(.active) .badge { background: var(--grey-soft); color: var(--ink); }
 
-/* Cards / Items */
+/* Cards / Items — Glass Surface */
 .scope-group {
-  background: var(--paper); border: 1px solid var(--line);
-  border-radius: var(--r-lg); padding: 13px 14px;
-  margin-bottom: 10px; box-shadow: var(--shadow-1);
+  background: var(--glass-card);
+  -webkit-backdrop-filter: var(--blur-card);
+  backdrop-filter: var(--blur-card);
+  border: 0.5px solid rgba(255, 255, 255, 0.50);
+  border-radius: var(--r-md); padding: var(--stack-lg) var(--margin-main);
+  margin-bottom: var(--stack-md);
   width: 100%; text-align: left; font-family: inherit; color: inherit;
   cursor: pointer; display: block;
+  transition: border-color var(--d-fast) var(--ease-out-expo);
 }
-.scope-group:hover { border-color: var(--line-strong); }
-.scope-group-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+@supports not (backdrop-filter: blur(1px)) {
+  .scope-group { background: var(--surface-container-lowest); box-shadow: var(--shadow-1); }
+}
+.scope-group:hover { border-color: var(--outline-variant); }
+.scope-group-head { display: flex; align-items: center; gap: var(--gutter); margin-bottom: var(--stack-md); }
 .scope-icon {
-  width: 26px; height: 26px; border-radius: 8px;
-  background: var(--red-soft); color: var(--red);
+  width: 28px; height: 28px; border-radius: var(--r-DEFAULT);
+  background: var(--primary-fixed); color: var(--primary-container);
   display: flex; align-items: center; justify-content: center;
 }
 .scope-icon svg { width: 15px; height: 15px; }
-.scope-name { font-family: var(--display); font-weight: 700; font-size: 14px; flex: 1; }
-.scope-progress-text { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--muted); }
+.scope-name { font-family: var(--display); font-weight: 700; font-size: 15px; flex: 1; }
+.scope-progress-text { font-size: 12px; font-weight: 500; color: var(--secondary); letter-spacing: 0.06px; }
 
-.progress-bar { height: 6px; background: var(--grey-soft); border-radius: 3px; overflow: hidden; }
+.progress-bar { height: 6px; background: var(--surface-container-highest); border-radius: 3px; overflow: hidden; }
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--red) 0%, var(--red-deep) 100%);
+  background: linear-gradient(90deg, var(--primary-container) 0%, var(--primary) 100%);
   border-radius: 3px; transition: width .5s ease;
 }
 .progress-bar-fill.green { background: var(--green); }
 
 /* Activity feed */
-.activity-feed { display: flex; flex-direction: column; gap: 6px; }
+.activity-feed { display: flex; flex-direction: column; gap: var(--stack-sm); }
 .activity-item {
-  display: flex; gap: 11px; padding: 10px 12px;
-  background: var(--paper); border: 1px solid var(--line);
+  display: flex; gap: var(--gutter); padding: var(--stack-md) var(--gutter);
+  background: var(--glass-card);
+  -webkit-backdrop-filter: var(--blur-card);
+  backdrop-filter: var(--blur-card);
+  border: 0.5px solid rgba(255, 255, 255, 0.50);
   border-radius: var(--r-md);
-  transition: all .12s; cursor: pointer; text-align: left;
+  transition: all var(--d-fast) var(--ease-out-expo);
+  cursor: pointer; text-align: left;
   width: 100%; font-family: inherit; color: inherit;
 }
-.activity-item:hover { border-color: var(--line-strong); transform: translateX(2px); }
+@supports not (backdrop-filter: blur(1px)) {
+  .activity-item { background: var(--surface-container-lowest); border-color: var(--outline-variant); }
+}
+.activity-item:hover { border-color: var(--outline-variant); transform: translateX(2px); }
 .activity-icon {
-  width: 30px; height: 30px; border-radius: 8px;
+  width: 30px; height: 30px; border-radius: var(--r-DEFAULT);
   background: var(--green-soft); color: var(--green);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .activity-icon svg { width: 15px; height: 15px; }
-.activity-icon.photo { background: var(--red-soft); color: var(--red); }
+.activity-icon.photo { background: var(--primary-fixed); color: var(--primary-container); }
 .activity-icon.defect { background: var(--amber-soft); color: var(--amber); }
 .activity-text { flex: 1; min-width: 0; }
 .activity-line1 {
