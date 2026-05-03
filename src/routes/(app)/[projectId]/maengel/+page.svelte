@@ -12,6 +12,7 @@
 import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, type VorgangAggregate } from '$lib/db/layoutFilter';
   import { getSignedUrl } from '$lib/storage/photos';
   import { suppressRealtimeFor } from '$lib/stores/realtime';
+  import { exportDefectsToExcel, generateImportTemplate, parseImportExcel, type ParsedImportRow, type DefectExportRow } from '$lib/excel/defectExcel';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -309,6 +310,79 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
     }
   }
 
+  // Excel Import/Export
+  let showImport = $state(false);
+  let importRows = $state<ParsedImportRow[]>([]);
+  let importing = $state(false);
+
+  function exportExcel() {
+    const aptMap = new Map<string, string>();
+    for (const h of parent.structure) {
+      for (const a of h.apartments) {
+        aptMap.set(a.id, `${h.name} / ${a.name}`);
+      }
+    }
+    const contactMap = new Map(parent.contacts.map((c) => [c.id, c]));
+
+    const rows: DefectExportRow[] = visible.map((d) => {
+      const contact = d.gewerkId ? contactMap.get(d.gewerkId) : null;
+      return {
+        shortId: d.shortId,
+        externalId: (d as Record<string, unknown>).externalId as string | null ?? null,
+        title: d.title,
+        description: null,
+        status: d.status,
+        priority: d.priority,
+        gewerkName: d.gewerkName,
+        contactCompany: contact?.company ?? null,
+        contactName: contact?.contactName ?? null,
+        deadline: d.deadline,
+        cost: (d as Record<string, unknown>).cost as string | null ?? null,
+        apartmentLabel: d.apartmentId ? aptMap.get(d.apartmentId) ?? null : null,
+        createdAt: d.createdAt
+      };
+    });
+    exportDefectsToExcel(rows, parent.project.name);
+    toast(`${rows.length} Mängel exportiert.`);
+  }
+
+  function handleImportFile(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        importRows = parseImportExcel(reader.result as ArrayBuffer);
+        showImport = true;
+      } catch (err) {
+        toast('Datei konnte nicht gelesen werden.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    input.value = '';
+  }
+
+  async function executeImport() {
+    if (importRows.length === 0) return;
+    importing = true;
+    const fd = new FormData();
+    fd.append('rows', JSON.stringify(importRows));
+    const res = await fetch('?/excelImport', { method: 'POST', body: fd });
+    if (res.ok) {
+      const data = await res.json();
+      const count = data?.data?.importCount ?? importRows.length;
+      toast(`${count} Mängel importiert.`);
+      showImport = false;
+      importRows = [];
+      suppressRealtimeFor(3000);
+      await invalidateAll();
+    } else {
+      toast('Import fehlgeschlagen.');
+    }
+    importing = false;
+  }
+
   function applyCreateTemplate(id: string) {
     if (!id) {
       createSelectedTemplateId = '';
@@ -412,6 +486,13 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
       <a class="btn btn-ghost btn-sm" href={`/${parent.project.id}/maengel/statistik`}>
         <Icon name="activity" size={14} /> Statistik
       </a>
+      <button class="btn btn-ghost btn-sm" onclick={exportExcel} type="button">
+        <Icon name="download" size={14} /> Excel
+      </button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+        <Icon name="upload" size={14} /> Import
+        <input type="file" accept=".xlsx,.xls,.csv" onchange={handleImportFile} hidden />
+      </label>
       <button class="btn btn-ghost btn-sm" onclick={() => (showBulk = true)}>
         <Icon name="list" size={14} /> Aus Protokoll
       </button>
@@ -834,6 +915,44 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   </div>
 {/if}
 
+{#if showImport}
+  <button class="scrim open" onclick={() => { showImport = false; importRows = []; }} aria-label="Schließen"></button>
+  <div class="sheet open" role="dialog" aria-label="Excel-Import Vorschau">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-head-text">
+        <div class="sheet-eyebrow">Excel-Import</div>
+        <h3 class="sheet-title">{importRows.length} Mängel gefunden</h3>
+      </div>
+      <button class="sheet-close" onclick={() => { showImport = false; importRows = []; }} aria-label="Schließen"><Icon name="close" /></button>
+    </div>
+    <div class="sheet-body">
+      <div class="import-preview">
+        {#each importRows as row, i}
+          <div class="import-row">
+            <span class="import-num">{i + 1}</span>
+            <span class="import-title">{row.title}</span>
+            {#if row.gewerkName}<span class="import-tag">{row.gewerkName}</span>{/if}
+            {#if row.priority === 1}<span class="import-tag import-tag-red">Hoch</span>{/if}
+          </div>
+        {/each}
+      </div>
+      <p class="field-hint" style="margin-top:8px">
+        Gewerke und Firmen werden automatisch zugeordnet (Name-Match).
+        <button class="btn btn-ghost btn-sm" onclick={generateImportTemplate} type="button" style="margin-left:8px">Vorlage herunterladen</button>
+      </p>
+    </div>
+    <div class="sheet-foot">
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" onclick={() => { showImport = false; importRows = []; }}>Abbrechen</button>
+        <button class="btn btn-primary" onclick={executeImport} disabled={importing}>
+          {#if importing}Importiert…{:else}{importRows.length} Mängel importieren{/if}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .maengel-layout { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
   @media (min-width: 980px) { .maengel-layout { grid-template-columns: 240px 1fr; } }
@@ -904,4 +1023,10 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   .gps-row { display: flex; align-items: center; gap: var(--stack-md); }
   .gps-coords { font-size: 12px; color: var(--secondary); font-variant-numeric: tabular-nums; }
   .bulk-extras { padding: 10px var(--gutter); margin-bottom: var(--gutter); background: var(--surface-container-low); border: 1px solid var(--outline-variant); border-radius: var(--r-md); display: flex; flex-direction: column; gap: var(--stack-md); }
+  .import-preview { display: flex; flex-direction: column; gap: var(--stack-sm); max-height: 300px; overflow-y: auto; }
+  .import-row { display: flex; align-items: center; gap: var(--stack-md); padding: var(--stack-sm) var(--stack-md); background: var(--surface-container-low); border-radius: var(--r-sm); font-size: 13px; }
+  .import-num { font-size: 11px; font-weight: 600; color: var(--secondary); min-width: 24px; }
+  .import-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .import-tag { font-size: 11px; font-weight: 500; text-transform: uppercase; padding: 2px 6px; border-radius: var(--r-sm); background: var(--surface-container); color: var(--secondary); }
+  .import-tag-red { background: rgba(226, 22, 42, 0.10); color: var(--primary-container); }
 </style>

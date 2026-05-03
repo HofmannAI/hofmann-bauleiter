@@ -209,6 +209,64 @@ export const actions: Actions = {
     return { ok: true };
   },
 
+  excelImport: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const rowsJson = String(fd.rows ?? '');
+    if (!rowsJson) return fail(400, { error: 'Keine Daten.' });
+
+    let rows: Array<{
+      title: string;
+      description?: string;
+      gewerkName?: string;
+      company?: string;
+      deadline?: string;
+      priority?: number;
+      cost?: number;
+      externalId?: string;
+    }>;
+    try {
+      rows = JSON.parse(rowsJson);
+    } catch {
+      return fail(400, { error: 'Ungültiges JSON.' });
+    }
+    if (!Array.isArray(rows) || rows.length === 0) return fail(400, { error: 'Keine Zeilen.' });
+
+    // Load gewerke + contacts for name matching
+    const gewerkeRows = await db.select().from(gewerke);
+    const contactsAll = await listContactsForProject(params.projectId);
+
+    let count = 0;
+    for (const r of rows) {
+      if (!r.title?.trim()) continue;
+
+      // Match gewerk by name (case-insensitive)
+      const matchedGewerk = r.gewerkName
+        ? gewerkeRows.find((g) => g.name.toLowerCase() === r.gewerkName!.toLowerCase())
+        : null;
+
+      // Match contact by company name (case-insensitive)
+      const matchedContact = r.company
+        ? contactsAll.find((c) => c.company?.toLowerCase() === r.company!.toLowerCase())
+        : null;
+
+      await createDefect({
+        projectId: params.projectId,
+        title: r.title.trim().slice(0, 160),
+        description: r.description ?? null,
+        gewerkId: matchedGewerk?.id ?? null,
+        contactId: matchedContact?.id ?? null,
+        deadline: r.deadline ?? null,
+        priority: r.priority ?? 2,
+        cost: r.cost ?? null,
+        createdBy: locals.user.id
+      });
+      count++;
+    }
+
+    return { ok: true, importCount: count };
+  },
+
   bulkExtract: async ({ request, params, locals }) => {
     if (!locals.user || !db) return fail(401);
     const fd = Object.fromEntries(await request.formData());
