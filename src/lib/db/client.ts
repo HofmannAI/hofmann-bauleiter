@@ -12,7 +12,7 @@ if (!connectionString && typeof process !== 'undefined' && process.env.NODE_ENV 
 }
 
 const client = connectionString
-  ? postgres(connectionString, { prepare: false, max: 5 })
+  ? postgres(connectionString, { prepare: false, max: 15, idle_timeout: 20, connect_timeout: 10 })
   : (null as unknown as ReturnType<typeof postgres>);
 
 export const db = client ? drizzle(client, { schema }) : (null as unknown as ReturnType<typeof drizzle>);
