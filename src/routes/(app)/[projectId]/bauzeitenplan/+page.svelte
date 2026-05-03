@@ -110,7 +110,13 @@
       matches.add(t.id);
     }
 
-    // Step 2: add parents ONLY if they have at least one visible child
+    if (viewMode === 'next') {
+      // Next-Mode: keine Sammelbalken — nur Leaf-Tasks zeigen
+      // Das gibt die kompakteste Ansicht fuer Mobile
+      return parent.tasks.filter((t) => matches.has(t.id));
+    }
+
+    // Vollplan: Parents hinzufuegen wenn mindestens 1 Kind sichtbar
     for (const id of [...matches]) {
       let p = byId.get(id)?.parentId ?? null;
       while (p) {
