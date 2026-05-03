@@ -6,7 +6,17 @@ Human-readable feature log. Eine Zeile pro merklicher Änderung.
 
 ## [unreleased] — post-rc2
 
+### Changed
+- design: **Liquid Construction System** — komplette Design-Migration
+  auf iOS-inspiriertes Glassmorphism-Design. Neue Farbpalette mit
+  Construction Red (#E2162A), Glass-Surface-Effekte mit backdrop-blur,
+  iOS HIG Typography-Skala (Inter), 44px Touch-Targets durchgehend.
+  11 PRs (#54-#64), keine funktionalen Änderungen.
+
 ### Added
+- feat(projects): Projekt löschen mit Passwort-Bestätigung
+  ("hofmannhaus"). Lösch-Button auf Projekt-Karten, CASCADE löscht
+  alle Kind-Daten. (PR #65)
 - feat(bauzeit-pro-batch2): 10 weitere Features + Hotfix:
   BP-14 Projektende-Linie, BP-15 Verknuepfte hervorheben,
   BP-16 Ghost-Bars, BP-08 Soll-Ist Dual-Bars, BP-10 Rueckmeldung
