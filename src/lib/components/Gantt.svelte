@@ -1228,4 +1228,17 @@
   .gantt-milestone .gantt-dep-handle { position: absolute; top: 50%; transform: translateY(-50%); }
   .gantt-milestone .gantt-dep-handle-start { left: -12px; }
   .gantt-milestone .gantt-dep-handle-end { right: -12px; }
+
+  /* Print/PDF */
+  @media print {
+    .gantt-toolbar { display: none !important; }
+    .gantt-wrap { height: auto !important; min-height: auto !important; overflow: visible !important; }
+    .gantt-list { overflow: visible !important; height: auto !important; }
+    .gantt-timeline-wrap { overflow: visible !important; height: auto !important; }
+    .gantt-bar-tooltip { display: none !important; }
+    .gantt-dep-handle { display: none !important; }
+    .gantt-pin-btn { display: none !important; }
+    .gantt-today-pulse { display: none !important; }
+    .dep-mode-banner { display: none !important; }
+  }
 </style>
