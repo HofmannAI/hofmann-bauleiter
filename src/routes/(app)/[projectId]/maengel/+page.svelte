@@ -42,6 +42,14 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
 
   let fristFilter = $state<FristFilter>('all');
   let searchText = $state('');
+  let taskIdFilter = $state<string | null>(null);
+
+  // Hydrate taskId filter from URL
+  onMount(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const tid = sp.get('taskId');
+    if (tid) taskIdFilter = tid;
+  });
 
   let vorgangMap = $derived.by(() => {
     const m = new Map<string, VorgangAggregate>();
@@ -223,6 +231,7 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
         }
         if (gewerkFilter !== 'all' && d.gewerkId !== gewerkFilter) return false;
       }
+      if (taskIdFilter && d.taskId !== taskIdFilter) return false;
       if (!fristMatches(d)) return false;
       if (!searchMatches(d)) return false;
       if (!defectMatchesStruktur(d)) return false;
@@ -364,6 +373,17 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
       </button>
     </div>
   </div>
+
+  {#if taskIdFilter}
+    <div class="filter-bar">
+      <span class="filter-pill active" style="background:var(--red);color:#fff">
+        Nur Mängel zu Termin
+      </span>
+      <button class="filter-pill" onclick={() => { taskIdFilter = null; history.replaceState({}, '', window.location.pathname); }}>
+        ✕ Filter aufheben
+      </button>
+    </div>
+  {/if}
 
   <div class="filter-bar">
     <button class="filter-pill" class:active={statusFilter === 'all'} onclick={() => (statusFilter = 'all')}>Alle</button>

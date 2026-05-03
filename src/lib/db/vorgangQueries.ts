@@ -4,7 +4,7 @@
  */
 import { db } from './client';
 import { defectVorgaenge, briefVorlagen, firmaSettings, defects } from './schema';
-import { eq, and, desc, asc, sql } from 'drizzle-orm';
+import { eq, and, desc, asc, sql, inArray } from 'drizzle-orm';
 import type { VorgangPartei, VorgangStatus } from './vorgangTypes';
 export type { VorgangPartei, VorgangStatus } from './vorgangTypes';
 export { VORGANG_STATUS_LABEL, VORGANG_STATUS_TINT } from './vorgangTypes';
@@ -88,33 +88,47 @@ export async function getFirmaSettings() {
 
 /**
  * Aggregiert für die Mängel-Liste: ein Map defectId → letzter AN/AG-Status.
- * Eine einzige DB-Query mit DISTINCT ON — liefert pro (defect_id, partei)
- * nur den neuesten Vorgang. Nutzt Index dv_defect_partei_idx auf
- * (defect_id, partei, created_at DESC).
+ *
+ * Strategie: Zuerst die defect_ids des Projekts holen (via defects-Tabelle,
+ * die bereits RLS-gefiltert ist), dann Vorgänge direkt per defect_id IN (...)
+ * laden. Das vermeidet den JOIN durch RLS auf defect_vorgaenge.
+ *
+ * Falls keine Defects: early return (kein DB-Hit auf vorgaenge).
  */
 export async function vorgaengeByProject(projectId: string): Promise<
   Map<string, { AN: VorgangRow | null; AG: VorgangRow | null }>
 > {
   const out = new Map<string, { AN: VorgangRow | null; AG: VorgangRow | null }>();
   if (!db) return out;
-  // DISTINCT ON gibt pro Gruppe nur die erste Row zurück → mit
-  // ORDER BY created_at DESC ist das die neueste pro (defect, partei).
-  // Drastisch weniger Daten als "alle Vorgänge des Projekts".
-  const rows = await db.execute<VorgangRow>(sql`
-    SELECT DISTINCT ON (v.defect_id, v.partei)
-      v.id, v.defect_id AS "defectId", v.partei, v.status,
-      v.beschreibung, v.termin, v.termin_antwort AS "terminAntwort",
-      v.document_id AS "documentId", v.document_url AS "documentUrl",
-      v.created_by AS "createdBy", v.created_at AS "createdAt"
-    FROM defect_vorgaenge v
-    INNER JOIN defects d ON d.id = v.defect_id
-    WHERE d.project_id = ${projectId}
-    ORDER BY v.defect_id, v.partei, v.created_at DESC
-  `);
-  for (const v of rows) {
+
+  // Schritt 1: Defect-IDs des Projekts (RLS auf defects greift hier)
+  const defectRows = await db
+    .select({ id: defects.id })
+    .from(defects)
+    .where(eq(defects.projectId, projectId));
+
+  if (defectRows.length === 0) return out;
+  const defectIds = defectRows.map(d => d.id);
+
+  // Schritt 2: Vorgänge per defect_id IN (...) — nutzt dv_defect_partei_idx
+  // In Batches falls >500 Defects (vermeidet zu langen IN-Ausdruck)
+  const BATCH = 500;
+  const allVorgaenge: VorgangRow[] = [];
+  for (let i = 0; i < defectIds.length; i += BATCH) {
+    const batch = defectIds.slice(i, i + BATCH);
+    const rows = await db
+      .select()
+      .from(defectVorgaenge)
+      .where(inArray(defectVorgaenge.defectId, batch))
+      .orderBy(desc(defectVorgaenge.createdAt));
+    allVorgaenge.push(...rows);
+  }
+
+  // Schritt 3: Pro (defect_id, partei) nur den neuesten behalten
+  for (const v of allVorgaenge) {
     const cur = out.get(v.defectId) ?? { AN: null, AG: null };
-    if (v.partei === 'AN') cur.AN = v;
-    else if (v.partei === 'AG') cur.AG = v;
+    if (v.partei === 'AN' && !cur.AN) cur.AN = v;
+    else if (v.partei === 'AG' && !cur.AG) cur.AG = v;
     out.set(v.defectId, cur);
   }
   return out;

@@ -166,6 +166,8 @@ export const tasks = pgTable('tasks', {
   sortOrder: integer('sort_order').default(0).notNull(),
   notes: text('notes'),
   progressPct: integer('progress_pct').default(0).notNull(),
+  actualStartDate: date('actual_start_date'),
+  actualEndDate: date('actual_end_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });

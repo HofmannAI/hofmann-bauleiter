@@ -38,6 +38,7 @@
     lookaheadWeeks?: 0 | 3 | 4 | 6;
     taskDefectCounts?: TaskDefectCount[];
     floatMap?: Map<string, number>;
+    highlightedTaskId?: string | null;
   };
   let {
     tasks,
@@ -51,8 +52,26 @@
     dependencies = [],
     lookaheadWeeks = 0,
     taskDefectCounts = [],
-    floatMap = new Map<string, number>()
+    floatMap = new Map<string, number>(),
+    highlightedTaskId = null
   }: Props = $props();
+
+  /* Transitive connected set from highlightedTaskId */
+  let connectedIds = $derived.by(() => {
+    if (!highlightedTaskId) return new Set<string>();
+    const connected = new Set<string>();
+    const queue = [highlightedTaskId];
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      if (connected.has(id)) continue;
+      connected.add(id);
+      for (const d of dependencies) {
+        if (d.predecessorId === id && !connected.has(d.successorId)) queue.push(d.successorId);
+        if (d.successorId === id && !connected.has(d.predecessorId)) queue.push(d.predecessorId);
+      }
+    }
+    return connected;
+  });
 
   /* ===== Verzug-Ampel: task overdue + open defects = red, all resolved = green ===== */
   let defectMap = $derived.by(() => {
@@ -181,6 +200,14 @@
     if (today < range.start || today > range.end) return null;
     return daysBetween(range.start, today) * dayWidth();
   }
+
+  let projectEndPos = $derived.by(() => {
+    if (tasks.length === 0) return null;
+    let latest = tasks[0].endDate;
+    for (const t of tasks) if (t.endDate > latest) latest = t.endDate;
+    if (latest < range.start || latest > range.end) return null;
+    return { px: (daysBetween(range.start, latest) + 1) * dayWidth(), date: latest };
+  });
 
   /* ===== Drag-to-move (Pointer Events: Maus + Touch) =====
    *
@@ -474,6 +501,11 @@
         {/if}
         <span class="gantt-list-num">{t.num ?? ''}</span>
         <span class="gantt-list-name">{t.name}</span>
+        {#if !isParentMap.has(t.id) && t.startDate !== t.endDate && t.endDate < fmtDate(new Date()) && (t.progressPct ?? 0) < 100}
+          <span class="gantt-status-dot red"></span>
+        {:else if !isParentMap.has(t.id) && (t.progressPct ?? 0) >= 100}
+          <span class="gantt-status-dot green"></span>
+        {/if}
       </button>
     {/each}
   </div>
@@ -494,6 +526,11 @@
           <span class="gantt-today-label">Heute</span>
         </div>
       {/if}
+      {#if projectEndPos}
+        <div class="gantt-project-end-line" style={`left:${projectEndPos.px}px`}>
+          <span class="gantt-project-end-label">Projektende</span>
+        </div>
+      {/if}
       <div class="gantt-rows" ondblclick={(e) => {
         if (!onCreateAtDate) return;
         // Only fire if double-click was on empty area (not on a bar)
@@ -512,9 +549,17 @@
           <div class="gantt-row depth-{t.depth}">
             {#if bl && !isParentMap.has(t.id)}
               <div
-                class="gantt-baseline"
+                class="gantt-baseline-bar"
                 title={`Soll: ${bl.plannedStart} → ${bl.plannedEnd}`}
                 style={`left:${offsetPx(bl.plannedStart)}px;width:${Math.max(8, (daysBetween(bl.plannedStart, bl.plannedEnd) + 1) * dayWidth())}px`}
+              >
+                <span class="gantt-baseline-label">Soll</span>
+              </div>
+            {/if}
+            {#if dragging?.id === t.id && dragging.armed && dragging.moved}
+              <div
+                class="gantt-ghost"
+                style={`left:${offsetPx(t.startDate)}px;width:${widthFor(t)}px;background:${t.color ?? '#3B6CC4'}`}
               ></div>
             {/if}
             {#if isParentMap.has(t.id)}
@@ -524,7 +569,7 @@
               <button
                 class="gantt-milestone"
                 class:critical={criticalPathIds.has(t.id)}
-                class:dimmed={criticalPathIds.size > 0 && !criticalPathIds.has(t.id)}
+                class:dimmed={(criticalPathIds.size > 0 && !criticalPathIds.has(t.id)) || (connectedIds.size > 0 && !connectedIds.has(t.id))}
                 class:dragging={dragging?.id === t.id && dragging.armed}
                 class:dep-mode-target={depMode && depMode.id !== t.id}
                 style={`left:${offsetPx(t.startDate) + (dragging?.id === t.id && dragging.armed ? dragging.previewOffset : 0)}px;--ms-color:${vs === 'overdue' ? '#C62828' : vs === 'clear' ? '#2E7D32' : (t.color ?? '#E30613')}`}
@@ -577,7 +622,7 @@
               <button
                 class="gantt-bar"
                 class:critical={criticalPathIds.has(t.id)}
-                class:dimmed={criticalPathIds.size > 0 && !criticalPathIds.has(t.id)}
+                class:dimmed={(criticalPathIds.size > 0 && !criticalPathIds.has(t.id)) || (connectedIds.size > 0 && !connectedIds.has(t.id))}
                 class:dragging={dragging?.id === t.id && dragging.armed}
                 class:armed-touch={dragging?.id === t.id && dragging.armed && dragging.pointerType !== 'mouse'}
                 class:dep-mode-target={depMode && depMode.id !== t.id}
@@ -762,7 +807,7 @@
   .gantt-row-list:hover { background: var(--paper-tint); }
   .gantt-row-list.depth-0 {
     font-weight: 800; font-family: var(--display); font-size: 13px;
-    background: var(--paper-tint);
+    background: var(--paper-tint); border-bottom: 2px solid var(--line-strong);
   }
   .gantt-row-list.depth-0:hover { background: var(--grey-soft); }
   .gantt-row-list.depth-1 { font-weight: 700; }
@@ -781,6 +826,9 @@
     flex-shrink: 0; min-width: 38px; letter-spacing: -.02em;
   }
   .gantt-list-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gantt-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: transparent; margin-left: 4px; }
+  .gantt-status-dot.red { background: var(--red); }
+  .gantt-status-dot.green { background: var(--green); }
   .gantt-row-list.depth-1 .gantt-list-name { padding-left: 6px; }
   .gantt-row-list.depth-2 .gantt-list-name { padding-left: 14px; font-size: 12.5px; color: var(--ink-2); }
 
@@ -827,6 +875,20 @@
     background: var(--red); z-index: 8; pointer-events: none;
     box-shadow: 0 0 0 1px rgba(227, 6, 19, .2);
   }
+  .gantt-project-end-line {
+    position: absolute; top: 30px; bottom: 0; width: 2px;
+    background: var(--ink-2); z-index: 7; pointer-events: none;
+    border-left: 2px dashed var(--ink-2);
+    opacity: 0.6;
+  }
+  .gantt-project-end-label {
+    position: absolute; left: -22px; top: 0;
+    background: var(--ink-2); color: #fff;
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap;
+  }
   .gantt-today-label {
     position: absolute; left: -14px; top: 0;
     background: var(--red); color: #fff;
@@ -851,7 +913,7 @@
   }
   .gantt-rows { position: relative; }
   .gantt-row { position: relative; height: 32px; border-bottom: 1px solid var(--line); }
-  .gantt-row.depth-0 { background: var(--paper-tint); }
+  .gantt-row.depth-0 { background: var(--paper-tint); border-bottom: 2px solid var(--line-strong); }
   .gantt-row:hover { background: rgba(227, 6, 19, .03); }
   .gantt-bar {
     position: absolute; top: 6px; height: 20px;
@@ -942,13 +1004,18 @@
     z-index: 60;
   }
   .dep-mode-banner .btn { color: #fff; }
-  .gantt-baseline {
-    position: absolute; top: 22px; height: 4px;
-    background: transparent;
-    border: 1.5px dashed rgba(15, 15, 16, 0.45);
-    border-radius: 2px;
+  .gantt-baseline-bar {
+    position: absolute; top: 2px; height: 6px;
+    background: rgba(15, 15, 16, 0.15);
+    border-radius: 3px;
     pointer-events: none;
     z-index: 1;
+  }
+  .gantt-baseline-label {
+    position: absolute; left: 2px; top: -1px;
+    font-family: var(--mono); font-size: 7px; font-weight: 700;
+    color: rgba(15, 15, 16, 0.35); text-transform: uppercase;
+    letter-spacing: .04em; pointer-events: none;
   }
   .gantt-bar.verzug-overdue {
     box-shadow: 0 0 0 2px #C62828, 0 2px 6px rgba(198, 40, 40, .35);
@@ -998,14 +1065,17 @@
     letter-spacing: .04em;
     text-transform: uppercase;
   }
-  .gantt-bar { cursor: grab; }
+  .gantt-bar { cursor: grab; overflow: visible; }
   .gantt-bar::after {
     content: '';
     position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
     cursor: ew-resize; z-index: 2;
   }
   .gantt-bar.dragging { cursor: grabbing; }
-  .gantt-bar-label { display: block; }
+  .gantt-bar-label {
+    display: block; position: relative; z-index: 1;
+    white-space: nowrap; pointer-events: none;
+  }
   .gantt-bar-tooltip {
     position: absolute; bottom: calc(100% + 6px); left: 50%;
     transform: translateX(-50%) scale(0.9);
@@ -1026,6 +1096,13 @@
   .gantt-bar-tooltip .tooltip-name { font-family: var(--display); font-weight: 700; font-size: 12px; }
   .gantt-bar-tooltip .tooltip-meta { font-family: var(--mono); font-size: 10px; opacity: 0.8; }
   .gantt-bar:hover .gantt-bar-tooltip { opacity: 1; transform: translateX(-50%) scale(1); }
+  .gantt-ghost {
+    position: absolute; top: 6px; height: 20px;
+    border-radius: 4px; opacity: 0.2;
+    pointer-events: none; z-index: 1;
+    border: 2px dashed rgba(15, 15, 16, .3);
+    background: transparent !important;
+  }
   .gantt-bar.summary {
     height: 8px; top: 12px; border-radius: 2px;
     background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);

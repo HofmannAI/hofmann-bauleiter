@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { gewerke, defectPhotos, defectHistory, defects as defectsTable, defectLayouts, defectTemplates } from '$lib/db/schema';
+import { gewerke, defectPhotos, defectHistory, defects as defectsTable, defectLayouts, defectTemplates, tasks } from '$lib/db/schema';
 import { listDefects, listPlans, listContactsForProject, createDefect } from '$lib/db/defectQueries';
 import { loadStructureTree } from '$lib/db/structureQueries';
 import { vorgaengeByProject } from '$lib/db/vorgangQueries';
@@ -64,6 +64,23 @@ export const actions: Actions = {
     const parsed = createSchema.safeParse(fd);
     if (!parsed.success) return fail(400, { error: 'Bitte Titel angeben.' });
 
+    // Auto-link to matching task (same gewerk, closest to today)
+    let autoTaskId: string | null = null;
+    if (parsed.data.gewerkId && db) {
+      const today = new Date().toISOString().slice(0, 10);
+      const matchingTasks = await db
+        .select({ id: tasks.id, startDate: tasks.startDate, endDate: tasks.endDate })
+        .from(tasks)
+        .where(and(eq(tasks.projectId, params.projectId), eq(tasks.gewerkId, parsed.data.gewerkId)))
+        .orderBy(asc(tasks.startDate))
+        .limit(10);
+      // Prefer task whose range covers today, else closest upcoming, else most recent
+      autoTaskId = matchingTasks.find(t => t.startDate <= today && t.endDate >= today)?.id
+        ?? matchingTasks.find(t => t.startDate >= today)?.id
+        ?? matchingTasks[matchingTasks.length - 1]?.id
+        ?? null;
+    }
+
     const row = await createDefect({
       projectId: params.projectId,
       title: parsed.data.title,
@@ -71,6 +88,7 @@ export const actions: Actions = {
       gewerkId: parsed.data.gewerkId || null,
       apartmentId: parsed.data.apartmentId || null,
       contactId: parsed.data.contactId || null,
+      taskId: autoTaskId,
       deadline: parsed.data.deadline || null,
       priority: parsed.data.priority,
       createdBy: locals.user.id

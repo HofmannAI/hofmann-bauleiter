@@ -403,6 +403,7 @@
       lookaheadWeeks={lookahead}
       taskDefectCounts={parent.taskDefectCounts}
       floatMap={floatMap}
+      highlightedTaskId={selected}
     />
   {/if}
 </div>
@@ -471,6 +472,12 @@
           <span class="field-label">Notizen</span>
           <div>{selectedTask.notes}</div>
         </div>
+      {/if}
+      {#if parent.taskDefectCounts.find(c => c.taskId === selectedTask.id && c.total > 0)}
+        {@const defectCount = parent.taskDefectCounts.find(c => c.taskId === selectedTask.id)!}
+        <a class="btn btn-ghost btn-block" style="margin-top:8px;color:var(--red)" href={`/${parent.project.id}/maengel?taskId=${selectedTask.id}`}>
+          <Icon name="file" size={14} /> {defectCount.open} offene Mängel anzeigen ({defectCount.total} gesamt)
+        </a>
       {/if}
     </div>
     <div class="sheet-foot">
