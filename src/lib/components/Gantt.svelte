@@ -501,6 +501,11 @@
         {/if}
         <span class="gantt-list-num">{t.num ?? ''}</span>
         <span class="gantt-list-name">{t.name}</span>
+        {#if !isParentMap.has(t.id) && t.startDate !== t.endDate && t.endDate < fmtDate(new Date()) && (t.progressPct ?? 0) < 100}
+          <span class="gantt-status-dot red"></span>
+        {:else if !isParentMap.has(t.id) && (t.progressPct ?? 0) >= 100}
+          <span class="gantt-status-dot green"></span>
+        {/if}
       </button>
     {/each}
   </div>
@@ -821,6 +826,9 @@
     flex-shrink: 0; min-width: 38px; letter-spacing: -.02em;
   }
   .gantt-list-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gantt-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: transparent; margin-left: 4px; }
+  .gantt-status-dot.red { background: var(--red); }
+  .gantt-status-dot.green { background: var(--green); }
   .gantt-row-list.depth-1 .gantt-list-name { padding-left: 6px; }
   .gantt-row-list.depth-2 .gantt-list-name { padding-left: 14px; font-size: 12.5px; color: var(--ink-2); }
 
