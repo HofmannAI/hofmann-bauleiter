@@ -168,6 +168,7 @@ export const tasks = pgTable('tasks', {
   progressPct: integer('progress_pct').default(0).notNull(),
   actualStartDate: date('actual_start_date'),
   actualEndDate: date('actual_end_date'),
+  segments: jsonb('segments'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });

@@ -430,7 +430,7 @@
       </div>
     {/if}
     <Gantt
-      tasks={visibleTasks}
+      tasks={visibleTasks as any}
       dependencies={parent.deps as Dependency[]}
       criticalPathIds={cpIds}
       onSelect={(id) => (selected = id)}

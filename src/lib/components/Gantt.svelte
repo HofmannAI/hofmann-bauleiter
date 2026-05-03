@@ -1,6 +1,7 @@
 <script lang="ts">
   import { parseDate, addDays, daysBetween, fmtDate, isNonWorkdayFull, holidayName } from '$lib/gantt/calendar';
 
+  type Segment = { start: string; end: string };
   type GTask = {
     id: string;
     num: string | null;
@@ -12,6 +13,7 @@
     depth: number;
     sortOrder: number;
     progressPct?: number;
+    segments?: Segment[] | null;
   };
 
   type TaskDefectCount = { taskId: string | null; total: number; open: number };
@@ -682,6 +684,16 @@
                 {#if (t.progressPct ?? 0) > 0}
                   <span class="gantt-bar-progress" style={`width:${Math.min(100, t.progressPct ?? 0)}%`}></span>
                 {/if}
+                {#if t.segments && t.segments.length >= 2}
+                  {#each t.segments.slice(0, -1) as seg, i}
+                    {@const gapStart = offsetPx(seg.end) - offsetPx(t.startDate) + dayWidth()}
+                    {@const nextSegStart = t.segments[i + 1] ? offsetPx(t.segments[i + 1].start) - offsetPx(t.startDate) : 0}
+                    {@const gapWidth = nextSegStart - gapStart}
+                    {#if gapWidth > 0}
+                      <span class="gantt-segment-gap" style={`left:${gapStart}px;width:${gapWidth}px`}></span>
+                    {/if}
+                  {/each}
+                {/if}
                 <span class="gantt-bar-label">{t.name}</span>
                 <span class="gantt-bar-tooltip" role="tooltip">
                   <span class="tooltip-name">{t.name}</span>
@@ -1154,6 +1166,12 @@
   .gantt-bar-tooltip .tooltip-name { font-family: var(--display); font-weight: 700; font-size: 12px; }
   .gantt-bar-tooltip .tooltip-meta { font-family: var(--mono); font-size: 10px; opacity: 0.8; }
   .gantt-bar:hover .gantt-bar-tooltip { opacity: 1; transform: translateX(-50%) scale(1); }
+  .gantt-segment-gap {
+    position: absolute; top: 0; bottom: 0;
+    background: var(--paper); z-index: 1;
+    border-left: 1px dashed rgba(15, 15, 16, .2);
+    border-right: 1px dashed rgba(15, 15, 16, .2);
+  }
   .gantt-ghost {
     position: absolute; top: 6px; height: 20px;
     border-radius: 4px; opacity: 0.2;
