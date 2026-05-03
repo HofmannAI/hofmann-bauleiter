@@ -158,6 +158,31 @@
     const rest = all.filter((t) => t.gewerkId !== gewerkId);
     return [...matching, ...rest];
   });
+  // Folgegewerk-Warnung: wenn dieser Mangel einem Termin zugeordnet ist
+  // und dieser Termin Nachfolger hat, zeige welche Gewerke betroffen sind
+  let folgewerkWarnung = $derived.by(() => {
+    if (!taskId) return null;
+    const deps = parent.taskDeps ?? [];
+    const allTasks = parent.projectTasks ?? [];
+    const gewerkeList = parent.gewerke ?? [];
+
+    // Finde direkte Nachfolger des zugeordneten Termins
+    const successorIds = deps.filter(d => d.predecessorId === taskId).map(d => d.successorId);
+    if (successorIds.length === 0) return null;
+
+    const successors = allTasks
+      .filter(t => successorIds.includes(t.id))
+      .map(t => {
+        const g = gewerkeList.find(g => g.id === t.gewerkId);
+        return { name: t.name, gewerk: g?.name ?? null };
+      });
+
+    if (successors.length === 0) return null;
+
+    const namen = successors.map(s => s.gewerk ?? s.name).join(', ');
+    return `Achtung: Dieser Mangel kann ${successors.length === 1 ? 'Folgegewerk' : 'Folgegewerke'} ${namen} verzögern.`;
+  });
+
   let deadline = $state(data.defect.deadline ?? '');
   let followupDate = $state(data.defect.followupDate ?? '');
   let priority = $state(String(data.defect.priority ?? 2));
@@ -434,6 +459,12 @@
         <span class="task-link-arrow">→</span>
       </a>
     {/if}
+    {#if folgewerkWarnung}
+      <div class="folgewerk-warnung">
+        <span class="folgewerk-icon">⚠️</span>
+        <span>{folgewerkWarnung}</span>
+      </div>
+    {/if}
   </div>
 
   <h3 class="section-title">Fotos <span class="count">{parent.photos.length}</span></h3>
@@ -664,4 +695,12 @@
   .task-link-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .task-link-date { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .task-link-arrow { font-size: 14px; color: var(--muted); flex-shrink: 0; }
+  .folgewerk-warnung {
+    display: flex; align-items: flex-start; gap: 8px;
+    margin-top: 8px; padding: 10px 12px;
+    background: rgba(217, 119, 6, .08); border: 1px solid rgba(217, 119, 6, .25);
+    border-radius: var(--r-md); font-size: 13px; line-height: 1.4;
+    color: var(--ink);
+  }
+  .folgewerk-icon { font-size: 16px; flex-shrink: 0; }
 </style>

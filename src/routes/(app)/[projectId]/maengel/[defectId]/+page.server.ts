@@ -2,7 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { defectPhotos, defectHistory, gewerke, contacts, textbausteine, tasks } from '$lib/db/schema';
+import { defectPhotos, defectHistory, gewerke, contacts, textbausteine, tasks, taskDependencies } from '$lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import { getDefect, updateDefectFields, listContactsForProject } from '$lib/db/defectQueries';
 import { listVorgaenge, addVorgang, listBriefVorlagen, getFirmaSettings } from '$lib/db/vorgangQueries';
@@ -10,9 +10,9 @@ import { listVorgaenge, addVorgang, listBriefVorlagen, getFirmaSettings } from '
 export const load: PageServerLoad = async ({ params }) => {
   const detail = await getDefect(params.projectId, params.defectId);
   if (!detail) error(404, 'Mangel nicht gefunden');
-  if (!db) return { ...detail, gewerke: [], contacts: [], textbausteine: [], vorgaenge: [], briefVorlagen: [], firma: null, projectTasks: [] };
+  if (!db) return { ...detail, gewerke: [], contacts: [], textbausteine: [], vorgaenge: [], briefVorlagen: [], firma: null, projectTasks: [], taskDeps: [] };
 
-  const [gewerkeRows, contactsRows, textRows, vorgaenge, briefVorlagen, firma, projectTasks] = await Promise.all([
+  const [gewerkeRows, contactsRows, textRows, vorgaenge, briefVorlagen, firma, projectTasks, taskDeps] = await Promise.all([
     db.select().from(gewerke).orderBy(asc(gewerke.sortOrder)),
     listContactsForProject(params.projectId),
     db.select().from(textbausteine).orderBy(asc(textbausteine.sortOrder)),
@@ -22,7 +22,9 @@ export const load: PageServerLoad = async ({ params }) => {
     db.select({ id: tasks.id, name: tasks.name, num: tasks.num, gewerkId: tasks.gewerkId, endDate: tasks.endDate })
       .from(tasks)
       .where(eq(tasks.projectId, params.projectId))
-      .orderBy(asc(tasks.sortOrder))
+      .orderBy(asc(tasks.sortOrder)),
+    db.select({ predecessorId: taskDependencies.predecessorId, successorId: taskDependencies.successorId, type: taskDependencies.type })
+      .from(taskDependencies)
   ]);
 
   return {
@@ -33,7 +35,8 @@ export const load: PageServerLoad = async ({ params }) => {
     vorgaenge,
     briefVorlagen,
     firma,
-    projectTasks
+    projectTasks,
+    taskDeps
   };
 };
 
