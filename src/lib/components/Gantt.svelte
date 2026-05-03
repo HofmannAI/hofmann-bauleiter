@@ -474,7 +474,7 @@
   /** Pfad-Generator: rechteckige Polylinie zwischen zwei Punkten,
    * ähnlich MS-Project: vom predecessor-Edge nach rechts/links,
    * dann vertikal, dann zur successor-Bar. */
-  let diagonalDeps = $state(false);
+  let diagonalDeps = $state(true); // Default: diagonal (natürlicher)
 
   function depPath(d: Dependency): string | null {
     const pred = barEdges(d.predecessorId);
@@ -483,7 +483,11 @@
     const fromX = d.type === 'SS' || d.type === 'SF' ? pred.x1 : pred.x2;
     const toX = d.type === 'FF' || d.type === 'SF' ? succ.x2 : succ.x1;
     if (diagonalDeps) {
-      return `M ${fromX} ${pred.y} L ${toX} ${succ.y}`;
+      // Schräge Linie mit kurzem horizontalen Stub für saubere Pfeilspitze
+      const stub = 6;
+      const fromDir = d.type === 'SS' || d.type === 'SF' ? -1 : 1;
+      const toDir = d.type === 'FF' || d.type === 'SF' ? 1 : -1;
+      return `M ${fromX} ${pred.y} L ${fromX + fromDir * stub} ${pred.y} L ${toX + toDir * stub} ${succ.y} L ${toX} ${succ.y}`;
     }
     const fromDir = d.type === 'SS' || d.type === 'SF' ? -1 : 1;
     const toDir = d.type === 'FF' || d.type === 'SF' ? 1 : -1;
@@ -1111,8 +1115,8 @@
   }
   .gantt-dep-arrow {
     fill: none;
-    stroke: rgba(15, 15, 16, 0.55);
-    stroke-width: 1.4;
+    stroke: rgba(15, 15, 16, 0.6);
+    stroke-width: 1.8;
     pointer-events: stroke;
     cursor: pointer;
     transition: stroke var(--d-fast, 180ms) ease, stroke-width var(--d-fast, 180ms) ease;
@@ -1123,8 +1127,8 @@
   }
   .gantt-dep-drag {
     stroke: var(--red);
-    stroke-width: 2;
-    stroke-dasharray: 4 3;
+    stroke-width: 2.5;
+    stroke-dasharray: 6 4;
     pointer-events: none;
   }
   .dep-mode-banner {
