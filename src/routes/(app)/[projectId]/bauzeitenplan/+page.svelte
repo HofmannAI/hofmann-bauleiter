@@ -612,22 +612,48 @@
       infoboxes={parent.infoboxes ?? []}
     />
     {#if parent.gewerke.length > 0}
-      <div class="gantt-legend">
-        <span class="gantt-legend-title">Legende</span>
-        {#each parent.gewerke as g (g.id)}
+      <div class="gantt-sidebar">
+        <span class="gantt-sidebar-title">Gewerke × Häuser</span>
+        <div class="gantt-sidebar-section">
+          <span class="gantt-sidebar-label">Gewerke</span>
+          {#each parent.gewerke as g (g.id)}
+            {@const active = gewerkFilter.size === 0 || gewerkFilter.has(g.id)}
+            <label class="gantt-sidebar-item" class:dimmed={!active}>
+              <input type="checkbox" checked={active} onchange={() => toggleGewerkFilter(g.id)} />
+              <span class="gantt-legend-dot" style={`background:${g.color}`}></span>
+              <span>{g.name}</span>
+            </label>
+          {/each}
+        </div>
+        {#if parent.houses.length > 0}
+          <div class="gantt-sidebar-section">
+            <span class="gantt-sidebar-label">Häuser</span>
+            {#each parent.houses as h (h.id)}
+              {@const active = houseFilter.size === 0 || houseFilter.has(h.id)}
+              <label class="gantt-sidebar-item" class:dimmed={!active}>
+                <input type="checkbox" checked={active} onchange={() => toggleHouseFilter(h.id)} />
+                <Icon name="building" size={12} />
+                <span>{h.name}</span>
+              </label>
+            {/each}
+          </div>
+        {/if}
+        {#if gewerkFilter.size > 0 || houseFilter.size > 0}
+          <button class="gantt-sidebar-reset" onclick={() => { gewerkFilter = new Set(); houseFilter = new Set(); syncUrl(); }}>
+            Filter zurücksetzen
+          </button>
+        {/if}
+        <div class="gantt-sidebar-section" style="margin-top:auto">
+          <span class="gantt-sidebar-label">Legende</span>
           <span class="gantt-legend-item">
-            <span class="gantt-legend-dot" style={`background:${g.color}`}></span>
-            <span>{g.name}</span>
+            <span class="gantt-legend-dot" style="background:var(--primary-container)">◆</span>
+            <span>Meilenstein</span>
           </span>
-        {/each}
-        <span class="gantt-legend-item">
-          <span class="gantt-legend-dot" style="background:var(--red)">◆</span>
-          <span>Meilenstein</span>
-        </span>
-        <span class="gantt-legend-item">
-          <span class="gantt-legend-dot" style="background:transparent;border:2px dashed var(--ink-2)"></span>
+          <span class="gantt-legend-item">
+            <span class="gantt-legend-dot" style="background:transparent;border:2px dashed var(--on-surface-variant)"></span>
           <span>Projektende</span>
         </span>
+        </div>
       </div>
     {/if}
   {/if}
@@ -849,8 +875,28 @@
   }
   @page { size: A3 landscape; margin: 10mm; }
 
-  .gantt-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 14px; background: var(--paper-tint); border-top: 1px solid var(--line); font-size: 11px; }
-  .gantt-legend-title { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-size: 10px; margin-right: 4px; }
-  .gantt-legend-item { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); }
+  .gantt-sidebar {
+    display: flex; flex-direction: column; gap: var(--stack-md);
+    padding: var(--stack-md) var(--margin-main);
+    background: var(--surface-container-low); border-top: 1px solid var(--outline-variant);
+    font-size: 12px; max-height: 300px; overflow-y: auto;
+  }
+  @media (min-width: 1024px) {
+    .gantt-sidebar {
+      position: fixed; right: 0; top: 120px; bottom: 80px; width: 200px;
+      border-top: none; border-left: 1px solid var(--outline-variant);
+      max-height: none; z-index: 20;
+    }
+  }
+  .gantt-sidebar-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06px; color: var(--secondary); }
+  .gantt-sidebar-section { display: flex; flex-direction: column; gap: 2px; }
+  .gantt-sidebar-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06px; color: var(--secondary); margin: var(--stack-sm) 0 2px; }
+  .gantt-sidebar-item { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: var(--r-sm); cursor: pointer; transition: opacity var(--d-fast); }
+  .gantt-sidebar-item.dimmed { opacity: 0.4; }
+  .gantt-sidebar-item:hover { background: var(--surface-container); }
+  .gantt-sidebar-item input[type="checkbox"] { width: 14px; height: 14px; flex-shrink: 0; }
+  .gantt-sidebar-reset { font-size: 11px; color: var(--primary-container); padding: 4px; cursor: pointer; }
+  .gantt-sidebar-reset:hover { text-decoration: underline; }
+  .gantt-legend-item { display: inline-flex; align-items: center; gap: 4px; color: var(--on-surface-variant); font-size: 11px; }
   .gantt-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; color: #fff; }
 </style>
