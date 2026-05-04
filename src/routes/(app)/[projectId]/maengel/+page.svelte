@@ -672,11 +672,13 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
         </h3>
         <div class="defect-list">
           {#each g.rows as d (d.id)}
+            {@const isOverdue = d.deadline && new Date(d.deadline + 'T00:00:00') < new Date() && !['resolved','accepted','rejected'].includes(d.status)}
+            {@const isSoonDue = d.deadline && !isOverdue && !['resolved','accepted','rejected'].includes(d.status) && (new Date(d.deadline + 'T00:00:00').getTime() - Date.now()) < 3 * 86400000}
             <div class="defect-row" class:selected={selected.has(d.id)}>
               <button class="select-cb" class:checked={selected.has(d.id)} onclick={() => toggleSelected(d.id)} aria-label="Auswählen" type="button">
                 {#if selected.has(d.id)}<Icon name="check" size={12} />{/if}
               </button>
-              <a class="defect-card" class:overdue={d.deadline && new Date(d.deadline + 'T00:00:00') < new Date()} href={`/${parent.project.id}/maengel/${d.id}`}>
+              <a class="defect-card" class:overdue={isOverdue} class:soon-due={isSoonDue} href={`/${parent.project.id}/maengel/${d.id}`}>
                 <span class="defect-stripe" style={`background:${d.gewerkColor ?? '#6B6660'}`}></span>
                 <span class="defect-body">
                   <span class="defect-line1">
@@ -685,10 +687,15 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
                   </span>
                   <span class="defect-line2">
                     {#if d.gewerkName}<span>{d.gewerkName}</span>{/if}
-                    {#if d.deadline}<span>· Deadline {fmtDateDe(d.deadline)}</span>{/if}
+                    {#if d.deadline}
+                      <span class:deadline-warn={isOverdue || isSoonDue}>
+                        {#if isOverdue}Frist abgelaufen{:else if isSoonDue}Frist in {Math.ceil((new Date(d.deadline + 'T00:00:00').getTime() - Date.now()) / 86400000)}d{:else}Frist {fmtDateDe(d.deadline)}{/if}
+                      </span>
+                    {/if}
                   </span>
                 </span>
                 {#if d.priority === 1}<span class="defect-prio">!</span>{/if}
+                {#if isOverdue}<span class="defect-overdue-badge">Überfällig</span>{/if}
               </a>
             </div>
           {/each}
@@ -1050,6 +1057,9 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   .group-header.status-rejected { color: var(--secondary); }
   .group-header .count { font-size: 10px; opacity: 0.7; }
   .defect-card.overdue { border-color: rgba(226, 22, 42, 0.3); background: linear-gradient(to right, var(--tint-red), var(--surface-container-lowest) 30%); }
+  .defect-card.soon-due { border-color: rgba(201, 119, 0, 0.3); background: linear-gradient(to right, var(--tint-amber), var(--surface-container-lowest) 30%); }
+  .deadline-warn { color: var(--error); font-weight: 600; }
+  .defect-overdue-badge { font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 2px 6px; border-radius: var(--r-sm); background: rgba(226, 22, 42, 0.10); color: var(--primary-container); flex-shrink: 0; }
   .defect-prio { font-family: var(--display); font-weight: 800; font-size: 18px; color: var(--primary-container); width: 24px; text-align: center; flex-shrink: 0; }
   .gps-row { display: flex; align-items: center; gap: var(--stack-md); }
   .gps-coords { font-size: 12px; color: var(--secondary); font-variant-numeric: tabular-nums; }
