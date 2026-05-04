@@ -5,6 +5,7 @@
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/state';
   import { criticalPath, criticalPathWithDefects, calculateFloat, propagate, type EngineTask, type EngineDep } from '$lib/gantt/engine';
+  import { generateGanttPdf, type PdfFormat, type GanttPdfTask } from '$lib/pdf/ganttPdf';
   import { fmtDate, setProjectExceptions } from '$lib/gantt/calendar';
   import { toast } from '$lib/components/Toast.svelte';
   import { confirm } from '$lib/components/ConfirmDialog.svelte';
@@ -203,6 +204,29 @@
     toast(`${overdueTasks.length} Termine + Nachfolger verschoben.`);
     showDelayProposal = false;
     await invalidateAll();
+  }
+
+  async function exportGanttPdf(format: PdfFormat) {
+    const gewerkMap = new Map(parent.gewerke.map((g: { id: string; name: string }) => [g.id, g.name]));
+    const pdfTasks: GanttPdfTask[] = visibleTasks.map((t: any) => ({
+      id: t.id,
+      num: t.num ?? '',
+      name: t.name ?? '',
+      startDate: t.startDate,
+      endDate: t.endDate,
+      depth: t.depth ?? 0,
+      color: t.color ?? '#3B6CC4',
+      progressPct: t.progressPct ?? 0,
+      gewerkName: t.gewerkId ? gewerkMap.get(t.gewerkId) ?? null : null
+    }));
+
+    await generateGanttPdf({
+      projectName: parent.project.name,
+      tasks: pdfTasks,
+      format,
+      title: viewMode === 'next' ? `${parent.project.name} — Next (±3 Wochen)` : undefined
+    });
+    toast(`${format}-PDF heruntergeladen.`);
   }
   let cpResult = $derived.by(() => {
     if (!showCritical) return { path: new Set<string>(), defectImpacts: [] };
@@ -462,9 +486,16 @@
       <button class="filter-pill" onclick={() => openCreateSheet(fmtDate(new Date()))}>
         + Termin
       </button>
-      <button class="filter-pill" onclick={() => window.print()}>
-        PDF
-      </button>
+      <details class="filter-dropdown">
+        <summary class="filter-pill">PDF</summary>
+        <div class="dropdown-panel">
+          <button class="dropdown-item" onclick={() => { exportGanttPdf('A4'); }}>A4 Querformat</button>
+          <button class="dropdown-item" onclick={() => { exportGanttPdf('A3'); }}>A3 Quartal-Übersicht</button>
+          <button class="dropdown-item" onclick={() => { exportGanttPdf('A0'); }}>A0 Plotter (Gesamtplan)</button>
+          <hr style="margin:4px 0;border:none;border-top:1px solid var(--outline-variant)" />
+          <button class="dropdown-item" onclick={() => window.print()}>Browser-Druck</button>
+        </div>
+      </details>
       <span class="extras-spacer"></span>
       {#if parent.gewerke.length > 0}
         <details class="filter-dropdown">
