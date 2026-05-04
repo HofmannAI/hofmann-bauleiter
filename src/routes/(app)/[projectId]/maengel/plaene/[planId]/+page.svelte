@@ -203,8 +203,15 @@
 
   let activeDefect = $derived(activePin ? parent.defects.find((d) => d.id === activePin) ?? null : null);
 
+  let showResolved = $state(false);
+  const RESOLVED_STATUSES = ['resolved', 'accepted', 'rejected'];
+
   let pagePins = $derived(
-    parent.defects.filter((d) => d.page === currentPage && (!d.gewerkId || !hiddenGewerke.has(d.gewerkId)))
+    parent.defects.filter((d) =>
+      d.page === currentPage &&
+      (!d.gewerkId || !hiddenGewerke.has(d.gewerkId)) &&
+      (showResolved || !RESOLVED_STATUSES.includes(d.status))
+    )
   );
 
   // Gewerke present on this plan (for filter chips)
@@ -228,6 +235,9 @@
     <button class="btn btn-ghost btn-sm" onclick={nextPage} disabled={!pdfDoc || currentPage >= pdfDoc.numPages} aria-label="Nächste Seite">›</button>
     <button class="btn btn-ghost btn-sm" onclick={() => zoom(-0.25)} aria-label="Zoom out">−</button>
     <button class="btn btn-ghost btn-sm" onclick={() => zoom(0.25)} aria-label="Zoom in">+</button>
+    <button class="btn btn-ghost btn-sm" class:active-toggle={showResolved} onclick={() => (showResolved = !showResolved)} title="Erledigte Pins anzeigen/verbergen">
+      <Icon name="eye" size={14} /> {showResolved ? 'Alle' : 'Offene'}
+    </button>
   </div>
 
   {#if gewerkePresent.length > 0}
@@ -326,6 +336,7 @@
   .plan-title { font-family: var(--display); font-weight: 800; font-size: 18px; margin: 0; }
   .toolbar-spacer { flex: 1; }
   .page-info { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .active-toggle { background: var(--primary-container); color: var(--on-primary); }
   .filter-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
   .canvas-wrap { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); overflow: auto; max-height: calc(100dvh - 260px); }
   .canvas-host { position: relative; display: inline-block; }

@@ -4,7 +4,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { criticalPath, calculateFloat, type EngineTask, type EngineDep } from '$lib/gantt/engine';
+  import { criticalPath, calculateFloat, propagate, type EngineTask, type EngineDep } from '$lib/gantt/engine';
   import { fmtDate, setProjectExceptions } from '$lib/gantt/calendar';
   import { toast } from '$lib/components/Toast.svelte';
   import { confirm } from '$lib/components/ConfirmDialog.svelte';
@@ -148,6 +148,62 @@
   }
 
   let showCritical = $state(false);
+  let showDelayProposal = $state(false);
+
+  // Auto-Verzugs-Erkennung
+  let overdueTasks = $derived.by(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return parent.tasks.filter((t) =>
+      t.endDate < today && (t.progressPct ?? 0) < 100 && (t.depth ?? 0) > 0
+    );
+  });
+
+  let delayProposal = $derived.by(() => {
+    if (!showDelayProposal || overdueTasks.length === 0) return [];
+    const today = new Date().toISOString().slice(0, 10);
+    const engineTasks: EngineTask[] = parent.tasks.map((t) => ({
+      id: t.id, startDate: t.startDate, endDate: t.endDate, durationAt: t.durationAt
+    }));
+    const engineDeps: EngineDep[] = parent.deps.map((d) => ({
+      predecessorId: d.predecessorId, successorId: d.successorId,
+      type: d.type as 'FS' | 'SS' | 'FF' | 'SF', lagDays: d.lagDays
+    }));
+
+    // For each overdue task, simulate moving its end to today
+    const allChanges: Array<{ id: string; name: string; oldEnd: string; newEnd: string; delayDays: number }> = [];
+    const seen = new Set<string>();
+    for (const t of overdueTasks) {
+      const diff = propagate(engineTasks, engineDeps, { id: t.id, end: today });
+      for (const [id, change] of diff) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const task = parent.tasks.find((x) => x.id === id);
+        if (task && change.newEnd !== change.oldEnd) {
+          const days = Math.round((new Date(change.newEnd).getTime() - new Date(change.oldEnd).getTime()) / 86400000);
+          if (days > 0) {
+            allChanges.push({ id, name: task.name, oldEnd: change.oldEnd, newEnd: change.newEnd, delayDays: days });
+          }
+        }
+      }
+    }
+    return allChanges.sort((a, b) => a.delayDays - b.delayDays);
+  });
+
+  async function acceptAllDelays() {
+    if (overdueTasks.length === 0) return;
+    const today = new Date().toISOString().slice(0, 10);
+    // For each overdue task, use applyMove to propagate the change
+    for (const t of overdueTasks) {
+      const fd = new FormData();
+      fd.append('taskId', t.id);
+      fd.append('newStart', t.startDate);
+      fd.append('newEnd', today);
+      await fetch('?/applyMove', { method: 'POST', body: fd });
+    }
+    toast(`${overdueTasks.length} Termine + Nachfolger verschoben.`);
+    showDelayProposal = false;
+    await invalidateAll();
+  }
   let cpIds = $derived.by(() => {
     if (!showCritical) return new Set<string>();
     const tasks: EngineTask[] = parent.tasks.map((t) => ({
@@ -472,6 +528,38 @@
         </div>
       </details>
     </div>
+    {#if overdueTasks.length > 0}
+      <div class="delay-banner">
+        <span class="delay-icon">⚠</span>
+        <span class="delay-text"><b>{overdueTasks.length}</b> {overdueTasks.length === 1 ? 'Termin' : 'Termine'} überfällig</span>
+        {#if !showDelayProposal}
+          <button class="btn btn-ghost btn-sm" onclick={() => (showDelayProposal = true)}>
+            Verschiebungs-Vorschlag
+          </button>
+        {:else}
+          {#if delayProposal.length > 0}
+            <div class="delay-proposals">
+              {#each delayProposal.slice(0, 8) as p}
+                <span class="delay-proposal-item">
+                  {p.name}: <b>+{p.delayDays}d</b> → {p.newEnd}
+                </span>
+              {/each}
+              {#if delayProposal.length > 8}
+                <span class="delay-proposal-item">…und {delayProposal.length - 8} weitere</span>
+              {/if}
+            </div>
+            <button class="btn btn-primary btn-sm" onclick={acceptAllDelays}>
+              Alle {delayProposal.length} verschieben
+            </button>
+          {:else}
+            <span class="delay-text">Keine Nachfolger betroffen.</span>
+          {/if}
+          <button class="btn btn-ghost btn-sm" onclick={() => (showDelayProposal = false)}>
+            <Icon name="close" size={12} />
+          </button>
+        {/if}
+      </div>
+    {/if}
     {#if multiSelected.size > 0}
       <div class="multi-select-bar">
         <span><b>{multiSelected.size}</b> Termine ausgewählt</span>
@@ -695,6 +783,18 @@
   .gantt-empty-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
   .gantt-extras { padding: 10px 14px; background: var(--paper-tint); border-bottom: 1px solid var(--line); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .extras-spacer { flex: 1; }
+  .delay-banner {
+    display: flex; align-items: center; gap: var(--stack-md); flex-wrap: wrap;
+    padding: 10px 14px; background: rgba(226, 22, 42, 0.06);
+    border-bottom: 1px solid rgba(226, 22, 42, 0.15);
+  }
+  .delay-icon { font-size: 16px; }
+  .delay-text { font-size: 13px; color: var(--on-surface); }
+  .delay-proposals { display: flex; flex-wrap: wrap; gap: var(--stack-sm); }
+  .delay-proposal-item {
+    font-size: 12px; padding: 2px 8px; border-radius: var(--r-sm);
+    background: var(--surface-container-low); border: 1px solid var(--outline-variant);
+  }
   .filter-dropdown { position: relative; }
   .filter-dropdown summary { list-style: none; cursor: pointer; }
   .filter-dropdown summary::-webkit-details-marker { display: none; }
