@@ -7,6 +7,18 @@
 
   let { data } = $props();
   let parent = $derived(data);
+  let reassigning = $state(false);
+
+  async function reassignGewerke() {
+    reassigning = true;
+    const res = await fetch('?/reassignGewerke', { method: 'POST', body: new FormData() });
+    if (res.ok) {
+      toast('Gewerke-Zuordnung aktualisiert.');
+      suppressRealtimeFor(3000);
+      await invalidateAll();
+    } else toast('Fehler.');
+    reassigning = false;
+  }
 
   // Expand/collapse state per gewerk
   let expanded = $state<Set<string>>(new Set());
@@ -121,8 +133,15 @@
 
 <div class="page">
   <div class="gewerke-header">
-    <h1 class="gewerke-title">Aktuelle Gewerke</h1>
-    <span class="gewerke-subtitle">{parent.gewerkeData.length} Gewerke in den nächsten 3 Wochen</span>
+    <div class="gewerke-header-row">
+      <div>
+        <h1 class="gewerke-title">Aktuelle Gewerke</h1>
+        <span class="gewerke-subtitle">{parent.gewerkeData.length} Gewerke im Zeitfenster (−2 / +3 Wochen)</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick={reassignGewerke} disabled={reassigning} type="button">
+        <Icon name="gear" size={14} /> {reassigning ? 'Zuordnet…' : 'Gewerke zuordnen'}
+      </button>
+    </div>
   </div>
 
   {#if parent.gewerkeData.length === 0}
@@ -315,6 +334,7 @@
 
 <style>
   .gewerke-header { margin-bottom: var(--stack-lg); }
+  .gewerke-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--stack-md); }
   .gewerke-title { font-family: var(--display); font-weight: 700; font-size: 22px; margin: 0 0 var(--stack-sm); }
   .gewerke-subtitle { font-size: 13px; color: var(--secondary); }
   .gewerke-list { display: flex; flex-direction: column; gap: var(--stack-md); }
