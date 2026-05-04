@@ -4,10 +4,51 @@
   import { invalidateAll } from '$app/navigation';
   import { fmtDateDe } from '$lib/util/time';
   import { suppressRealtimeFor } from '$lib/stores/realtime';
+  import { generateHandoverPdf } from '$lib/pdf/handoverReport';
 
   let { data } = $props();
   let parent = $derived(data);
   let reassigning = $state(false);
+
+  let showHandover = $state(false);
+  let handoverFrom = $state('');
+  let handoverTo = $state('');
+
+  async function downloadHandover() {
+    const today = new Date().toISOString().slice(0, 10);
+    const allDefects = parent.gewerkeData.flatMap((g) => g.defects);
+    const allTasks = parent.gewerkeData.flatMap((g) => g.tasks);
+    const overdueTasks = allTasks.filter((t) => t.endDate < today && t.progressPct < 100);
+    const upcomingTasks = allTasks.filter((t) => t.startDate >= today || (t.startDate <= today && t.endDate >= today));
+
+    await generateHandoverPdf({
+      projectName: parent.project?.name ?? 'Projekt',
+      fromBauleiter: handoverFrom || 'Bauleiter A',
+      toBauleiter: handoverTo || 'Bauleiter B',
+      date: new Date().toLocaleDateString('de-DE'),
+      openDefects: allDefects.map((d) => ({
+        shortId: d.shortId, title: d.title, status: d.status,
+        deadline: d.deadline, gewerkName: null
+      })),
+      upcomingTasks: upcomingTasks.map((t) => ({
+        name: t.name, startDate: t.startDate, endDate: t.endDate,
+        progressPct: t.progressPct, gewerkName: null
+      })),
+      overdueTasks: overdueTasks.map((t) => ({
+        name: t.name, startDate: t.startDate, endDate: t.endDate,
+        progressPct: t.progressPct, gewerkName: null
+      })),
+      stats: {
+        totalDefects: allDefects.length,
+        openDefects: allDefects.length,
+        overdueDefects: allDefects.filter((d) => d.deadline && d.deadline < today).length,
+        totalTasks: allTasks.length,
+        completedTasks: allTasks.filter((t) => t.progressPct >= 100).length
+      }
+    });
+    toast('Übergabe-PDF heruntergeladen.');
+    showHandover = false;
+  }
 
   async function reassignGewerke() {
     reassigning = true;
@@ -138,6 +179,9 @@
         <h1 class="gewerke-title">Aktuelle Gewerke</h1>
         <span class="gewerke-subtitle">{parent.gewerkeData.length} Gewerke im Zeitfenster (−2 / +3 Wochen)</span>
       </div>
+      <button class="btn btn-ghost btn-sm" onclick={() => (showHandover = true)} type="button">
+        <Icon name="file" size={14} /> Übergabe-PDF
+      </button>
       <button class="btn btn-ghost btn-sm" onclick={reassignGewerke} disabled={reassigning} type="button">
         <Icon name="gear" size={14} /> {reassigning ? 'Zuordnet…' : 'Gewerke zuordnen'}
       </button>
@@ -331,6 +375,29 @@
     </div>
   {/if}
 </div>
+
+{#if showHandover}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="dialog open" onclick={() => (showHandover = false)} onkeydown={(e) => e.key === 'Escape' && (showHandover = false)}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="dialog-panel" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Übergabe-PDF">
+      <h3 class="dialog-title">Übergabe-PDF generieren</h3>
+      <p class="dialog-text">Erstellt ein PDF mit Projekt-Status, offenen Mängeln und kommenden Terminen.</p>
+      <div class="field">
+        <label class="field-label" for="ho-from">Von (Bauleiter)</label>
+        <input id="ho-from" class="field-input" bind:value={handoverFrom} placeholder="Name Bauleiter A" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="ho-to">An (Vertretung)</label>
+        <input id="ho-to" class="field-input" bind:value={handoverTo} placeholder="Name Bauleiter B" />
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" onclick={() => (showHandover = false)}>Abbrechen</button>
+        <button class="btn btn-primary" onclick={downloadHandover}>PDF herunterladen</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .gewerke-header { margin-bottom: var(--stack-lg); }
