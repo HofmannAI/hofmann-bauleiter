@@ -13,6 +13,7 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   import { getSignedUrl } from '$lib/storage/photos';
   import { suppressRealtimeFor } from '$lib/stores/realtime';
   import { exportDefectsToExcel, generateImportTemplate, parseImportExcel, type ParsedImportRow, type DefectExportRow } from '$lib/excel/defectExcel';
+  import VoiceInput from '$lib/components/VoiceInput.svelte';
 
   let { data } = $props();
   let parent = $derived(data);
@@ -799,7 +800,10 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
       {/if}
       <div class="field">
         <label class="field-label" for="t">Titel</label>
-        <input id="t" name="title" class="field-input" bind:value={createTitle} required maxlength="160" />
+        <div class="voice-input-row">
+          <input id="t" name="title" class="field-input" bind:value={createTitle} required maxlength="160" style="flex:1" />
+          <VoiceInput onResult={(text) => { createTitle = text; }} />
+        </div>
       </div>
       <div class="field">
         <label class="field-label" for="g">Gewerk</label>
@@ -1070,4 +1074,5 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   .import-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .import-tag { font-size: 11px; font-weight: 500; text-transform: uppercase; padding: 2px 6px; border-radius: var(--r-sm); background: var(--surface-container); color: var(--secondary); }
   .import-tag-red { background: rgba(226, 22, 42, 0.10); color: var(--primary-container); }
+  .voice-input-row { display: flex; align-items: center; gap: var(--stack-sm); }
 </style>
