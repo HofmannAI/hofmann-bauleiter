@@ -22,6 +22,22 @@
   let newDefectTitle = $state('');
   let newDefectPriority = $state('2');
 
+  // QR-Code Freimeldung
+  let qrLink = $state<string | null>(null);
+  let qrLoading = $state(false);
+
+  async function generateQr() {
+    qrLoading = true;
+    const fd = new FormData();
+    const res = await fetch('?/createQrToken', { method: 'POST', body: fd });
+    if (res.ok) {
+      const data = await res.json();
+      qrLink = data?.data?.qrLink ?? null;
+      if (qrLink) toast('QR-Link erstellt.');
+    } else toast('Fehler.');
+    qrLoading = false;
+  }
+
   async function submitNewDefect() {
     if (!newDefectTitle.trim()) return;
     const fd = new FormData();
@@ -330,6 +346,25 @@
     {/if}
   </div>
 
+  <!-- QR-Code Freimeldung -->
+  <div class="field">
+    <span class="field-label">QR-Code Freimeldung</span>
+    {#if qrLink}
+      <div class="qr-result">
+        <a href={qrLink} target="_blank" class="qr-link">{qrLink}</a>
+        <button class="btn btn-ghost btn-sm" onclick={() => navigator.clipboard.writeText(qrLink ?? '').then(() => toast('Link kopiert.'))}>
+          Kopieren
+        </button>
+      </div>
+      <p class="field-hint">Subunternehmer kann über diesen Link die Fertigstellung bestätigen — ohne Login.</p>
+    {:else}
+      <button class="btn btn-ghost btn-sm" onclick={generateQr} disabled={qrLoading} type="button">
+        {qrLoading ? 'Erstellt…' : 'Freimeldungs-Link erstellen'}
+      </button>
+      <p class="field-hint">Erstellt einen Link/QR-Code für den Subunternehmer zur Freimeldung.</p>
+    {/if}
+  </div>
+
   {#if isPerApartment && parent.apartments.length > 0}
     <h3 class="section-title">Pro Wohnung <span class="count">{parent.apartments.length}</span></h3>
     <div class="apt-grid">
@@ -436,4 +471,7 @@
     border-radius: var(--r-sm); background: var(--surface-container-lowest);
     font-size: 13px; font-family: inherit;
   }
+  .qr-result { display: flex; align-items: center; gap: var(--stack-md); flex-wrap: wrap; margin-bottom: var(--stack-sm); }
+  .qr-link { font-size: 12px; color: var(--primary-container); word-break: break-all; text-decoration: none; }
+  .qr-link:hover { text-decoration: underline; }
 </style>
