@@ -23,7 +23,16 @@ export const GEWERKE_SEED = [
   { name: 'Außenanlagen', color: '#7CB246', defaultPerApartment: false, sortOrder: 17 },
   { name: 'Pflasterarbeiten', color: '#9C7B65', defaultPerApartment: false, sortOrder: 18 },
   { name: 'Gärtner', color: '#5C8C3F', defaultPerApartment: false, sortOrder: 19 },
-  { name: 'Aufzug', color: '#445C70', defaultPerApartment: false, sortOrder: 20 }
+  { name: 'Aufzug', color: '#445C70', defaultPerApartment: false, sortOrder: 20 },
+  { name: 'Abdichtung', color: '#2196F3', defaultPerApartment: false, sortOrder: 21 },
+  { name: 'Putzer', color: '#FF9800', defaultPerApartment: true, sortOrder: 22 },
+  { name: 'Fußbodenheizung', color: '#00BCD4', defaultPerApartment: true, sortOrder: 23 },
+  { name: 'Reinigung', color: '#607D8B', defaultPerApartment: false, sortOrder: 24 },
+  { name: 'Flaschner', color: '#795548', defaultPerApartment: false, sortOrder: 25 },
+  { name: 'Treppenhaus', color: '#9E9E9E', defaultPerApartment: false, sortOrder: 26 },
+  { name: 'Steigleitungen', color: '#00897B', defaultPerApartment: false, sortOrder: 27 },
+  { name: 'Toreinbau', color: '#546E7A', defaultPerApartment: false, sortOrder: 28 },
+  { name: 'Haustüren', color: '#8D6E63', defaultPerApartment: false, sortOrder: 29 }
 ] as const;
 
 export type GewerkSeed = (typeof GEWERKE_SEED)[number];

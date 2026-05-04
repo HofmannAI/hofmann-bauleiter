@@ -507,7 +507,7 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
 
   {#if taskIdFilter}
     <div class="filter-bar">
-      <span class="filter-pill active" style="background:var(--red);color:#fff">
+      <span class="filter-pill active" style="background:var(--primary-container);color:#fff">
         Nur Mängel zu Termin
       </span>
       <button class="filter-pill" onclick={() => { taskIdFilter = null; history.replaceState({}, '', window.location.pathname); }}>
@@ -516,29 +516,50 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
     </div>
   {/if}
 
-  <div class="filter-bar">
-    <button class="filter-pill" class:active={statusFilter === 'all'} onclick={() => (statusFilter = 'all')}>Alle</button>
-    <button class="filter-pill" class:active={statusFilter === 'open'} onclick={() => (statusFilter = 'open')}>Offen</button>
-    <button class="filter-pill" class:active={statusFilter === 'sent'} onclick={() => (statusFilter = 'sent')}>Gesendet</button>
-    <button class="filter-pill" class:active={statusFilter === 'acknowledged'} onclick={() => (statusFilter = 'acknowledged')}>Bestätigt</button>
-    <button class="filter-pill" class:active={statusFilter === 'resolved'} onclick={() => (statusFilter = 'resolved')}>Erledigt</button>
-  </div>
-
-  <div class="filter-bar">
-    <button class="filter-pill" class:active={gewerkFilter === 'all'} onclick={() => (gewerkFilter = 'all')}>Alle Gewerke</button>
-    {#each parent.gewerke as g (g.id)}
-      <button class="filter-pill" class:active={gewerkFilter === g.id} onclick={() => (gewerkFilter = g.id)}>{g.name}</button>
-    {/each}
-  </div>
-
-  {#if parent.members.length > 1}
-    <div class="filter-bar">
-      <button class="filter-pill" class:active={creatorFilter === 'all'} onclick={() => (creatorFilter = 'all')}>Alle Ersteller</button>
-      {#each parent.members as m (m.id)}
-        <button class="filter-pill" class:active={creatorFilter === m.id} onclick={() => (creatorFilter = m.id)}>{m.name}</button>
-      {/each}
+  <div class="filter-dropdowns">
+    <div class="filter-group">
+      <label class="field-label" for="f-status">Status</label>
+      <select id="f-status" class="filter-select" bind:value={statusFilter}>
+        <option value="all">Alle</option>
+        <option value="open">Offen</option>
+        <option value="sent">Gesendet</option>
+        <option value="acknowledged">Bestätigt</option>
+        <option value="resolved">Erledigt</option>
+      </select>
     </div>
-  {/if}
+
+    <div class="filter-group">
+      <label class="field-label" for="f-gewerk">Gewerk</label>
+      <select id="f-gewerk" class="filter-select" bind:value={gewerkFilter}>
+        <option value="all">Alle Gewerke</option>
+        {#each parent.gewerke as g (g.id)}
+          <option value={g.id}>{g.name}</option>
+        {/each}
+      </select>
+    </div>
+
+    {#if parent.members.length > 1}
+      <div class="filter-group">
+        <label class="field-label" for="f-creator">Ersteller</label>
+        <select id="f-creator" class="filter-select" bind:value={creatorFilter}>
+          <option value="all">Alle Ersteller</option>
+          {#each parent.members as m (m.id)}
+            <option value={m.id}>{m.name}</option>
+          {/each}
+        </select>
+      </div>
+    {/if}
+
+    <div class="filter-group">
+      <label class="field-label" for="f-frist">Frist</label>
+      <select id="f-frist" class="filter-select" bind:value={fristFilter}>
+        <option value="all">Alle</option>
+        <option value="overdue">Überfällig</option>
+        <option value="week">Diese Woche</option>
+        <option value="month">Dieser Monat</option>
+      </select>
+    </div>
+  </div>
 
 <div class="layout-bar">
     <span class="layout-eyebrow">Layout</span>
@@ -602,11 +623,6 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
     {/if}
   {/if}
   <div class="filter-bar">
-    <button class="filter-pill" class:active={fristFilter === 'all'} onclick={() => (fristFilter = 'all')}>Frist: alle</button>
-    <button class="filter-pill filter-pill-red" class:active={fristFilter === 'overdue'} onclick={() => (fristFilter = 'overdue')}>Überfällig</button>
-    <button class="filter-pill" class:active={fristFilter === 'week'} onclick={() => (fristFilter = 'week')}>Diese Woche</button>
-    <button class="filter-pill" class:active={fristFilter === 'month'} onclick={() => (fristFilter = 'month')}>Dieser Monat</button>
-    <span class="search-spacer"></span>
     <div class="search-wrap">
       <Icon name="list" size={12} />
       <input
@@ -958,6 +974,21 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
   @media (min-width: 980px) { .maengel-layout { grid-template-columns: 240px 1fr; } }
   .maengel-main { min-width: 0; }
   .maengel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-dropdowns {
+    display: flex; flex-wrap: wrap; gap: var(--stack-md); margin-bottom: var(--gutter);
+    padding: var(--stack-md) var(--gutter);
+    background: var(--surface-container-low); border-radius: var(--r-md);
+    border: 1px solid var(--outline-variant);
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 2px; min-width: 120px; flex: 1; }
+  .filter-group .field-label { margin-bottom: 0; }
+  .filter-select {
+    width: 100%; min-height: 36px; padding: 4px 8px;
+    border: 1px solid var(--outline-variant); border-radius: var(--r-sm);
+    background: var(--surface-container-lowest); font-size: 13px;
+    font-family: inherit; color: var(--on-surface);
+  }
+  .filter-select:focus { border-color: var(--primary-container); outline: none; }
 .layout-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--stack-sm); padding: 10px 0; margin-bottom: var(--gutter); border-top: 1px dashed var(--outline-variant); border-bottom: 1px dashed var(--outline-variant); }
   .layout-eyebrow { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06px; text-transform: uppercase; color: var(--secondary); margin-right: 4px; }
   .layout-spacer { flex: 1; }

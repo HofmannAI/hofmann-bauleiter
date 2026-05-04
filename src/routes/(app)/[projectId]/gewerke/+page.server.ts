@@ -166,7 +166,81 @@ const checklistSetSchema = z.object({
 	done: z.enum(['true', 'false']).transform((v) => v === 'true')
 });
 
+/**
+ * Map task names to gewerk names. Case-insensitive substring match.
+ * More specific matches first (longer patterns take priority).
+ */
+const TASK_GEWERK_MAP: [RegExp, string][] = [
+	// Specific matches first
+	[/abdichtung/i, 'Abdichtung'],
+	[/flaschner|falschner|fallroh/i, 'Flaschner'],
+	[/innenputz|außenputz|putz.*treppe|treppenwangen.*putz/i, 'Putzer'],
+	[/fußbodenheizung|heizschleifen/i, 'Fußbodenheizung'],
+	[/bauendreinigung|reinigung/i, 'Reinigung'],
+	[/steigleitung/i, 'Steigleitungen'],
+	[/toreinbau/i, 'Toreinbau'],
+	[/haustür/i, 'Haustüren'],
+	[/treppengeländer|treppenstufe|treppenhaus.*belag|podest/i, 'Treppenhaus'],
+	[/maler|anstrich|lackier/i, 'Maler'],
+	[/elektro|steckdose|schalter|lüfter.*einbau|elektrodose/i, 'Elektro'],
+	[/sanitär|heizung.*fertig|heizung.*sanitär/i, 'Sanitär/Heizung'],
+	[/inbetriebnahme.*heizung/i, 'Sanitär/Heizung'],
+	[/trockenbau|beplank|spachtel|ständer/i, 'Trockenbau'],
+	[/fliesen/i, 'Fliesenleger'],
+	[/estrich/i, 'Estrich'],
+	[/parkett/i, 'Parkett'],
+	[/türzarg|türblät|türen/i, 'Türen'],
+	[/stahltür/i, 'Türen'],
+	[/aufzug/i, 'Aufzug'],
+	[/fenster/i, 'Fenster'],
+	[/flachdach|dachbegrünung|abschweißen.*dach/i, 'Flachdach'],
+	[/dämmung|fußbodendämmung/i, 'Dämmung'],
+	[/gerüst/i, 'Gerüstbau'],
+	[/rohbau|beton|schal|verzug.*rohbau/i, 'Rohbau'],
+	[/tiefbau|aushub|drainage|schotter|tragschicht/i, 'Tiefbau'],
+	[/pflaster/i, 'Pflasterarbeiten'],
+	[/grünanlagen|garten/i, 'Gärtner'],
+	[/außenanlagen|briefkasten|traufstreifen/i, 'Außenanlagen'],
+	[/lüfterabdeckung|balkongeländer|balkonbelag/i, 'Schlosser'],
+	[/wanddurchdringung|deckendurchbruch|UG.*beschicht|abstellräume|rinnenkörper|badewanne|rinnen/i, 'Rohbau'],
+];
+
+function matchTaskToGewerk(taskName: string): string | null {
+	for (const [pattern, gewerk] of TASK_GEWERK_MAP) {
+		if (pattern.test(taskName)) return gewerk;
+	}
+	return null;
+}
+
 export const actions: Actions = {
+	reassignGewerke: async ({ params, locals }) => {
+		if (!locals.user || !db) return fail(401);
+
+		const allGewerke = await db.select().from(gewerke);
+		const gewerkByName = new Map(allGewerke.map((g) => [g.name.toLowerCase(), g.id]));
+
+		const allTasks = await db
+			.select({ id: tasks.id, name: tasks.name, depth: tasks.depth })
+			.from(tasks)
+			.where(eq(tasks.projectId, params.projectId));
+
+		let updated = 0;
+		for (const t of allTasks) {
+			if (t.depth === 0) continue; // Skip parent/summary tasks
+			const gewerkName = matchTaskToGewerk(t.name);
+			if (!gewerkName) continue;
+			const gewerkId = gewerkByName.get(gewerkName.toLowerCase());
+			if (!gewerkId) continue;
+
+			await db.update(tasks)
+				.set({ gewerkId, updatedAt: new Date() })
+				.where(eq(tasks.id, t.id));
+			updated++;
+		}
+
+		return { ok: true, updated };
+	},
+
 	updateTaskDates: async ({ request, params, locals }) => {
 		if (!locals.user || !db) return fail(401);
 		const fd = Object.fromEntries(await request.formData());
