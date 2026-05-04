@@ -4,7 +4,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { criticalPath, calculateFloat, propagate, type EngineTask, type EngineDep } from '$lib/gantt/engine';
+  import { criticalPath, criticalPathWithDefects, calculateFloat, propagate, type EngineTask, type EngineDep } from '$lib/gantt/engine';
   import { fmtDate, setProjectExceptions } from '$lib/gantt/calendar';
   import { toast } from '$lib/components/Toast.svelte';
   import { confirm } from '$lib/components/ConfirmDialog.svelte';
@@ -204,22 +204,30 @@
     showDelayProposal = false;
     await invalidateAll();
   }
-  let cpIds = $derived.by(() => {
-    if (!showCritical) return new Set<string>();
-    const tasks: EngineTask[] = parent.tasks.map((t) => ({
+  let cpResult = $derived.by(() => {
+    if (!showCritical) return { path: new Set<string>(), defectImpacts: [] };
+    const engineTasks: EngineTask[] = parent.tasks.map((t) => ({
       id: t.id,
       startDate: t.startDate,
       endDate: t.endDate,
       durationAt: t.durationAt
     }));
-    const deps: EngineDep[] = parent.deps.map((d) => ({
+    const engineDeps: EngineDep[] = parent.deps.map((d) => ({
       predecessorId: d.predecessorId,
       successorId: d.successorId,
       type: d.type as 'FS' | 'SS' | 'FF' | 'SF',
       lagDays: d.lagDays
     }));
-    return criticalPath(tasks, deps);
+    const defectCounts = (parent.taskDefectCounts ?? [])
+      .filter((c: { taskId: string | null; open: number }) => c.taskId != null)
+      .map((c: { taskId: string | null; open: number }) => ({
+        taskId: c.taskId!,
+        open: c.open
+      }));
+    return criticalPathWithDefects(engineTasks, engineDeps, defectCounts);
   });
+  let cpIds = $derived(cpResult.path);
+  let cpDefectImpacts = $derived(cpResult.defectImpacts);
 
   let floatMap = $derived.by(() => {
     const tasks: EngineTask[] = parent.tasks.map((t) => ({
@@ -413,6 +421,11 @@
       <button class="filter-pill" class:active={showCritical} onclick={() => (showCritical = !showCritical)}>
         Kritisch {#if showCritical}<span class="badge">{cpIds.size}</span>{/if}
       </button>
+      {#if showCritical && cpDefectImpacts.length > 0}
+        <span class="cp-defect-hint">
+          {cpDefectImpacts.length} Mängel auf krit. Pfad (+{cpDefectImpacts.reduce((s, d) => s + d.estimatedDelayDays, 0)}d)
+        </span>
+      {/if}
       <details class="filter-dropdown">
         <summary class="filter-pill">Ansichten</summary>
         <div class="dropdown-panel">
@@ -794,6 +807,11 @@
   .delay-proposal-item {
     font-size: 12px; padding: 2px 8px; border-radius: var(--r-sm);
     background: var(--surface-container-low); border: 1px solid var(--outline-variant);
+  }
+  .cp-defect-hint {
+    font-size: 12px; font-weight: 500; color: var(--error);
+    padding: 4px 8px; border-radius: var(--r-sm);
+    background: rgba(226, 22, 42, 0.06);
   }
   .filter-dropdown { position: relative; }
   .filter-dropdown summary { list-style: none; cursor: pointer; }

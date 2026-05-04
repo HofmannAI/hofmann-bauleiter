@@ -242,6 +242,49 @@ export function calculateFloat(tasks: EngineTask[], deps: EngineDep[]): Map<stri
  * Returns set of task ids on the path. Edge weights are the task's working-day
  * duration; we walk back from the latest-ending task following predecessors.
  */
+/**
+ * Defect impact on critical path: open defects delay the task they're linked to.
+ * Each open defect adds an estimated delay based on average resolution time.
+ */
+export type DefectImpact = {
+  taskId: string;
+  openCount: number;
+  estimatedDelayDays: number;
+};
+
+export function criticalPathWithDefects(
+  tasks: EngineTask[],
+  deps: EngineDep[],
+  defectCounts: Array<{ taskId: string; open: number }>
+): { path: Set<string>; defectImpacts: DefectImpact[] } {
+  const DAYS_PER_DEFECT = 2; // estimated delay per open defect
+  const defectMap = new Map(defectCounts.map((d) => [d.taskId, d.open]));
+
+  // Adjust task end dates by defect impact for critical path calculation
+  const adjustedTasks = tasks.map((t) => {
+    const openDefects = defectMap.get(t.id) ?? 0;
+    if (openDefects === 0) return t;
+    const delay = openDefects * DAYS_PER_DEFECT;
+    const adjustedEnd = addWorkingDays(t.endDate, delay);
+    return { ...t, endDate: adjustedEnd };
+  });
+
+  const path = criticalPath(adjustedTasks, deps);
+
+  const defectImpacts: DefectImpact[] = [];
+  for (const [taskId, count] of defectMap) {
+    if (count > 0 && path.has(taskId)) {
+      defectImpacts.push({
+        taskId,
+        openCount: count,
+        estimatedDelayDays: count * DAYS_PER_DEFECT
+      });
+    }
+  }
+
+  return { path, defectImpacts };
+}
+
 export function criticalPath(tasks: EngineTask[], deps: EngineDep[]): Set<string> {
   if (tasks.length === 0) return new Set();
   // Find ending tasks (those with no FS/FF successors) — but simpler: use latest-ending task overall
