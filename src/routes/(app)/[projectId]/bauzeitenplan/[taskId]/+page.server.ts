@@ -2,8 +2,8 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks, activity, taskPhotos, defects } from '$lib/db/schema';
-import { eq, and, asc } from 'drizzle-orm';
+import { tasks, activity, taskPhotos, defects, freimeldungTokens } from '$lib/db/schema';
+import { eq, and, asc, sql } from 'drizzle-orm';
 import { getTaskWithApartmentProgress, setApartmentProgress } from '$lib/db/taskQueries';
 import { listDefectsForTask, createDefect, updateDefectFields } from '$lib/db/defectQueries';
 
@@ -205,6 +205,26 @@ export const actions: Actions = {
       status: status as 'resolved'
     });
     return { ok: true };
+  },
+
+  createQrToken: async ({ params, locals, url }) => {
+    if (!locals.user || !db) return fail(401);
+
+    // Create freimeldung token
+    const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000); // 30 days
+    const tokenValue = crypto.randomUUID().replace(/-/g, '').slice(0, 32);
+
+    const [row] = await db.insert(freimeldungTokens).values({
+      projectId: params.projectId,
+      taskId: params.taskId,
+      token: tokenValue,
+      expiresAt
+    }).returning({ token: freimeldungTokens.token });
+
+    const baseUrl = url.origin;
+    const link = `${baseUrl}/freimeldung/${row.token}`;
+
+    return { ok: true, qrLink: link };
   },
 
   delete: async ({ params, locals }) => {

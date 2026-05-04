@@ -547,3 +547,18 @@ export type Defect = typeof defects.$inferSelect;
 export type Plan = typeof plans.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;
 export type Activity = typeof activity.$inferSelect;
+
+/* ----- QR-Code Freimeldung ----- */
+
+export const freimeldungTokens = pgTable('freimeldung_tokens', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  taskId: uuid('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  status: text('status', { enum: ['pending', 'completed', 'expired'] }).default('pending').notNull(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedByName: text('completed_by_name'),
+  completedNote: text('completed_note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+});
