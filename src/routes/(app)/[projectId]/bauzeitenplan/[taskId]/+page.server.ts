@@ -2,10 +2,10 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/db/client';
-import { tasks, activity, taskPhotos } from '$lib/db/schema';
+import { tasks, activity, taskPhotos, defects } from '$lib/db/schema';
 import { eq, and, asc } from 'drizzle-orm';
 import { getTaskWithApartmentProgress, setApartmentProgress } from '$lib/db/taskQueries';
-import { listDefectsForTask } from '$lib/db/defectQueries';
+import { listDefectsForTask, createDefect, updateDefectFields } from '$lib/db/defectQueries';
 
 export const load: PageServerLoad = async ({ params }) => {
   const detail = await getTaskWithApartmentProgress(params.projectId, params.taskId);
@@ -169,6 +169,40 @@ export const actions: Actions = {
       message: `Rückmeldung: Ist-Start ${parsed.data.actualStartDate || '—'}, Ist-Ende ${parsed.data.actualEndDate || '—'}`,
       refTable: 'tasks',
       refId: params.taskId
+    });
+    return { ok: true };
+  },
+
+  createDefect: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const title = String(fd.title ?? '').trim();
+    const priority = parseInt(String(fd.priority ?? '2')) || 2;
+    if (!title) return fail(400, { error: 'Titel fehlt.' });
+
+    // Get task's gewerkId to auto-assign
+    const [task] = await db.select({ gewerkId: tasks.gewerkId }).from(tasks).where(eq(tasks.id, params.taskId)).limit(1);
+
+    await createDefect({
+      projectId: params.projectId,
+      title: title.slice(0, 160),
+      gewerkId: task?.gewerkId ?? null,
+      taskId: params.taskId,
+      priority,
+      createdBy: locals.user.id
+    });
+    return { ok: true };
+  },
+
+  resolveDefect: async ({ request, params, locals }) => {
+    if (!locals.user || !db) return fail(401);
+    const fd = Object.fromEntries(await request.formData());
+    const defectId = String(fd.defectId ?? '');
+    const status = String(fd.status ?? 'resolved');
+    if (!defectId) return fail(400);
+
+    await updateDefectFields(params.projectId, defectId, locals.user.id, {
+      status: status as 'resolved'
     });
     return { ok: true };
   },

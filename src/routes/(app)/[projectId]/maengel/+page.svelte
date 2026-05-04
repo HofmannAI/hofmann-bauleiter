@@ -35,7 +35,7 @@ import { matchDefectFilter, groupDefects, type DefectFilterJson, type GroupKey, 
 
   type Status = 'all' | 'open' | 'sent' | 'acknowledged' | 'resolved';
   type FristFilter = 'all' | 'overdue' | 'week' | 'month';
-  let statusFilter = $state<Status>('all');
+  let statusFilter = $state<Status>('open');
   let gewerkFilter = $state<string>('all');
   let strukturSelection = $state<StructureSelection>({ kind: 'project', houseId: null, apartmentId: null, roomId: null });
   let activeLayoutId = $state<string | null>(null);

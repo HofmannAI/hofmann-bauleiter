@@ -17,6 +17,25 @@
   let photoUrls = $state<Record<string, string>>({});
   let lightbox = $state<string | null>(null);
 
+  // Quick-add defect from task detail
+  let newDefectOpen = $state(false);
+  let newDefectTitle = $state('');
+  let newDefectPriority = $state('2');
+
+  async function submitNewDefect() {
+    if (!newDefectTitle.trim()) return;
+    const fd = new FormData();
+    fd.append('title', newDefectTitle.trim());
+    fd.append('priority', newDefectPriority);
+    const res = await fetch(`?/createDefect`, { method: 'POST', body: fd });
+    if (res.ok) {
+      toast('Mangel angelegt und verknüpft.');
+      newDefectTitle = '';
+      newDefectOpen = false;
+      await invalidateAll();
+    } else toast('Fehler beim Anlegen.');
+  }
+
   const SWATCHES = ['#E8833A', '#3B6CC4', '#3FAA60', '#D4A22A', '#7A7570', '#C9482F', '#1E96A8', '#7CB246'];
 
   $effect(() => {
@@ -252,20 +271,62 @@
   {/if}
 
   <div class="field">
-    <span class="field-label">Verknüpfte Mängel <span class="count">{parent.linkedDefects?.length ?? 0}</span></span>
+    <span class="field-label">Mängel zu diesem Termin <span class="count">{parent.linkedDefects?.length ?? 0}</span></span>
     {#if (parent.linkedDefects?.length ?? 0) > 0}
       <div class="defect-link-list">
         {#each parent.linkedDefects as d (d.id)}
-          <a class="defect-link-card" href={`/${parent.project.id}/maengel/${d.id}`}>
-            <span class="defect-link-dot" style={`background:${d.gewerkColor ?? '#9CA3AF'}`}></span>
-            <span class="defect-link-id">{d.shortId}</span>
-            <span class="defect-link-title">{d.title}</span>
-            <span class="defect-link-status status-{d.status}">{d.status}</span>
-          </a>
+          <div class="defect-link-row">
+            <a class="defect-link-card" href={`/${parent.project.id}/maengel/${d.id}`}>
+              <span class="defect-link-dot" style={`background:${d.gewerkColor ?? '#9CA3AF'}`}></span>
+              <span class="defect-link-id">{d.shortId}</span>
+              <span class="defect-link-title">{d.title}</span>
+              <span class="defect-link-status status-{d.status}">{d.status}</span>
+            </a>
+            {#if d.status !== 'resolved' && d.status !== 'accepted'}
+              <button class="defect-resolve-btn" title="Als erledigt markieren" onclick={async () => {
+                const fd = new FormData();
+                fd.append('defectId', d.id);
+                fd.append('status', 'resolved');
+                const res = await fetch(`/${parent.project.id}/bauzeitenplan/${parent.task.id}?/resolveDefect`, { method: 'POST', body: fd });
+                if (res.ok) { toast(`${d.shortId} erledigt.`); await invalidateAll(); }
+              }}>
+                <Icon name="check" size={14} />
+              </button>
+            {/if}
+          </div>
         {/each}
       </div>
     {:else}
-      <p class="field-hint">Keine Mängel mit diesem Termin verknüpft. Mängel können im Mangel-Detail einem Termin zugeordnet werden.</p>
+      <p class="field-hint">Keine Mängel verknüpft.</p>
+    {/if}
+
+    <!-- Quick-Add Mangel -->
+    {#if !newDefectOpen}
+      <button class="hub-add-btn" onclick={() => (newDefectOpen = true)}>
+        <Icon name="plus" size={12} /> Mangel anlegen
+      </button>
+    {:else}
+      <div class="quick-defect-form">
+        <input
+          class="field-input"
+          placeholder="Mangel-Titel…"
+          bind:value={newDefectTitle}
+          onkeydown={(e) => e.key === 'Enter' && submitNewDefect()}
+        />
+        <div class="quick-defect-actions">
+          <select class="filter-select" bind:value={newDefectPriority} style="flex:0 0 auto;width:auto">
+            <option value="2">Normal</option>
+            <option value="1">Hoch</option>
+            <option value="3">Niedrig</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick={submitNewDefect} disabled={!newDefectTitle.trim()}>
+            Anlegen
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick={() => { newDefectOpen = false; newDefectTitle = ''; }}>
+            Abbrechen
+          </button>
+        </div>
+      </div>
     {/if}
   </div>
 
@@ -352,4 +413,27 @@
   .defect-link-status.status-sent, .defect-link-status.status-acknowledged { background: rgba(201, 119, 0, 0.10); color: var(--amber); border: 1px solid rgba(201, 119, 0, 0.30); }
   .defect-link-status.status-resolved, .defect-link-status.status-accepted { background: rgba(46, 125, 50, 0.10); color: var(--green); border: 1px solid rgba(46, 125, 50, 0.30); }
   .defect-link-status.status-rejected { background: var(--surface-container); color: var(--secondary); border: 1px solid var(--outline-variant); }
+  .defect-link-row { display: flex; align-items: center; gap: var(--stack-sm); }
+  .defect-link-row .defect-link-card { flex: 1; min-width: 0; }
+  .defect-resolve-btn {
+    flex-shrink: 0; width: 36px; height: 36px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--green); border: 1px solid var(--green);
+    transition: all var(--d-fast) var(--ease-out-expo);
+  }
+  .defect-resolve-btn:hover { background: rgba(46, 125, 50, 0.10); }
+  .hub-add-btn {
+    display: inline-flex; align-items: center; gap: var(--stack-sm);
+    margin-top: var(--stack-sm); padding: var(--stack-sm) var(--stack-md);
+    font-size: 12px; color: var(--primary-container); border-radius: var(--r-sm);
+    min-height: 36px; transition: background var(--d-fast) var(--ease-out-expo);
+  }
+  .hub-add-btn:hover { background: rgba(226, 22, 42, 0.06); }
+  .quick-defect-form { display: flex; flex-direction: column; gap: var(--stack-md); margin-top: var(--stack-md); }
+  .quick-defect-actions { display: flex; gap: var(--stack-sm); align-items: center; }
+  .filter-select {
+    min-height: 36px; padding: 4px 8px; border: 1px solid var(--outline-variant);
+    border-radius: var(--r-sm); background: var(--surface-container-lowest);
+    font-size: 13px; font-family: inherit;
+  }
 </style>
