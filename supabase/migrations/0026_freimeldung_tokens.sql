@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.freimeldung_tokens (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   task_id uuid NOT NULL REFERENCES public.tasks(id) ON DELETE CASCADE,
-  token text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
+  token text NOT NULL UNIQUE,
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'expired')),
   completed_at timestamptz,
   completed_by_name text,
